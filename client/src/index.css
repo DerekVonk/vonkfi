@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(210, 20%, 98%);
+  --foreground: hsl(222.2, 84%, 4.9%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(215.4, 16.3%, 46.9%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222.2, 84%, 4.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222.2, 84%, 4.9%);
+  --border: hsl(214.3, 31.8%, 91.4%);
+  --input: hsl(214.3, 31.8%, 91.4%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(210, 40%, 96%);
+  --secondary-foreground: hsl(222.2, 84%, 4.9%);
+  --accent: hsl(210, 40%, 96%);
+  --accent-foreground: hsl(222.2, 84%, 4.9%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(222.2, 84%, 4.9%);
+  --radius: 0.5rem;
+  --chart-1: hsl(12, 76%, 61%);
+  --chart-2: hsl(173, 58%, 39%);
+  --chart-3: hsl(197, 37%, 24%);
+  --chart-4: hsl(43, 74%, 66%);
+  --chart-5: hsl(27, 87%, 67%);
+  
+  /* Custom FIRE app colors */
+  --fire-primary: hsl(207, 90%, 54%);
+  --fire-success: hsl(122, 39%, 49%);
+  --fire-accent: hsl(14, 100%, 57%);
+  --fire-neutral-50: hsl(210, 20%, 98%);
+  --fire-neutral-100: hsl(220, 14%, 91%);
+  --fire-neutral-200: hsl(220, 13%, 82%);
+  --fire-neutral-400: hsl(215, 12%, 63%);
+  --fire-neutral-600: hsl(215, 25%, 47%);
+  --fire-neutral-800: hsl(217, 33%, 17%);
+}
+
+.dark {
+  --background: hsl(222.2, 84%, 4.9%);
+  --foreground: hsl(210, 40%, 98%);
+  --muted: hsl(217.2, 32.6%, 17.5%);
+  --muted-foreground: hsl(215, 20.2%, 65.1%);
+  --popover: hsl(222.2, 84%, 4.9%);
+  --popover-foreground: hsl(210, 40%, 98%);
+  --card: hsl(222.2, 84%, 4.9%);
+  --card-foreground: hsl(210, 40%, 98%);
+  --border: hsl(217.2, 32.6%, 17.5%);
+  --input: hsl(217.2, 32.6%, 17.5%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(222.2, 84%, 4.9%);
+  --secondary: hsl(217.2, 32.6%, 17.5%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(217.2, 32.6%, 17.5%);
+  --accent-foreground: hsl(210, 40%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(212.7, 26.8%, 83.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .fire-gradient {
+    background: linear-gradient(135deg, var(--fire-primary) 0%, var(--fire-accent) 100%);
+  }
+  
+  .fire-card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200;
+  }
+  
+  .fire-button-primary {
+    @apply bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors;
+  }
+  
+  .fire-button-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium transition-colors;
+  }
+  
+  .fire-sidebar-item {
+    @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors;
+  }
+  
+  .fire-sidebar-item-active {
+    @apply text-blue-600 bg-blue-50;
+  }
+  
+  .fire-sidebar-item-inactive {
+    @apply text-gray-600 hover:bg-gray-100;
+  }
+}
+
+@layer utilities {
+  .text-fire-primary {
+    color: var(--fire-primary);
+  }
+  
+  .text-fire-success {
+    color: var(--fire-success);
+  }
+  
+  .text-fire-accent {
+    color: var(--fire-accent);
+  }
+  
+  .bg-fire-primary {
+    background-color: var(--fire-primary);
+  }
+  
+  .bg-fire-success {
+    background-color: var(--fire-success);
+  }
+  
+  .bg-fire-accent {
+    background-color: var(--fire-accent);
+  }
+}
