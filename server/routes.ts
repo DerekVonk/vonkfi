@@ -59,9 +59,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parsedStatement = await camtParser.parseFile(xmlContent);
 
       const results = {
-        newAccounts: [],
-        newTransactions: [],
-        categorySuggestions: []
+        newAccounts: [] as any[],
+        newTransactions: [] as any[],
+        categorySuggestions: [] as any[]
       };
 
       // Process accounts

@@ -46,7 +46,7 @@ export default function Layout({ children }: LayoutProps) {
               return (
                 <li key={item.name}>
                   <Link href={item.href}>
-                    <a
+                    <div
                       className={`fire-sidebar-item ${
                         isActive(item.href)
                           ? "fire-sidebar-item-active"
@@ -55,7 +55,7 @@ export default function Layout({ children }: LayoutProps) {
                     >
                       <Icon className="w-5 h-5 mr-3" />
                       {item.name}
-                    </a>
+                    </div>
                   </Link>
                 </li>
               );
