@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowUp, ArrowDown, PiggyBank, Shield, Flame, TrendingUp, CheckCircle, Clock } from "lucide-react";
+import { Plus, ArrowUp, ArrowDown, PiggyBank, Shield, Flame, TrendingUp, CheckCircle, Clock, ArrowLeftRight, Target } from "lucide-react";
 import { api } from "@/lib/api";
 import type { DashboardData } from "@/types";
 import ImportModal from "@/components/ImportModal";

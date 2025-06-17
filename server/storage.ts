@@ -121,11 +121,16 @@ export class MemStorage implements IStorage {
     const id = this.currentAccountId++;
     const now = new Date();
     const account: Account = { 
-      ...insertAccount, 
+      ...insertAccount,
       id, 
       discoveredDate: now, 
       lastSeenDate: now,
-      isActive: true 
+      isActive: true,
+      role: insertAccount.role || null,
+      bic: insertAccount.bic || null,
+      bankName: insertAccount.bankName || null,
+      customName: insertAccount.customName || null,
+      accountType: insertAccount.accountType || null
     };
     this.accounts.set(id, account);
     return account;
@@ -153,7 +158,19 @@ export class MemStorage implements IStorage {
 
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
     const id = this.currentTransactionId++;
-    const transaction: Transaction = { ...insertTransaction, id };
+    const transaction: Transaction = { 
+      ...insertTransaction, 
+      id,
+      currency: insertTransaction.currency || null,
+      description: insertTransaction.description || null,
+      merchant: insertTransaction.merchant || null,
+      categoryId: insertTransaction.categoryId || null,
+      isIncome: insertTransaction.isIncome || null,
+      counterpartyIban: insertTransaction.counterpartyIban || null,
+      counterpartyName: insertTransaction.counterpartyName || null,
+      reference: insertTransaction.reference || null,
+      statementId: insertTransaction.statementId || null
+    };
     this.transactions.set(id, transaction);
     return transaction;
   }
@@ -174,7 +191,14 @@ export class MemStorage implements IStorage {
 
   async createCategory(insertCategory: InsertCategory): Promise<Category> {
     const id = this.currentCategoryId++;
-    const category: Category = { ...insertCategory, id };
+    const category: Category = { 
+      ...insertCategory, 
+      id,
+      color: insertCategory.color || null,
+      parentId: insertCategory.parentId || null,
+      icon: insertCategory.icon || null,
+      isSystemCategory: insertCategory.isSystemCategory || null
+    };
     this.categories.set(id, category);
     return category;
   }
@@ -186,7 +210,15 @@ export class MemStorage implements IStorage {
 
   async createGoal(insertGoal: InsertGoal): Promise<Goal> {
     const id = this.currentGoalId++;
-    const goal: Goal = { ...insertGoal, id };
+    const goal: Goal = { 
+      ...insertGoal, 
+      id,
+      currentAmount: insertGoal.currentAmount || null,
+      linkedAccountId: insertGoal.linkedAccountId || null,
+      targetDate: insertGoal.targetDate || null,
+      priority: insertGoal.priority || null,
+      isCompleted: insertGoal.isCompleted || null
+    };
     this.goals.set(id, goal);
     return goal;
   }
@@ -207,7 +239,14 @@ export class MemStorage implements IStorage {
 
   async createAllocation(insertAllocation: InsertAllocation): Promise<Allocation> {
     const id = this.currentAllocationId++;
-    const allocation: Allocation = { ...insertAllocation, id };
+    const allocation: Allocation = { 
+      ...insertAllocation, 
+      id,
+      isActive: insertAllocation.isActive || null,
+      categoryId: insertAllocation.categoryId || null,
+      goalId: insertAllocation.goalId || null,
+      fixedAmount: insertAllocation.fixedAmount || null
+    };
     this.allocations.set(id, allocation);
     return allocation;
   }
