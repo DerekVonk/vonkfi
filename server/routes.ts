@@ -47,7 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Import CAMT.053 statement
-  app.post("/api/import/:userId", upload.single('camtFile'), async (req, res) => {
+  app.post("/api/import/:userId", upload.single('camtFile'), async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       

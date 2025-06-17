@@ -262,7 +262,8 @@ export class MemStorage implements IStorage {
       ...insertRecommendation, 
       id, 
       date: new Date(),
-      status: "pending" 
+      status: "pending",
+      goalId: insertRecommendation.goalId || null
     };
     this.transferRecommendations.set(id, recommendation);
     return recommendation;
@@ -284,7 +285,12 @@ export class MemStorage implements IStorage {
 
   async createCryptoWallet(insertWallet: InsertCryptoWallet): Promise<CryptoWallet> {
     const id = this.currentCryptoWalletId++;
-    const wallet: CryptoWallet = { ...insertWallet, id };
+    const wallet: CryptoWallet = { 
+      ...insertWallet, 
+      id,
+      isActive: insertWallet.isActive || null,
+      provider: insertWallet.provider || null
+    };
     this.cryptoWallets.set(id, wallet);
     return wallet;
   }
