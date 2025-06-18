@@ -6,7 +6,7 @@ export async function seedDatabase() {
     // Create default user
     const [user] = await db.insert(users).values({
       username: "demo",
-      email: "demo@fire-budget.com"
+      password: "demo123"
     }).returning();
 
     console.log("Created demo user:", user);
@@ -40,7 +40,7 @@ export async function seedDatabase() {
 }
 
 // Run seed if this file is executed directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   seedDatabase()
     .then(() => {
       console.log("Database seeded successfully");
