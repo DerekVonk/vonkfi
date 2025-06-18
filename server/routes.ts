@@ -316,6 +316,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
       
+      // Update goal account balances first to ensure linked goals have current amounts
+      await storage.updateGoalAccountBalances(userId);
+      
       // Fetch fresh data and recalculate
       const [accounts, transactions, goals] = await Promise.all([
         storage.getAccountsByUserId(userId),

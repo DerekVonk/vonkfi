@@ -28,6 +28,32 @@ export class CamtParser {
       const bankName = bankInfo?.FinInstnId?.[0]?.Nm?.[0] || 'Unknown Bank';
       const bic = bankInfo?.FinInstnId?.[0]?.BIC?.[0];
 
+      // Try to extract balance information from CAMT if available
+      let openingBalance = null;
+      let closingBalance = null;
+      
+      // Check for opening balance
+      const openingBalanceInfo = statement.Bal?.find((bal: any) => 
+        bal.Tp?.[0]?.CdOrPrtry?.[0]?.Cd?.[0] === 'OPBD' || 
+        bal.Tp?.[0]?.CdOrPrtry?.[0]?.Cd?.[0] === 'PRCD'
+      );
+      if (openingBalanceInfo) {
+        const amount = parseFloat(openingBalanceInfo.Amt[0]._);
+        const indicator = openingBalanceInfo.CdtDbtInd[0];
+        openingBalance = indicator === 'DBIT' ? -amount : amount;
+      }
+
+      // Check for closing balance  
+      const closingBalanceInfo = statement.Bal?.find((bal: any) => 
+        bal.Tp?.[0]?.CdOrPrtry?.[0]?.Cd?.[0] === 'CLBD' ||
+        bal.Tp?.[0]?.CdOrPrtry?.[0]?.Cd?.[0] === 'CLAV'
+      );
+      if (closingBalanceInfo) {
+        const amount = parseFloat(closingBalanceInfo.Amt[0]._);
+        const indicator = closingBalanceInfo.CdtDbtInd[0];
+        closingBalance = indicator === 'DBIT' ? -amount : amount;
+      }
+
       const account: Omit<InsertAccount, 'userId'> = {
         iban,
         bic,
