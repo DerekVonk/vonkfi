@@ -100,10 +100,22 @@ The application is built as a full-stack web application with a React frontend a
 - **Build Scripts**: Separate development and production workflows
 - **Asset Management**: Public asset serving with Express static middleware
 
+## Recent Changes
+
+- June 18, 2025: PostgreSQL database integration completed
+  - Replaced in-memory storage with persistent PostgreSQL database
+  - Added DatabaseStorage implementation with full CRUD operations
+  - Database schema pushed successfully with all tables created
+  - Essential categories seeded (income, expenses, investments)
+  - Demo user created for testing
+  - Fixed file upload functionality - resolved FormData handling in API client
+  - CAMT.053 XML import now working correctly with database persistence
+
 ## Changelog
 
 Changelog:
 - June 17, 2025. Initial setup
+- June 18, 2025. PostgreSQL database integration and file upload fixes
 
 ## User Preferences
 
