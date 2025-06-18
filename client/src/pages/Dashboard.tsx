@@ -28,12 +28,12 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="h-64 bg-gray-200 rounded-xl"></div>
-            <div className="lg:col-span-2 h-64 bg-gray-200 rounded-xl"></div>
+      <div className="p-4 sm:p-6">
+        <div className="animate-pulse space-y-4 sm:space-y-6">
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-1/2 sm:w-1/4"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="h-48 sm:h-64 bg-gray-200 rounded-xl"></div>
+            <div className="lg:col-span-2 h-48 sm:h-64 bg-gray-200 rounded-xl"></div>
           </div>
         </div>
       </div>
@@ -70,15 +70,15 @@ export default function Dashboard() {
           
           <Button 
             onClick={() => setShowImportModal(true)}
-            className="fire-button-primary"
+            className="fire-button-primary w-full sm:w-auto flex-shrink-0"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Import Bank Statement
+            <span className="truncate">Import Bank Statement</span>
           </Button>
         </div>
       </header>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <OutdatedDataNotification dashboardData={dashboardData} userId={DEMO_USER_ID} />
         <DraggableLayout dashboardData={dashboardData} />
       </div>

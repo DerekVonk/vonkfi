@@ -202,12 +202,12 @@ export default function Goals() {
 
   if (goalsLoading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="p-4 sm:p-6">
+        <div className="animate-pulse space-y-4 sm:space-y-6">
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-1/2 sm:w-1/4"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-48 bg-gray-200 rounded-xl"></div>
+              <div key={i} className="h-40 sm:h-48 bg-gray-200 rounded-xl"></div>
             ))}
           </div>
         </div>
@@ -218,18 +218,18 @@ export default function Goals() {
   return (
     <>
       {/* Header */}
-      <header className="bg-white border-b border-neutral-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-neutral-800">Savings Goals</h2>
-            <p className="text-sm text-neutral-400 mt-1">
+      <header className="bg-white border-b border-neutral-200 px-4 sm:px-6 py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-semibold text-neutral-800">Savings Goals</h2>
+            <p className="text-xs sm:text-sm text-neutral-400 mt-1">
               Track your progress towards financial independence with targeted savings goals
             </p>
           </div>
           
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="fire-button-primary">
+              <Button className="fire-button-primary w-full sm:w-auto flex-shrink-0">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Goal
               </Button>
@@ -370,29 +370,29 @@ export default function Goals() {
         </div>
       </header>
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Goals Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Target className="text-blue-600" size={20} />
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Target className="text-blue-600" size={16} />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-neutral-800">{goals?.length || 0}</p>
-                <p className="text-sm text-neutral-400">Total Goals</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-lg sm:text-2xl font-bold text-neutral-800">{goals?.length || 0}</p>
+                <p className="text-xs sm:text-sm text-neutral-400 truncate">Total Goals</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Clock className="text-yellow-600" size={20} />
+          <Card className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Clock className="text-yellow-600" size={16} />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-neutral-800">{activeGoals.length}</p>
-                <p className="text-sm text-neutral-400">Active</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-lg sm:text-2xl font-bold text-neutral-800">{activeGoals.length}</p>
+                <p className="text-xs sm:text-sm text-neutral-400 truncate">Active</p>
               </div>
             </div>
           </Card>
