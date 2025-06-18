@@ -1,17 +1,70 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { University, Settings, CreditCard, PiggyBank, Shield } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { University, Settings, CreditCard, PiggyBank, Shield, Edit2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Account } from "@/types";
 
 const DEMO_USER_ID = 1;
 
 export default function Accounts() {
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [formData, setFormData] = useState({
+    customName: "",
+    accountType: "",
+    role: "",
+  });
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
   const { data: accounts, isLoading } = useQuery<Account[]>({
     queryKey: [api.getAccounts(DEMO_USER_ID)],
   });
+
+  const updateAccountMutation = useMutation({
+    mutationFn: ({ accountId, updates }: { accountId: number; updates: any }) => 
+      api.updateAccount(accountId, updates),
+    onSuccess: () => {
+      toast({
+        title: "Account Updated",
+        description: "Account details have been updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: [api.getAccounts(DEMO_USER_ID)] });
+      setEditingAccount(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update account",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditAccount = (account: Account) => {
+    setEditingAccount(account);
+    setFormData({
+      customName: account.customName || "",
+      accountType: account.accountType || "",
+      role: account.role || "",
+    });
+  };
+
+  const handleSaveAccount = () => {
+    if (!editingAccount) return;
+    updateAccountMutation.mutate({
+      accountId: editingAccount.id,
+      updates: formData,
+    });
+  };
 
   const getAccountIcon = (accountType: string, role: string | null) => {
     if (role === 'emergency') return Shield;
@@ -140,8 +193,12 @@ export default function Accounts() {
                         </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm">
-                      <Settings size={16} />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleEditAccount(account)}
+                    >
+                      <Edit2 size={16} />
                     </Button>
                   </div>
                 </CardHeader>

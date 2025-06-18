@@ -48,7 +48,7 @@ export default function Goals() {
       userId: DEMO_USER_ID,
       targetAmount: parseFloat(data.targetAmount).toString(),
       currentAmount: data.currentAmount ? parseFloat(data.currentAmount).toString() : "0",
-      linkedAccountId: data.linkedAccountId ? parseInt(data.linkedAccountId) : null,
+      linkedAccountId: (data.linkedAccountId && data.linkedAccountId !== "none") ? parseInt(data.linkedAccountId) : null,
       priority: data.priority ? parseInt(data.priority) : 1,
       targetDate: data.targetDate ? new Date(data.targetDate).toISOString() : null,
     }),
@@ -231,7 +231,7 @@ export default function Goals() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">No account</SelectItem>
+                            <SelectItem value="none">No account</SelectItem>
                             {accounts?.map((account) => (
                               <SelectItem key={account.id} value={account.id.toString()}>
                                 {account.customName || account.accountHolderName} (...{account.iban.slice(-4)})
