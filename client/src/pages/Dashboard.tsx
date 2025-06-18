@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Clock } from "lucide-react";
 import { api } from "@/lib/api";
 import type { DashboardData } from "@/types";
 import ImportModal from "@/components/ImportModal";
@@ -11,6 +11,15 @@ const DEMO_USER_ID = 1;
 
 export default function Dashboard() {
   const [showImportModal, setShowImportModal] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(timer);
+  }, []);
   
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
     queryKey: [api.getDashboard(DEMO_USER_ID)],
@@ -37,9 +46,25 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-semibold text-neutral-800">Dashboard</h2>
-            <p className="text-sm text-neutral-400 mt-1">
-              Your path to Financial Independence, Retire Early
-            </p>
+            <div className="flex items-center space-x-4 mt-1">
+              <p className="text-sm text-neutral-400">
+                Your path to Financial Independence, Retire Early
+              </p>
+              <div className="flex items-center space-x-2 text-sm text-neutral-500">
+                <Clock size={14} />
+                <span>
+                  {currentDateTime.toLocaleDateString('en-EU', { 
+                    weekday: 'short',
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })} • {currentDateTime.toLocaleTimeString('en-EU', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </span>
+              </div>
+            </div>
           </div>
           
           <Button 

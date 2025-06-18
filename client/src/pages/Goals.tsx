@@ -81,7 +81,12 @@ export default function Goals() {
   });
 
   const onSubmit = (data: CreateGoalForm) => {
-    createGoalMutation.mutate(data);
+    const goalData = {
+      ...data,
+      targetDate: data.targetDate ? new Date(data.targetDate).toISOString() : null,
+      userId: DEMO_USER_ID,
+    };
+    createGoalMutation.mutate(goalData);
   };
 
   const formatCurrency = (amount: number | string) => {

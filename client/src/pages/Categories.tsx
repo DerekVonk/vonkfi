@@ -43,6 +43,8 @@ const categoryColors = [
 
 export default function Categories() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

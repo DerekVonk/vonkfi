@@ -38,6 +38,7 @@ export default function Accounts() {
       toast({
         title: "Account Updated",
         description: "Account details have been updated successfully",
+        duration: 5000,
       });
       queryClient.invalidateQueries({ queryKey: [api.getAccounts(DEMO_USER_ID)] });
       setEditingAccount(null);
@@ -57,6 +58,7 @@ export default function Accounts() {
       toast({
         title: "Account Deleted",
         description: "Account has been deleted successfully",
+        duration: 5000,
       });
       queryClient.invalidateQueries({ queryKey: [api.getAccounts(DEMO_USER_ID)] });
       queryClient.invalidateQueries({ queryKey: [api.getDashboard(DEMO_USER_ID)] });
