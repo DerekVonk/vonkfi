@@ -6,6 +6,13 @@ export interface FireMetrics {
   savingsRate: number;
   fireProgress: number;
   timeToFire: number;
+  currentMonth: string;
+  monthlyBreakdown: {
+    month: string;
+    income: number;
+    expenses: number;
+    savings: number;
+  }[];
   bufferStatus: {
     current: number;
     target: number;
@@ -72,12 +79,18 @@ export class FireCalculator {
     const savingsRate = (avgIncome - avgExpenses) / avgIncome;
     const timeToFire = this.calculateTimeToFire(savingsRate, fireProgress);
 
+    // Generate monthly breakdown
+    const monthlyBreakdown = this.generateMonthlyBreakdown(last6Months);
+    const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM format
+
     return {
-      monthlyIncome: avgIncome,
-      monthlyExpenses: avgExpenses,
-      savingsRate,
+      monthlyIncome: avgIncome || 0,
+      monthlyExpenses: avgExpenses || 0,
+      savingsRate: isNaN(savingsRate) ? 0 : savingsRate,
       fireProgress,
       timeToFire,
+      currentMonth,
+      monthlyBreakdown,
       bufferStatus: {
         current: currentBuffer,
         target: (this.BUFFER_MIN + this.BUFFER_MAX) / 2,
@@ -165,6 +178,32 @@ export class FireCalculator {
       });
     
     return Array.from(monthlyData.values());
+  }
+
+  private generateMonthlyBreakdown(transactions: Transaction[]): { month: string; income: number; expenses: number; savings: number; }[] {
+    const monthlyData = new Map<string, { income: number; expenses: number; }>();
+    
+    transactions.forEach(tx => {
+      const monthKey = new Date(tx.date).toISOString().substring(0, 7); // YYYY-MM
+      const current = monthlyData.get(monthKey) || { income: 0, expenses: 0 };
+      
+      if (tx.isIncome) {
+        current.income += Math.abs(parseFloat(tx.amount));
+      } else {
+        current.expenses += Math.abs(parseFloat(tx.amount));
+      }
+      
+      monthlyData.set(monthKey, current);
+    });
+    
+    return Array.from(monthlyData.entries())
+      .map(([month, data]) => ({
+        month,
+        income: data.income,
+        expenses: data.expenses,
+        savings: data.income - data.expenses,
+      }))
+      .sort((a, b) => a.month.localeCompare(b.month));
   }
 
   private calculateStandardDeviation(values: number[]): number {

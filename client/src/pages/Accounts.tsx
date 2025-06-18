@@ -254,6 +254,75 @@ export default function Accounts() {
           </Card>
         )}
       </div>
+
+      {/* Edit Account Dialog */}
+      <Dialog open={!!editingAccount} onOpenChange={() => setEditingAccount(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Account Details</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="customName">Custom Name</Label>
+              <Input
+                id="customName"
+                value={formData.customName}
+                onChange={(e) => setFormData(prev => ({ ...prev, customName: e.target.value }))}
+                placeholder="Enter custom name for this account"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="accountType">Account Type</Label>
+              <Select value={formData.accountType} onValueChange={(value) => setFormData(prev => ({ ...prev, accountType: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="checking">Checking</SelectItem>
+                  <SelectItem value="savings">Savings</SelectItem>
+                  <SelectItem value="investment">Investment</SelectItem>
+                  <SelectItem value="credit">Credit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="role">Account Role</Label>
+              <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="income">Income Account</SelectItem>
+                  <SelectItem value="spending">Spending Account</SelectItem>
+                  <SelectItem value="emergency">Emergency Fund</SelectItem>
+                  <SelectItem value="goal-specific">Goal-Specific</SelectItem>
+                  <SelectItem value="investment">Investment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex space-x-3 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setEditingAccount(null)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveAccount}
+              disabled={updateAccountMutation.isPending}
+              className="flex-1"
+            >
+              {updateAccountMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
