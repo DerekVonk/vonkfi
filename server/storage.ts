@@ -1,6 +1,6 @@
 import { 
   users, accounts, transactions, categories, goals, allocations, 
-  transferRecommendations, cryptoWallets, budgetPeriods, budgetCategories, budgetAccounts,
+  transferRecommendations, cryptoWallets, budgetPeriods, budgetCategories, budgetAccounts, importHistory,
   type User, type InsertUser, type Account, type InsertAccount,
   type Transaction, type InsertTransaction, type Category, type InsertCategory,
   type Goal, type InsertGoal, type Allocation, type InsertAllocation,
@@ -8,7 +8,8 @@ import {
   type CryptoWallet, type InsertCryptoWallet,
   type BudgetPeriod, type InsertBudgetPeriod,
   type BudgetCategory, type InsertBudgetCategory,
-  type BudgetAccount, type InsertBudgetAccount
+  type BudgetAccount, type InsertBudgetAccount,
+  type ImportHistory, type InsertImportHistory
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, inArray, and, desc } from "drizzle-orm";
@@ -426,6 +427,19 @@ export class DatabaseStorage implements IStorage {
       totalSpent,
       remainingToBudget: totalIncome - totalAllocated,
     };
+  }
+
+  async deleteBudgetCategory(id: number): Promise<void> {
+    await db.delete(budgetCategories).where(eq(budgetCategories.id, id));
+  }
+
+  async getImportHistoryByUserId(userId: number): Promise<ImportHistory[]> {
+    return await db.select().from(importHistory).where(eq(importHistory.userId, userId)).orderBy(desc(importHistory.importDate));
+  }
+
+  async createImportHistory(insertImportHistory: InsertImportHistory): Promise<ImportHistory> {
+    const [result] = await db.insert(importHistory).values(insertImportHistory).returning();
+    return result;
   }
 }
 

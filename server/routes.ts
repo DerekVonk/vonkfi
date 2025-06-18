@@ -127,6 +127,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update goal account balances after processing all transactions
       await storage.updateGoalAccountBalances(userId);
 
+      // Track import history
+      await storage.createImportHistory({
+        userId,
+        fileName: file.originalname,
+        fileSize: file.size,
+        statementId: parsedStatement.statementId,
+        accountsFound: results.newAccounts.length,
+        transactionsImported: results.newTransactions.length,
+        status: "completed"
+      });
+
       res.json({
         message: "Statement imported successfully",
         ...results,
@@ -134,6 +145,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Import error:", error);
+      
+      // Track failed import
+      if (file) {
+        try {
+          await storage.createImportHistory({
+            userId: parseInt(req.body.userId || "0"),
+            fileName: file.originalname,
+            fileSize: file.size,
+            statementId: "",
+            accountsFound: 0,
+            transactionsImported: 0,
+            status: "failed",
+            errorMessage: error instanceof Error ? error.message : "Unknown error"
+          });
+        } catch (historyError) {
+          console.error("Failed to track import history:", historyError);
+        }
+      }
+      
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to import statement" 
       });
@@ -660,8 +690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/budget/categories/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      // Use storage method for consistency
-      await storage.updateBudgetCategory(id, { allocatedAmount: "0", spentAmount: "0" });
+      await storage.deleteBudgetCategory(id);
       res.json({ message: "Budget category deleted successfully" });
     } catch (error) {
       console.error("Budget category deletion error:", error);
