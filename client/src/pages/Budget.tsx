@@ -48,6 +48,7 @@ interface BudgetAccount {
 
 export default function Budget() {
   const [showCreatePeriodDialog, setShowCreatePeriodDialog] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
   const [newPeriod, setNewPeriod] = useState({
@@ -55,6 +56,10 @@ export default function Budget() {
     startDate: "",
     endDate: "",
     totalIncome: "",
+  });
+  const [syncData, setSyncData] = useState({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
   });
   const [categoryData, setCategoryData] = useState({
     categoryId: "",
@@ -82,6 +87,32 @@ export default function Budget() {
 
   const { data: availableCategories = [] } = useQuery<any[]>({
     queryKey: ['/api/categories'],
+  });
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: [`/api/accounts/${DEMO_USER_ID}`],
+  });
+
+  const incomeAccount = accounts.find((acc: any) => acc.role === 'income');
+
+  const syncMonthlyMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/budget/sync-monthly/${DEMO_USER_ID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to sync monthly budget');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Monthly Budget Synced",
+        description: `Created ${data.period.name} with ${data.categoriesCreated} categories from ${data.transactionCount} transactions (${formatCurrency(data.totalIncome)} income)`,
+      });
+      queryClient.invalidateQueries();
+      setShowSyncDialog(false);
+    },
   });
 
   const createPeriodMutation = useMutation({
@@ -313,9 +344,18 @@ export default function Budget() {
           </div>
           
           <div className="flex space-x-2">
-            <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+            <Dialog open={showSyncDialog} onOpenChange={setShowSyncDialog}>
               <DialogTrigger asChild>
                 <Button className="fire-button-primary flex-shrink-0">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Sync Monthly
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+            
+            <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex-shrink-0">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Category
                 </Button>
@@ -326,7 +366,7 @@ export default function Budget() {
               <DialogTrigger asChild>
                 <Button variant="outline" className="flex-shrink-0">
                   <Calendar className="w-4 h-4 mr-2" />
-                  New Period
+                  Manual Period
                 </Button>
               </DialogTrigger>
             </Dialog>

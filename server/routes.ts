@@ -545,12 +545,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/budget/periods", async (req, res) => {
     try {
       const periodData = req.body;
+      const userId = periodData.userId;
+      
+      // Calculate actual income from transactions in the period if not provided
+      let totalIncome = periodData.totalIncome;
+      
+      if (!totalIncome || totalIncome === "0") {
+        const startDate = new Date(periodData.startDate);
+        const endDate = new Date(periodData.endDate);
+        
+        // Get all transactions for the user in this period
+        const transactions = await storage.getTransactionsByUserId(userId);
+        const periodTransactions = transactions.filter(t => {
+          const transactionDate = new Date(t.date);
+          return transactionDate >= startDate && transactionDate <= endDate;
+        });
+        
+        // Calculate income from income account or positive transactions
+        const accounts = await storage.getAccountsByUserId(userId);
+        const incomeAccount = accounts.find(a => a.role === 'income');
+        
+        if (incomeAccount) {
+          // Sum income transactions from the designated income account
+          const incomeTransactions = periodTransactions.filter(t => 
+            t.accountId === incomeAccount.id && parseFloat(t.amount) > 0
+          );
+          totalIncome = incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0).toString();
+        } else {
+          // Fallback: sum all positive transactions (income) across all accounts
+          const incomeTransactions = periodTransactions.filter(t => parseFloat(t.amount) > 0);
+          totalIncome = incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0).toString();
+        }
+      }
+      
       const period = await storage.createBudgetPeriod({
         ...periodData,
+        totalIncome,
         startDate: new Date(periodData.startDate),
         endDate: new Date(periodData.endDate),
         isActive: true,
       });
+      
       res.json(period);
     } catch (error) {
       console.error("Budget period creation error:", error);
@@ -562,7 +597,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const budgetPeriodId = parseInt(req.params.budgetPeriodId);
       const categories = await storage.getBudgetCategoriesByPeriod(budgetPeriodId);
-      res.json(categories);
+      
+      // Get the budget period to determine date range
+      const periods = await storage.getBudgetPeriodsByUserId(1); // TODO: get from session
+      const period = periods.find(p => p.id === budgetPeriodId);
+      
+      if (period) {
+        // Calculate actual spending for each category from transactions
+        const transactions = await storage.getTransactionsByUserId(1); // TODO: get from session
+        const periodTransactions = transactions.filter(t => {
+          const transactionDate = new Date(t.date);
+          const startDate = new Date(period.startDate);
+          const endDate = new Date(period.endDate);
+          return transactionDate >= startDate && transactionDate <= endDate;
+        });
+        
+        // Update spent amounts based on actual transactions
+        const categoriesWithSpending = categories.map(category => {
+          const categoryTransactions = periodTransactions.filter(t => 
+            t.categoryId === category.categoryId && parseFloat(t.amount) < 0
+          );
+          const actualSpent = Math.abs(categoryTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0));
+          
+          return {
+            ...category,
+            spentAmount: actualSpent.toString(),
+          };
+        });
+        
+        res.json(categoriesWithSpending);
+      } else {
+        res.json(categories);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch budget categories" });
     }
@@ -619,6 +685,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(progress);
     } catch (error) {
       res.status(500).json({ error: "Failed to calculate budget progress" });
+    }
+  });
+
+  // Auto-create budget period from monthly statements
+  app.post("/api/budget/sync-monthly/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { month, year } = req.body; // e.g., { month: 1, year: 2025 }
+      
+      // Calculate date range for the month
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0); // Last day of the month
+      
+      // Get transactions for this month
+      const transactions = await storage.getTransactionsByUserId(userId);
+      const monthlyTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        return transactionDate >= startDate && transactionDate <= endDate;
+      });
+      
+      // Get accounts to find income account
+      const accounts = await storage.getAccountsByUserId(userId);
+      const incomeAccount = accounts.find(a => a.role === 'income');
+      
+      // Calculate total income from income account or all positive transactions
+      let totalIncome = 0;
+      if (incomeAccount) {
+        const incomeTransactions = monthlyTransactions.filter(t => 
+          t.accountId === incomeAccount.id && parseFloat(t.amount) > 0
+        );
+        totalIncome = incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      } else {
+        const incomeTransactions = monthlyTransactions.filter(t => parseFloat(t.amount) > 0);
+        totalIncome = incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      }
+      
+      // Create budget period name
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+      const periodName = `${monthNames[month - 1]} ${year}`;
+      
+      // Check if period already exists
+      const existingPeriods = await storage.getBudgetPeriodsByUserId(userId);
+      const existingPeriod = existingPeriods.find(p => p.name === periodName);
+      
+      if (existingPeriod) {
+        return res.json({ 
+          message: "Budget period already exists", 
+          period: existingPeriod,
+          totalIncome: totalIncome.toString(),
+          transactionCount: monthlyTransactions.length 
+        });
+      }
+      
+      // Create the budget period
+      const period = await storage.createBudgetPeriod({
+        userId,
+        name: periodName,
+        startDate,
+        endDate,
+        totalIncome: totalIncome.toString(),
+        isActive: true,
+      });
+      
+      // Auto-create common budget categories based on existing transactions
+      const categories = await storage.getCategories();
+      const expenseTransactions = monthlyTransactions.filter(t => parseFloat(t.amount) < 0);
+      
+      const categorySpending = new Map();
+      expenseTransactions.forEach(t => {
+        if (t.categoryId) {
+          const current = categorySpending.get(t.categoryId) || 0;
+          categorySpending.set(t.categoryId, current + Math.abs(parseFloat(t.amount)));
+        }
+      });
+      
+      // Create budget categories for categories that had spending
+      const budgetCategories = [];
+      const categoryEntries = Array.from(categorySpending.entries());
+      
+      for (const [categoryId, spending] of categoryEntries) {
+        const category = categories.find(c => c.id === categoryId);
+        if (category) {
+          const budgetCategory = await storage.createBudgetCategory({
+            budgetPeriodId: period.id,
+            categoryId: categoryId,
+            allocatedAmount: spending.toString(), // Start with actual spending as allocation
+            spentAmount: spending.toString(),
+            priority: category.type === 'income' ? 3 : category.name.toLowerCase().includes('rent') || 
+                     category.name.toLowerCase().includes('mortgage') || 
+                     category.name.toLowerCase().includes('utilities') ? 1 : 2,
+            isFixed: category.name.toLowerCase().includes('rent') || 
+                    category.name.toLowerCase().includes('mortgage') || 
+                    category.name.toLowerCase().includes('insurance'),
+          });
+          budgetCategories.push(budgetCategory);
+        }
+      }
+      
+      res.json({
+        message: "Budget period created from monthly statements",
+        period,
+        totalIncome: totalIncome.toString(),
+        transactionCount: monthlyTransactions.length,
+        categoriesCreated: budgetCategories.length,
+        incomeSource: incomeAccount ? incomeAccount.customName || incomeAccount.accountHolderName : 'All accounts'
+      });
+      
+    } catch (error) {
+      console.error("Monthly sync error:", error);
+      res.status(500).json({ error: "Failed to sync monthly budget" });
     }
   });
 
