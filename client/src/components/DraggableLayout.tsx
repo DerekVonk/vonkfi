@@ -1,0 +1,304 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { GripVertical, ArrowUp, ArrowDown, PiggyBank, Shield, Flame, TrendingUp, CheckCircle, Clock, ArrowLeftRight, Target } from "lucide-react";
+import type { DashboardData } from "@/types";
+import IncomeVolatilityChart from "./charts/IncomeVolatilityChart";
+
+interface DashboardComponent {
+  id: string;
+  title: string;
+  component: React.ReactNode;
+  order: number;
+}
+
+interface DraggableLayoutProps {
+  dashboardData?: DashboardData;
+}
+
+export default function DraggableLayout({ dashboardData }: DraggableLayoutProps) {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-EU', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatPercentage = (value: number) => {
+    return `${(value * 100).toFixed(1)}%`;
+  };
+
+  const [components, setComponents] = useState<DashboardComponent[]>([
+    {
+      id: 'monthly-overview',
+      title: 'Monthly Overview',
+      order: 1,
+      component: (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <ArrowUp className="text-green-600" size={20} />
+            </div>
+            <div className="text-xl lg:text-2xl font-bold text-neutral-800 min-h-[2rem] flex items-center justify-center">
+              {formatCurrency(dashboardData?.fireMetrics.monthlyIncome || 0)}
+            </div>
+            <div className="text-sm text-neutral-400 truncate">Income</div>
+            <div className="text-xs text-green-600 mt-1 truncate">Current month</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <ArrowDown className="text-neutral-600" size={20} />
+            </div>
+            <div className="text-xl lg:text-2xl font-bold text-neutral-800 min-h-[2rem] flex items-center justify-center">
+              {formatCurrency(dashboardData?.fireMetrics.monthlyExpenses || 0)}
+            </div>
+            <div className="text-sm text-neutral-400 truncate">Essential</div>
+            <div className="text-xs text-neutral-600 mt-1 truncate">Current month</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <PiggyBank className="text-purple-600" size={20} />
+            </div>
+            <div className="text-xl lg:text-2xl font-bold text-neutral-800 min-h-[2rem] flex items-center justify-center">
+              {formatCurrency((dashboardData?.fireMetrics.monthlyIncome || 0) - (dashboardData?.fireMetrics.monthlyExpenses || 0))}
+            </div>
+            <div className="text-sm text-neutral-400 truncate">Discretionary</div>
+            <div className="text-xs text-purple-600 mt-1 truncate">
+              {formatPercentage(dashboardData?.fireMetrics.savingsRate || 0)} rate
+            </div>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <ArrowLeftRight className="text-orange-500" size={20} />
+            </div>
+            <div className="text-xl lg:text-2xl font-bold text-neutral-800 min-h-[2rem] flex items-center justify-center">
+              {dashboardData?.transferRecommendations?.length || 0}
+            </div>
+            <div className="text-sm text-neutral-400 truncate">Transfers</div>
+            <div className="text-xs text-orange-500 mt-1 truncate">Recommended</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'volatility-monitor',
+      title: 'Income Volatility Monitor',
+      order: 2,
+      component: <IncomeVolatilityChart data={dashboardData?.fireMetrics} />
+    },
+    {
+      id: 'account-overview',
+      title: 'Account Overview',
+      order: 3,
+      component: (
+        <div className="space-y-4">
+          {dashboardData?.accounts?.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">
+                <Shield size={32} className="mx-auto" />
+              </div>
+              <p className="text-sm text-gray-500">No accounts connected yet</p>
+              <p className="text-xs text-gray-400">Import a bank statement to get started</p>
+            </div>
+          ) : (
+            dashboardData?.accounts?.map((account) => (
+              <div key={account.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-neutral-800">
+                    {account.customName || account.accountHolderName}
+                  </p>
+                  <p className="text-xs text-neutral-400">{account.iban}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-neutral-800">Connected</p>
+                  <p className="text-xs text-green-600">{account.accountType}</p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )
+    },
+    {
+      id: 'transfer-instructions',
+      title: 'Recent Transfer Instructions',
+      order: 4,
+      component: (
+        <div className="space-y-3">
+          {(!dashboardData?.transferRecommendations || dashboardData.transferRecommendations.length === 0) ? (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">
+                <ArrowLeftRight size={32} className="mx-auto" />
+              </div>
+              <p className="text-sm text-gray-500">No transfer recommendations yet</p>
+              <p className="text-xs text-gray-400">Recommendations appear after importing transactions</p>
+            </div>
+          ) : (
+            dashboardData.transferRecommendations.slice(0, 3).map((transfer) => (
+              <div key={transfer.id} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-blue-800">
+                    {formatCurrency(parseFloat(transfer.amount))}
+                  </span>
+                  <span className="text-xs text-blue-600 px-2 py-1 bg-blue-100 rounded">
+                    {transfer.status}
+                  </span>
+                </div>
+                <p className="text-xs text-blue-700">{transfer.purpose}</p>
+              </div>
+            ))
+          )}
+        </div>
+      )
+    },
+    {
+      id: 'savings-goals',
+      title: 'Savings Goals Progress',
+      order: 5,
+      component: (
+        <div className="grid grid-cols-1 gap-4">
+          {(!dashboardData?.goals || dashboardData.goals.length === 0) ? (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">
+                <Target size={32} className="mx-auto" />
+              </div>
+              <p className="text-sm text-gray-500">No savings goals yet</p>
+              <p className="text-xs text-gray-400">Create your first goal to start tracking progress</p>
+            </div>
+          ) : (
+            dashboardData.goals.slice(0, 3).map((goal) => {
+              const progress = parseFloat(goal.currentAmount || "0") / parseFloat(goal.targetAmount);
+              const progressPercentage = Math.min(progress * 100, 100);
+              
+              return (
+                <div key={goal.id} className="p-4 border border-neutral-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-neutral-800">{goal.name}</h4>
+                    <span className="text-xs text-neutral-500">
+                      {progressPercentage.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-neutral-200 rounded-full h-2 mb-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-neutral-500">
+                    <span>{formatCurrency(parseFloat(goal.currentAmount || "0"))}</span>
+                    <span>{formatCurrency(parseFloat(goal.targetAmount))}</span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )
+    },
+    {
+      id: 'fire-timeline',
+      title: 'FIRE Timeline',
+      order: 6,
+      component: (
+        <div className="text-center">
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Flame className="text-orange-500" size={24} />
+          </div>
+          <div className="text-3xl font-bold text-neutral-800 mb-2">
+            {dashboardData?.fireMetrics.timeToFire || 0} years
+          </div>
+          <p className="text-sm text-neutral-600 mb-4">
+            Until Financial Independence
+          </p>
+          <div className="w-full bg-neutral-200 rounded-full h-3">
+            <div 
+              className="bg-gradient-to-r from-orange-400 to-red-500 h-3 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min((dashboardData?.fireMetrics.fireProgress || 0) * 100, 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-neutral-500 mt-2">
+            {formatPercentage(dashboardData?.fireMetrics.fireProgress || 0)} complete
+          </p>
+        </div>
+      )
+    }
+  ]);
+
+  const moveComponent = (dragIndex: number, hoverIndex: number) => {
+    const draggedComponent = components[dragIndex];
+    const newComponents = [...components];
+    newComponents.splice(dragIndex, 1);
+    newComponents.splice(hoverIndex, 0, draggedComponent);
+    
+    const reorderedComponents = newComponents.map((comp, index) => ({
+      ...comp,
+      order: index + 1
+    }));
+    
+    setComponents(reorderedComponents);
+  };
+
+  const resetToDefault = () => {
+    setComponents(prev => 
+      prev.sort((a, b) => parseInt(a.id.split('-')[0]) - parseInt(b.id.split('-')[0]))
+         .map((comp, index) => ({ ...comp, order: index + 1 }))
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-neutral-800">Dashboard Layout</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={resetToDefault}
+          className="text-xs"
+        >
+          Reset Layout
+        </Button>
+      </div>
+      
+      {components
+        .sort((a, b) => a.order - b.order)
+        .map((component, index) => (
+          <Card key={component.id} className="fire-card">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">{component.title}</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => index > 0 && moveComponent(index, index - 1)}
+                    disabled={index === 0}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ArrowUp size={14} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => index < components.length - 1 && moveComponent(index, index + 1)}
+                    disabled={index === components.length - 1}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ArrowDown size={14} />
+                  </Button>
+                  <GripVertical size={16} className="text-neutral-400" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {component.component}
+            </CardContent>
+          </Card>
+        ))}
+    </div>
+  );
+}

@@ -1,14 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowUp, ArrowDown, PiggyBank, Shield, Flame, TrendingUp, CheckCircle, Clock, ArrowLeftRight, Target } from "lucide-react";
+import { Plus, Flame } from "lucide-react";
 import { api } from "@/lib/api";
 import type { DashboardData } from "@/types";
 import ImportModal from "@/components/ImportModal";
-import IncomeVolatilityChart from "@/components/charts/IncomeVolatilityChart";
+import DraggableLayout from "@/components/DraggableLayout";
 
 const DEMO_USER_ID = 1;
 
@@ -32,6 +29,41 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  return (
+    <>
+      {/* Header */}
+      <header className="bg-white border-b border-neutral-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-neutral-800">Dashboard</h2>
+            <p className="text-sm text-neutral-400 mt-1">
+              Your path to Financial Independence, Retire Early
+            </p>
+          </div>
+          
+          <Button 
+            onClick={() => setShowImportModal(true)}
+            className="fire-button-primary"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Import Bank Statement
+          </Button>
+        </div>
+      </header>
+
+      <div className="p-6">
+        <DraggableLayout dashboardData={dashboardData} />
+      </div>
+
+      <ImportModal 
+        isOpen={showImportModal} 
+        onClose={() => setShowImportModal(false)}
+        userId={DEMO_USER_ID}
+      />
+    </>
+  );
+}
 
   const formatCurrency = (amount: number | string) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -158,49 +190,46 @@ export default function Dashboard() {
                 <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <ArrowUp className="text-green-600" size={20} />
                 </div>
-                <div className="text-2xl font-bold text-neutral-800">
+                <div className="text-xl lg:text-2xl font-bold text-neutral-800 min-h-[2rem] flex items-center justify-center">
                   {formatCurrency(dashboardData?.fireMetrics.monthlyIncome || 0)}
                 </div>
-                <div className="text-sm text-neutral-400">Income</div>
-                <div className="text-xs text-green-600 mt-1">Current month</div>
+                <div className="text-sm text-neutral-400 truncate">Income</div>
+                <div className="text-xs text-green-600 mt-1 truncate">Current month</div>
               </div>
               
               <div className="text-center">
                 <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <ArrowDown className="text-neutral-600" size={20} />
                 </div>
-                <div className="text-2xl font-bold text-neutral-800">
+                <div className="text-xl lg:text-2xl font-bold text-neutral-800 min-h-[2rem] flex items-center justify-center">
                   {formatCurrency(dashboardData?.fireMetrics.monthlyExpenses || 0)}
                 </div>
-                <div className="text-sm text-neutral-400">Expenses</div>
-                <div className="text-xs text-neutral-600 mt-1">Current month</div>
+                <div className="text-sm text-neutral-400 truncate">Essential</div>
+                <div className="text-xs text-neutral-600 mt-1 truncate">Current month</div>
               </div>
               
               <div className="text-center">
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <PiggyBank className="text-blue-600" size={20} />
+                <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center mx-auto mb-3">
+                  <PiggyBank className="text-purple-600" size={20} />
                 </div>
-                <div className="text-2xl font-bold text-neutral-800">
+                <div className="text-xl lg:text-2xl font-bold text-neutral-800 min-h-[2rem] flex items-center justify-center">
                   {formatCurrency((dashboardData?.fireMetrics.monthlyIncome || 0) - (dashboardData?.fireMetrics.monthlyExpenses || 0))}
                 </div>
-                <div className="text-sm text-neutral-400">Saved</div>
-                <div className="text-xs text-blue-600 mt-1">
+                <div className="text-sm text-neutral-400 truncate">Discretionary</div>
+                <div className="text-xs text-purple-600 mt-1 truncate">
                   {formatPercentage(dashboardData?.fireMetrics.savingsRate || 0)} rate
                 </div>
               </div>
               
               <div className="text-center">
                 <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <Shield className="text-orange-500" size={20} />
+                  <ArrowLeftRight className="text-orange-500" size={20} />
                 </div>
-                <div className="text-2xl font-bold text-neutral-800">
-                  {formatCurrency(dashboardData?.fireMetrics.bufferStatus.current || 0)}
+                <div className="text-xl lg:text-2xl font-bold text-neutral-800 min-h-[2rem] flex items-center justify-center">
+                  {dashboardData?.transferRecommendations?.length || 0}
                 </div>
-                <div className="text-sm text-neutral-400">Buffer</div>
-                <div className={`text-xs mt-1 ${getBufferStatusColor(dashboardData?.fireMetrics.bufferStatus.status || 'optimal')}`}>
-                  {dashboardData?.fireMetrics.bufferStatus.status === 'optimal' ? 'Target met' : 
-                   dashboardData?.fireMetrics.bufferStatus.status === 'above' ? 'Above target' : 'Below target'}
-                </div>
+                <div className="text-sm text-neutral-400 truncate">Transfers</div>
+                <div className="text-xs text-orange-500 mt-1 truncate">Recommended</div>
               </div>
             </div>
           </div>
