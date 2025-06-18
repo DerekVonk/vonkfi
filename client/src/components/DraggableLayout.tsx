@@ -204,14 +204,14 @@ export default function DraggableLayout({ dashboardData }: DraggableLayoutProps)
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-neutral-800">Dashboard Layout</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
+        <h2 className="text-base sm:text-lg font-semibold text-neutral-800">Dashboard Layout</h2>
         <Button 
           variant="outline" 
           size="sm" 
           onClick={resetToDefault}
-          className="text-xs"
+          className="text-xs w-full sm:w-auto"
         >
           Reset Layout
         </Button>
@@ -222,28 +222,28 @@ export default function DraggableLayout({ dashboardData }: DraggableLayoutProps)
         .map((component, index) => (
           <Card key={component.id} className="fire-card">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{component.title}</CardTitle>
-                <div className="flex items-center space-x-2">
+              <div className="flex items-start sm:items-center justify-between">
+                <CardTitle className="text-base sm:text-lg min-w-0 flex-1 truncate pr-2">{component.title}</CardTitle>
+                <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => index > 0 && moveComponent(index, index - 1)}
                     disabled={index === 0}
-                    className="h-8 w-8 p-0"
+                    className="h-6 w-6 sm:h-8 sm:w-8 p-0"
                   >
-                    <ArrowUp size={14} />
+                    <ArrowUp size={12} />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => index < components.length - 1 && moveComponent(index, index + 1)}
                     disabled={index === components.length - 1}
-                    className="h-8 w-8 p-0"
+                    className="h-6 w-6 sm:h-8 sm:w-8 p-0"
                   >
-                    <ArrowDown size={14} />
+                    <ArrowDown size={12} />
                   </Button>
-                  <GripVertical size={16} className="text-neutral-400" />
+                  <GripVertical size={14} className="text-neutral-400 hidden sm:block" />
                 </div>
               </div>
             </CardHeader>

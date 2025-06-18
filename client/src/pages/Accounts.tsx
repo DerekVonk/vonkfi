@@ -133,110 +133,110 @@ export default function Accounts() {
   return (
     <>
       {/* Header */}
-      <header className="bg-white border-b border-neutral-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-neutral-800">Account Management</h2>
-            <p className="text-sm text-neutral-400 mt-1">
+      <header className="bg-white border-b border-neutral-200 px-4 sm:px-6 py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-semibold text-neutral-800">Account Management</h2>
+            <p className="text-xs sm:text-sm text-neutral-400 mt-1">
               Manage your bank accounts, assign roles, and track balances across all your financial institutions
             </p>
           </div>
           
-          <Button className="fire-button-primary">
+          <Button className="fire-button-primary flex-shrink-0 w-full sm:w-auto">
             <Settings className="w-4 h-4 mr-2" />
-            Account Settings
+            <span className="sm:inline">Account Settings</span>
           </Button>
         </div>
       </header>
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Account Overview Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <University className="text-purple-600" size={20} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <Card className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <University className="text-purple-600" size={16} />
               </div>
-              <div>
-                <p className="text-xl font-bold text-neutral-800">{formatCurrency(totalBalance)}</p>
-                <p className="text-sm text-neutral-400">Total Balance</p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <University className="text-blue-600" size={20} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-neutral-800">{accounts?.length || 0}</p>
-                <p className="text-sm text-neutral-400">Total Accounts</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm sm:text-lg font-bold text-neutral-800 truncate">{formatCurrency(totalBalance)}</p>
+                <p className="text-xs sm:text-sm text-neutral-400 truncate">Total Balance</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <CreditCard className="text-green-600" size={20} />
+          <Card className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <University className="text-blue-600" size={16} />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-neutral-800">
+              <div className="min-w-0 flex-1">
+                <p className="text-lg sm:text-2xl font-bold text-neutral-800">{accounts?.length || 0}</p>
+                <p className="text-xs sm:text-sm text-neutral-400 truncate">Total Accounts</p>
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <CreditCard className="text-green-600" size={16} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-lg sm:text-2xl font-bold text-neutral-800">
                   {accounts?.filter(a => a.accountType === 'checking').length || 0}
                 </p>
-                <p className="text-sm text-neutral-400">Checking</p>
+                <p className="text-xs sm:text-sm text-neutral-400 truncate">Checking</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <PiggyBank className="text-blue-600" size={20} />
+          <Card className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <PiggyBank className="text-blue-600" size={16} />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-neutral-800">
+              <div className="min-w-0 flex-1">
+                <p className="text-lg sm:text-2xl font-bold text-neutral-800">
                   {accounts?.filter(a => a.accountType === 'savings').length || 0}
                 </p>
-                <p className="text-sm text-neutral-400">Savings</p>
+                <p className="text-xs sm:text-sm text-neutral-400 truncate">Savings</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Shield className="text-orange-600" size={20} />
+          <Card className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Shield className="text-orange-600" size={16} />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-neutral-800">
+              <div className="min-w-0 flex-1">
+                <p className="text-lg sm:text-2xl font-bold text-neutral-800">
                   {accounts?.filter(a => a.role === 'emergency').length || 0}
                 </p>
-                <p className="text-sm text-neutral-400">Emergency</p>
+                <p className="text-xs sm:text-sm text-neutral-400 truncate">Emergency</p>
               </div>
             </div>
           </Card>
         </div>
 
         {/* Accounts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           {accounts?.map((account) => {
             const IconComponent = getAccountIcon(account.accountType, account.role);
             
             return (
               <Card key={account.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <IconComponent className="text-blue-600" size={20} />
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <IconComponent className="text-blue-600" size={18} />
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-base sm:text-lg truncate">
                           {account.customName || account.accountHolderName}
                         </CardTitle>
-                        <p className="text-sm text-neutral-400">
+                        <p className="text-xs sm:text-sm text-neutral-400 truncate">
                           {account.bankName}
                         </p>
                       </div>
@@ -244,22 +244,23 @@ export default function Accounts() {
                     <Button 
                       variant="ghost" 
                       size="sm"
+                      className="flex-shrink-0 ml-2"
                       onClick={() => handleEditAccount(account)}
                     >
-                      <Edit2 size={16} />
+                      <Edit2 size={14} />
                     </Button>
                   </div>
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-neutral-600">IBAN</span>
-                      <span className="text-sm font-mono">...{account.iban.slice(-4)}</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs sm:text-sm text-neutral-600">IBAN</span>
+                      <span className="text-xs sm:text-sm font-mono">...{account.iban.slice(-4)}</span>
                     </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-neutral-600">Type</span>
-                      <Badge className={getAccountTypeColor(account.accountType, account.role)}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs sm:text-sm text-neutral-600">Type</span>
+                      <Badge className={`${getAccountTypeColor(account.accountType, account.role)} text-xs`}>
                         {account.role || account.accountType}
                       </Badge>
                     </div>
@@ -267,8 +268,8 @@ export default function Accounts() {
                   
                   <div className="pt-3 border-t">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-neutral-600">Balance</span>
-                      <span className={`text-lg font-semibold ${
+                      <span className="text-xs sm:text-sm text-neutral-600">Balance</span>
+                      <span className={`text-sm sm:text-lg font-semibold truncate max-w-[120px] ${
                         parseFloat(account.balance || '0') >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
                         {formatCurrency(account.balance || '0')}
@@ -279,23 +280,23 @@ export default function Accounts() {
                     </div>
                   </div>
                   
-                  <div className="flex space-x-2 pt-2">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pt-2">
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="flex-1"
+                      className="flex-1 text-xs sm:text-sm"
                       onClick={() => handleEditAccount(account)}
                     >
-                      <Edit2 size={14} className="mr-2" />
+                      <Edit2 size={14} className="mr-1 sm:mr-2" />
                       Edit
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="flex-1 text-xs sm:text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
                       onClick={() => setDeletingAccount(account)}
                     >
-                      <Trash2 size={14} className="mr-2" />
+                      <Trash2 size={14} className="mr-1 sm:mr-2" />
                       Delete
                     </Button>
                   </div>

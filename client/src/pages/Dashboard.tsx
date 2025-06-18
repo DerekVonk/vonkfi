@@ -43,11 +43,11 @@ export default function Dashboard() {
   return (
     <>
       {/* Header */}
-      <header className="bg-white border-b border-neutral-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-neutral-800">Dashboard</h2>
-            <div className="flex items-center space-x-4 mt-1">
+      <header className="bg-white border-b border-neutral-200 px-4 sm:px-6 py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-semibold text-neutral-800">Dashboard</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1 space-y-1 sm:space-y-0">
               <p className="text-sm text-neutral-400">
                 Your path to Financial Independence, Retire Early
               </p>
