@@ -89,7 +89,7 @@ export default function Budget() {
     queryKey: ['/api/categories'],
   });
 
-  const { data: accounts = [] } = useQuery({
+  const { data: accounts = [] } = useQuery<any[]>({
     queryKey: [`/api/accounts/${DEMO_USER_ID}`],
   });
 
@@ -739,6 +739,112 @@ export default function Budget() {
                 className="flex-1 fire-button-primary"
               >
                 {createPeriodMutation.isPending ? "Creating..." : "Create"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Monthly Sync Dialog */}
+      <Dialog open={showSyncDialog} onOpenChange={setShowSyncDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sync Monthly Budget from Statements</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center space-x-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Automatic Budget Creation</span>
+              </div>
+              <p className="text-xs text-blue-600">
+                This will analyze your imported bank statements to automatically create a budget period with:
+              </p>
+              <ul className="text-xs text-blue-600 mt-2 ml-4 list-disc">
+                <li>Income calculated from {incomeAccount ? `${incomeAccount.customName || incomeAccount.accountHolderName}` : 'all positive transactions'}</li>
+                <li>Categories pre-filled with actual spending amounts</li>
+                <li>Smart priority assignment (Need/Want/Save)</li>
+              </ul>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="month">Month</Label>
+                <Select 
+                  value={syncData.month.toString()} 
+                  onValueChange={(value) => setSyncData(prev => ({ ...prev, month: parseInt(value) }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => {
+                      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+                      return (
+                        <SelectItem key={i + 1} value={(i + 1).toString()}>
+                          {monthNames[i]}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="year">Year</Label>
+                <Select 
+                  value={syncData.year.toString()} 
+                  onValueChange={(value) => setSyncData(prev => ({ ...prev, year: parseInt(value) }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 3 }, (_, i) => {
+                      const year = new Date().getFullYear() - 1 + i;
+                      return (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {incomeAccount && (
+              <div className="p-3 bg-green-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <DollarSign className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Income Source</span>
+                </div>
+                <p className="text-xs text-green-600 mt-1">
+                  {incomeAccount.customName || incomeAccount.accountHolderName} ({incomeAccount.bankName})
+                </p>
+                <p className="text-xs text-green-500">
+                  Current balance: {formatCurrency(incomeAccount.balance)}
+                </p>
+              </div>
+            )}
+            
+            <div className="flex space-x-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowSyncDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => syncMonthlyMutation.mutate(syncData)}
+                disabled={syncMonthlyMutation.isPending}
+                className="flex-1 fire-button-primary"
+              >
+                {syncMonthlyMutation.isPending ? "Syncing..." : "Sync Budget"}
               </Button>
             </div>
           </div>
