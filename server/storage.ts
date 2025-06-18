@@ -37,6 +37,7 @@ export interface IStorage {
 
   // Data Management
   clearUserData(userId: number): Promise<void>;
+  updateGoalAccountBalances(userId: number): Promise<void>;
 
   // Goals
   getGoalsByUserId(userId: number): Promise<Goal[]>;
@@ -193,6 +194,23 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Note: Accounts, categories, goals, and crypto wallets are preserved
+  }
+
+  async updateGoalAccountBalances(userId: number): Promise<void> {
+    // Update goal current amounts based on linked account balances
+    const userGoals = await this.getGoalsByUserId(userId);
+    const userAccounts = await this.getAccountsByUserId(userId);
+    
+    for (const goal of userGoals) {
+      if (goal.linkedAccountId) {
+        const linkedAccount = userAccounts.find(acc => acc.id === goal.linkedAccountId);
+        if (linkedAccount) {
+          await db.update(goals)
+            .set({ currentAmount: linkedAccount.balance })
+            .where(eq(goals.id, goal.id));
+        }
+      }
+    }
   }
 
   // Goals

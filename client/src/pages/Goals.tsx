@@ -172,7 +172,7 @@ export default function Goals() {
       currentAmount: data.currentAmount ? parseFloat(data.currentAmount).toString() : editingGoal.currentAmount,
       targetDate: data.targetDate || null,
       linkedAccountId: (data.linkedAccountId && data.linkedAccountId !== "none") ? parseInt(data.linkedAccountId) : null,
-      priority: data.priority ? parseInt(data.priority) : editingGoal.priority,
+      priority: data.priority ? parseInt(data.priority) : (editingGoal.priority || 1),
     };
     
     updateGoalMutation.mutate({ goalId: editingGoal.id, updates });
@@ -564,6 +564,152 @@ export default function Goals() {
           </Card>
         )}
       </div>
+
+      {/* Edit Goal Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Savings Goal</DialogTitle>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Goal Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g., Emergency Fund" 
+                        {...field} 
+                        defaultValue={editingGoal?.name || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="targetAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Target Amount (€)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="5000" 
+                        {...field} 
+                        defaultValue={editingGoal?.targetAmount || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="currentAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Current Amount (€)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="0" 
+                        {...field} 
+                        defaultValue={editingGoal?.currentAmount || "0"}
+                        disabled={!!editingGoal?.linkedAccountId}
+                      />
+                    </FormControl>
+                    {editingGoal?.linkedAccountId && (
+                      <p className="text-xs text-blue-600">
+                        Amount synced from linked account balance
+                      </p>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="targetDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Target Date (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        {...field} 
+                        defaultValue={editingGoal?.targetDate || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="linkedAccountId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Linked Account (Optional)</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={editingGoal?.linkedAccountId?.toString() || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select account" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No account</SelectItem>
+                        {accounts?.map((account) => (
+                          <SelectItem key={account.id} value={account.id.toString()}>
+                            {account.customName || account.accountHolderName} (...{account.iban.slice(-4)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-600">
+                      Link to account to auto-sync current amount from account balance
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex space-x-3 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowEditDialog(false);
+                    setEditingGoal(null);
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateGoalMutation.isPending}
+                  className="flex-1 fire-button-primary"
+                >
+                  {updateGoalMutation.isPending ? "Updating..." : "Update Goal"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

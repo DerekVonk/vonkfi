@@ -102,7 +102,7 @@ The application is built as a full-stack web application with a React frontend a
 
 ## Recent Changes
 
-- June 18, 2025: PostgreSQL database integration and selective data clearing
+- June 18, 2025: PostgreSQL database integration and comprehensive functionality enhancement
   - Replaced in-memory storage with persistent PostgreSQL database
   - Added DatabaseStorage implementation with full CRUD operations
   - Database schema pushed successfully with all tables created
@@ -114,6 +114,10 @@ The application is built as a full-stack web application with a React frontend a
   - Implemented selective data clearing that preserves user configurations
   - Added comprehensive testing framework with Vitest, Testing Library, and Supertest
   - Created unit and integration tests for goal creation and API endpoints
+  - Implemented goal editing functionality with account linking and balance synchronization
+  - Added automatic dashboard recalculation after data clearing
+  - Created comprehensive CAMT.053 import accuracy tests with expected transaction validation
+  - Implemented business logic tests for goal management, account linking, and data integrity
 
 ## Changelog
 
