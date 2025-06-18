@@ -475,6 +475,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear all user data
+  app.delete("/api/data/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      await storage.clearUserData(userId);
+      res.json({ message: "All user data cleared successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to clear user data" });
+    }
+  });
+
+  // Recalculate dashboard metrics
+  app.post("/api/recalculate/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      // Trigger a fresh calculation by invalidating cache and recalculating
+      const accounts = await storage.getAccountsByUserId(userId);
+      const transactions = await storage.getTransactionsByUserId(userId);
+      const goals = await storage.getGoalsByUserId(userId);
+      const transfers = await storage.getTransferRecommendationsByUserId(userId);
+      
+      const fireCalculator = new FireCalculator();
+      const fireMetrics = fireCalculator.calculateMetrics(transactions, goals, accounts);
+      
+      res.json({ 
+        message: "Dashboard recalculated successfully",
+        metrics: fireMetrics,
+        dataPoints: {
+          accounts: accounts.length,
+          transactions: transactions.length,
+          goals: goals.length,
+          transfers: transfers.length
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to recalculate dashboard" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Tags, Plus, Settings, TrendingUp, ShoppingBag, Home, Car, Zap, Gamepad, ArrowUp } from "lucide-react";
+import { Tags, Plus, Settings, TrendingUp, ShoppingBag, Home, Car, Zap, Gamepad, ArrowUp, Edit2, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import type { Category } from "@/types";
@@ -329,15 +330,18 @@ export default function Categories() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-neutral-800">{category.name}</p>
-                          {category.isSystemCategory && (
-                            <p className="text-xs text-neutral-400">System category</p>
-                          )}
+                          <p className="text-xs text-neutral-400 capitalize">{category.type}</p>
                         </div>
                       </div>
                       
-                      <Button variant="ghost" size="sm">
-                        <Settings size={16} />
-                      </Button>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => setEditingCategory(category)}>
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setDeletingCategory(category)} className="text-red-600 hover:text-red-700">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
