@@ -69,10 +69,15 @@ export interface IStorage {
   getBudgetCategoriesByPeriod(budgetPeriodId: number): Promise<BudgetCategory[]>;
   createBudgetCategory(budgetCategory: InsertBudgetCategory): Promise<BudgetCategory>;
   updateBudgetCategory(id: number, updates: Partial<BudgetCategory>): Promise<BudgetCategory>;
+  deleteBudgetCategory(id: number): Promise<void>;
   getBudgetAccountsByPeriod(budgetPeriodId: number): Promise<BudgetAccount[]>;
   createBudgetAccount(budgetAccount: InsertBudgetAccount): Promise<BudgetAccount>;
   updateBudgetAccount(id: number, updates: Partial<BudgetAccount>): Promise<BudgetAccount>;
   calculateBudgetProgress(budgetPeriodId: number): Promise<{ totalAllocated: number; totalSpent: number; remainingToBudget: number; }>;
+
+  // Import History
+  getImportHistoryByUserId(userId: number): Promise<ImportHistory[]>;
+  createImportHistory(importHistory: InsertImportHistory): Promise<ImportHistory>;
 }
 
 export class DatabaseStorage implements IStorage {

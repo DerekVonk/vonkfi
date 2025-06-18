@@ -169,6 +169,19 @@ export const cryptoTransactions = pgTable("crypto_transactions", {
   txHash: text("tx_hash"),
 });
 
+export const importHistory = pgTable("import_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  fileName: text("file_name").notNull(),
+  fileSize: integer("file_size"),
+  statementId: text("statement_id"),
+  importDate: timestamp("import_date").defaultNow(),
+  accountsFound: integer("accounts_found").default(0),
+  transactionsImported: integer("transactions_imported").default(0),
+  status: text("status").default("completed"), // processing, completed, failed
+  errorMessage: text("error_message"),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertAccountSchema = createInsertSchema(accounts).omit({ id: true, discoveredDate: true, lastSeenDate: true });
@@ -181,6 +194,7 @@ export const insertCryptoWalletSchema = createInsertSchema(cryptoWallets).omit({
 export const insertBudgetPeriodSchema = createInsertSchema(budgetPeriods).omit({ id: true, createdAt: true });
 export const insertBudgetCategorySchema = createInsertSchema(budgetCategories).omit({ id: true });
 export const insertBudgetAccountSchema = createInsertSchema(budgetAccounts).omit({ id: true });
+export const insertImportHistorySchema = createInsertSchema(importHistory).omit({ id: true, importDate: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -205,3 +219,5 @@ export type BudgetCategory = typeof budgetCategories.$inferSelect;
 export type InsertBudgetCategory = z.infer<typeof insertBudgetCategorySchema>;
 export type BudgetAccount = typeof budgetAccounts.$inferSelect;
 export type InsertBudgetAccount = z.infer<typeof insertBudgetAccountSchema>;
+export type ImportHistory = typeof importHistory.$inferSelect;
+export type InsertImportHistory = z.infer<typeof insertImportHistorySchema>;
