@@ -517,6 +517,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Zero Based Budgeting routes
+  app.get("/api/budget/periods/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const periods = await storage.getBudgetPeriodsByUserId(userId);
+      res.json(periods);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch budget periods" });
+    }
+  });
+
+  app.get("/api/budget/periods/active/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const period = await storage.getActiveBudgetPeriod(userId);
+      if (period) {
+        res.json(period);
+      } else {
+        res.status(404).json({ error: "No active budget period found" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch active budget period" });
+    }
+  });
+
+  app.post("/api/budget/periods", async (req, res) => {
+    try {
+      const periodData = req.body;
+      const period = await storage.createBudgetPeriod({
+        ...periodData,
+        startDate: new Date(periodData.startDate),
+        endDate: new Date(periodData.endDate),
+        isActive: true,
+      });
+      res.json(period);
+    } catch (error) {
+      console.error("Budget period creation error:", error);
+      res.status(500).json({ error: "Failed to create budget period" });
+    }
+  });
+
+  app.get("/api/budget/categories/:budgetPeriodId", async (req, res) => {
+    try {
+      const budgetPeriodId = parseInt(req.params.budgetPeriodId);
+      const categories = await storage.getBudgetCategoriesByPeriod(budgetPeriodId);
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch budget categories" });
+    }
+  });
+
+  app.post("/api/budget/categories", async (req, res) => {
+    try {
+      const categoryData = req.body;
+      const category = await storage.createBudgetCategory(categoryData);
+      res.json(category);
+    } catch (error) {
+      console.error("Budget category creation error:", error);
+      res.status(500).json({ error: "Failed to create budget category" });
+    }
+  });
+
+  app.patch("/api/budget/categories/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const category = await storage.updateBudgetCategory(id, updates);
+      res.json(category);
+    } catch (error) {
+      console.error("Budget category update error:", error);
+      res.status(500).json({ error: "Failed to update budget category" });
+    }
+  });
+
+  app.get("/api/budget/accounts/:budgetPeriodId", async (req, res) => {
+    try {
+      const budgetPeriodId = parseInt(req.params.budgetPeriodId);
+      const accounts = await storage.getBudgetAccountsByPeriod(budgetPeriodId);
+      res.json(accounts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch budget accounts" });
+    }
+  });
+
+  app.post("/api/budget/accounts", async (req, res) => {
+    try {
+      const accountData = req.body;
+      const account = await storage.createBudgetAccount(accountData);
+      res.json(account);
+    } catch (error) {
+      console.error("Budget account creation error:", error);
+      res.status(500).json({ error: "Failed to create budget account" });
+    }
+  });
+
+  app.get("/api/budget/progress/:budgetPeriodId", async (req, res) => {
+    try {
+      const budgetPeriodId = parseInt(req.params.budgetPeriodId);
+      const progress = await storage.calculateBudgetProgress(budgetPeriodId);
+      res.json(progress);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to calculate budget progress" });
+    }
+  });
+
   // Recalculate dashboard metrics
   app.post("/api/recalculate/:userId", async (req, res) => {
     try {

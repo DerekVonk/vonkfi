@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import Import from "@/pages/Import";
 import Accounts from "@/pages/Accounts";
 import Categories from "@/pages/Categories";
+import Budget from "@/pages/Budget";
 import Transfers from "@/pages/Transfers";
 import Goals from "@/pages/Goals";
 import Crypto from "@/pages/Crypto";
@@ -21,6 +22,7 @@ function Router() {
         <Route path="/import" component={Import} />
         <Route path="/accounts" component={Accounts} />
         <Route path="/categories" component={Categories} />
+        <Route path="/budget" component={Budget} />
         <Route path="/transfers" component={Transfers} />
         <Route path="/goals" component={Goals} />
         <Route path="/crypto" component={Crypto} />

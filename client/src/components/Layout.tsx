@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { Flame, TrendingUp, Upload, University, Tags, ArrowLeftRight, Target, Bitcoin, User } from "lucide-react";
+import { Flame, TrendingUp, Upload, University, Tags, Calculator, ArrowLeftRight, Target, Bitcoin, User } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: TrendingUp },
   { name: "Import Statements", href: "/import", icon: Upload },
   { name: "Accounts", href: "/accounts", icon: University },
   { name: "Categories", href: "/categories", icon: Tags },
+  { name: "Zero Based Budget", href: "/budget", icon: Calculator },
   { name: "Transfer Instructions", href: "/transfers", icon: ArrowLeftRight },
   { name: "Goals", href: "/goals", icon: Target },
   { name: "Crypto Portfolio", href: "/crypto", icon: Bitcoin },
