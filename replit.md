@@ -118,6 +118,10 @@ The application is built as a full-stack web application with a React frontend a
   - Added automatic dashboard recalculation after data clearing
   - Created comprehensive CAMT.053 import accuracy tests with expected transaction validation
   - Implemented business logic tests for goal management, account linking, and data integrity
+  - Added comprehensive account balance tracking with database schema updates
+  - Enhanced UI mobile responsiveness across all components with proper text truncation
+  - Fixed text overflow issues in overview cards and improved mobile adaptability
+  - Implemented responsive design patterns with proper spacing and grid layouts
 
 ## Changelog
 
