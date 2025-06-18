@@ -13,13 +13,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const camtParser = new CamtParser();
   const fireCalculator = new FireCalculator();
 
-  // Get or create default user for development
-  let defaultUser = await storage.getUserByUsername("demo");
-  if (!defaultUser) {
-    defaultUser = await storage.createUser({
-      username: "demo",
-      password: "demo123"
-    });
+  // Get or create default user for development with error handling
+  let defaultUser;
+  try {
+    defaultUser = await storage.getUserByUsername("demo");
+    if (!defaultUser) {
+      defaultUser = await storage.createUser({
+        username: "demo",
+        password: "demo123"
+      });
+    }
+  } catch (error) {
+    console.error("Failed to initialize default user:", error);
+    // Continue without default user for now
   }
 
   // Dashboard data endpoint
