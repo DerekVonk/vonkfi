@@ -660,7 +660,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/budget/categories/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      await storage.updateBudgetCategory(id, { allocatedAmount: "0" }); // Simple deletion by zeroing allocation
+      // Use storage method for consistency
+      await storage.updateBudgetCategory(id, { allocatedAmount: "0", spentAmount: "0" });
       res.json({ message: "Budget category deleted successfully" });
     } catch (error) {
       console.error("Budget category deletion error:", error);

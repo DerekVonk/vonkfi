@@ -31,9 +31,9 @@ export default function Layout({ children }: LayoutProps) {
     <div className="min-h-screen flex bg-neutral-50">
       {/* Sidebar */}
       <aside className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-white shadow-sm border-r border-neutral-200 flex flex-col transition-all duration-300`}>
-        <div className="p-6 border-b border-neutral-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+        <div className={`p-6 border-b border-neutral-200 ${sidebarCollapsed ? 'p-3' : ''}`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'flex-col space-y-2' : 'justify-between'}`}>
+            <div className={`flex items-center ${sidebarCollapsed ? 'flex-col space-y-2' : 'space-x-3'}`}>
               <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                 <Flame className="text-white" size={20} />
               </div>
@@ -48,7 +48,7 @@ export default function Layout({ children }: LayoutProps) {
               variant="ghost"
               size="sm"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-2 hover:bg-neutral-100"
+              className={`p-2 hover:bg-neutral-100 ${sidebarCollapsed ? 'w-full' : ''}`}
             >
               {sidebarCollapsed ? <Menu size={16} /> : <X size={16} />}
             </Button>
@@ -80,15 +80,17 @@ export default function Layout({ children }: LayoutProps) {
           </ul>
         </nav>
         
-        <div className="p-4 border-t border-neutral-200">
-          <div className="flex items-center space-x-3">
+        <div className={`p-4 border-t border-neutral-200 ${sidebarCollapsed ? 'p-3' : ''}`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
               <User className="text-white" size={16} />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-neutral-800 truncate">Demo User</p>
-              <p className="text-xs text-neutral-400">Premium User</p>
-            </div>
+            {!sidebarCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-neutral-800 truncate">Demo User</p>
+                <p className="text-xs text-neutral-400">Premium User</p>
+              </div>
+            )}
           </div>
         </div>
       </aside>
