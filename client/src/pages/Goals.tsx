@@ -93,7 +93,7 @@ export default function Goals() {
       name: data.name,
       targetAmount: parseFloat(data.targetAmount).toString(),
       currentAmount: data.currentAmount ? parseFloat(data.currentAmount).toString() : "0",
-      targetDate: data.targetDate ? new Date(data.targetDate) : null,
+      targetDate: data.targetDate || null,
       linkedAccountId: (data.linkedAccountId && data.linkedAccountId !== "none") ? parseInt(data.linkedAccountId) : null,
       priority: data.priority ? parseInt(data.priority) : 1,
       userId: DEMO_USER_ID,

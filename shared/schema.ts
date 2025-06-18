@@ -57,7 +57,7 @@ export const goals = pgTable("goals", {
   targetAmount: decimal("target_amount", { precision: 12, scale: 2 }).notNull(),
   currentAmount: decimal("current_amount", { precision: 12, scale: 2 }).default("0"),
   linkedAccountId: integer("linked_account_id"),
-  targetDate: timestamp("target_date"),
+  targetDate: text("target_date"),
   priority: integer("priority").default(1),
   isCompleted: boolean("is_completed").default(false),
 });
