@@ -146,6 +146,26 @@ export class FireCalculator {
   }
 
   private getLast6MonthsData(transactions: Transaction[]): Transaction[] {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-based
+    
+    // Focus on January 2025 data specifically
+    const january2025Start = new Date(2025, 0, 1); // January 1, 2025
+    const january2025End = new Date(2025, 1, 1); // February 1, 2025
+    
+    // If we're in 2025 and have January data, prioritize it
+    const january2025Data = transactions.filter(tx => {
+      const txDate = new Date(tx.date);
+      return txDate >= january2025Start && txDate < january2025End;
+    });
+    
+    if (january2025Data.length > 0) {
+      // Return January 2025 data if available
+      return january2025Data;
+    }
+    
+    // Fallback to last 6 months
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     

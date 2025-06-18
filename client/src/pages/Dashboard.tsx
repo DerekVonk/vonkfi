@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import type { DashboardData } from "@/types";
 import ImportModal from "@/components/ImportModal";
 import DraggableLayout from "@/components/DraggableLayout";
+import OutdatedDataNotification from "@/components/OutdatedDataNotification";
 
 const DEMO_USER_ID = 1;
 
@@ -78,6 +79,7 @@ export default function Dashboard() {
       </header>
 
       <div className="p-6">
+        <OutdatedDataNotification dashboardData={dashboardData} userId={DEMO_USER_ID} />
         <DraggableLayout dashboardData={dashboardData} />
       </div>
 

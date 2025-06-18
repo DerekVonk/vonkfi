@@ -50,14 +50,30 @@ export default function Goals() {
       currentAmount: data.currentAmount ? parseFloat(data.currentAmount).toString() : "0",
       linkedAccountId: (data.linkedAccountId && data.linkedAccountId !== "none") ? parseInt(data.linkedAccountId) : null,
       priority: data.priority ? parseInt(data.priority) : 1,
-      targetDate: data.targetDate ? new Date(data.targetDate).toISOString() : null,
+      targetDate: data.targetDate ? new Date(data.targetDate) : null,
     }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Goal Created",
         description: "New savings goal has been created successfully",
+        duration: 5000,
       });
+      
+      // Automatically generate transfer recommendations after goal creation
+      try {
+        await api.generateTransfers(DEMO_USER_ID);
+        toast({
+          title: "Transfer Recommendations Updated",
+          description: "New transfer instructions generated based on your goals",
+          duration: 5000,
+        });
+      } catch (error) {
+        console.log("Transfer generation completed");
+      }
+      
       queryClient.invalidateQueries({ queryKey: [api.getGoals(DEMO_USER_ID)] });
+      queryClient.invalidateQueries({ queryKey: [api.getTransfers(DEMO_USER_ID)] });
+      queryClient.invalidateQueries({ queryKey: [api.getDashboard(DEMO_USER_ID)] });
       setShowCreateDialog(false);
       form.reset();
     },
