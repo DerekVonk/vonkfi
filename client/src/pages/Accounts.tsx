@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { University, Settings, CreditCard, PiggyBank, Shield, Edit2 } from "lucide-react";
+import { University, Settings, CreditCard, PiggyBank, Shield, Edit2, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Account } from "@/types";
 
@@ -16,6 +17,7 @@ const DEMO_USER_ID = 1;
 
 export default function Accounts() {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
   const [formData, setFormData] = useState({
     customName: "",
     accountType: "",
@@ -46,6 +48,27 @@ export default function Accounts() {
         description: error.message || "Failed to update account",
         variant: "destructive",
       });
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: (accountId: number) => api.deleteAccount(accountId, DEMO_USER_ID),
+    onSuccess: () => {
+      toast({
+        title: "Account Deleted",
+        description: "Account has been deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: [api.getAccounts(DEMO_USER_ID)] });
+      queryClient.invalidateQueries({ queryKey: [api.getDashboard(DEMO_USER_ID)] });
+      setDeletingAccount(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Cannot Delete Account",
+        description: error.message || "Failed to delete account",
+        variant: "destructive",
+      });
+      setDeletingAccount(null);
     },
   });
 
@@ -228,11 +251,23 @@ export default function Accounts() {
                   </div>
                   
                   <div className="flex space-x-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Edit Name
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleEditAccount(account)}
+                    >
+                      <Edit2 size={14} className="mr-2" />
+                      Edit
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Set Role
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => setDeletingAccount(account)}
+                    >
+                      <Trash2 size={14} className="mr-2" />
+                      Delete
                     </Button>
                   </div>
                 </CardContent>
@@ -323,6 +358,28 @@ export default function Accounts() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Account Confirmation */}
+      <AlertDialog open={!!deletingAccount} onOpenChange={() => setDeletingAccount(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingAccount?.customName || deletingAccount?.accountHolderName}"?
+              This action cannot be undone and may affect dashboard calculations if the account has transactions or is linked to goals.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingAccount && deleteAccountMutation.mutate(deletingAccount.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

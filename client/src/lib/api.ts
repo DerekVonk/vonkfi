@@ -33,6 +33,12 @@ export const api = {
   createCategory: async (categoryData: any) => {
     return apiRequest('POST', '/api/categories', categoryData);
   },
+  updateCategory: async (categoryId: number, updates: any) => {
+    return apiRequest('PATCH', `/api/categories/${categoryId}`, updates);
+  },
+  deleteCategory: async (categoryId: number, userId: number) => {
+    return apiRequest('DELETE', `/api/categories/${categoryId}?userId=${userId}`);
+  },
   
   // Goals
   getGoals: (userId: number) => `/api/goals/${userId}`,
@@ -56,5 +62,13 @@ export const api = {
   getCrypto: (userId: number) => `/api/crypto/${userId}`,
   createCryptoWallet: async (walletData: any) => {
     return apiRequest('POST', '/api/crypto', walletData);
+  },
+
+  // Data Management
+  clearUserData: async (userId: number) => {
+    return apiRequest('DELETE', `/api/data/${userId}`);
+  },
+  recalculateDashboard: async (userId: number) => {
+    return apiRequest('POST', `/api/recalculate/${userId}`);
   },
 };
