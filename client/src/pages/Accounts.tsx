@@ -268,10 +268,14 @@ export default function Accounts() {
                   <div className="pt-3 border-t">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-neutral-600">Balance</span>
-                      <span className="text-lg font-semibold">€0.00</span>
+                      <span className={`text-lg font-semibold ${
+                        parseFloat(account.balance || '0') >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {formatCurrency(account.balance || '0')}
+                      </span>
                     </div>
                     <div className="text-xs text-neutral-400">
-                      Last updated: Not available
+                      Calculated from transactions
                     </div>
                   </div>
                   

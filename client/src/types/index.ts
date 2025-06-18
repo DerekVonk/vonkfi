@@ -14,6 +14,7 @@ export interface Account {
   role: string | null;
   bankName: string | null;
   accountHolderName: string;
+  balance: string | null;
 }
 
 export interface Transaction {
