@@ -657,6 +657,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/budget/categories/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.updateBudgetCategory(id, { allocatedAmount: "0" }); // Simple deletion by zeroing allocation
+      res.json({ message: "Budget category deleted successfully" });
+    } catch (error) {
+      console.error("Budget category deletion error:", error);
+      res.status(500).json({ error: "Failed to delete budget category" });
+    }
+  });
+
   app.get("/api/budget/accounts/:budgetPeriodId", async (req, res) => {
     try {
       const budgetPeriodId = parseInt(req.params.budgetPeriodId);

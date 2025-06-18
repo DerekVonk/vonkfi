@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Calculator, Plus, Target, TrendingUp, AlertCircle, CheckCircle, DollarSign, Calendar } from "lucide-react";
-import { api } from "@/lib/api";
+import { Calculator, Plus, Target, TrendingUp, AlertCircle, CheckCircle, DollarSign, Calendar, Edit, Trash2 } from "lucide-react";
 
 const DEMO_USER_ID = 1;
 
@@ -181,6 +180,22 @@ export default function Budget() {
     },
   });
 
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/budget/categories/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete budget category');
+    },
+    onSuccess: () => {
+      toast({
+        title: "Category Deleted",
+        description: "Budget category removed successfully",
+      });
+      queryClient.invalidateQueries();
+    },
+  });
+
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
     return new Intl.NumberFormat('en-EU', {
@@ -250,82 +265,25 @@ export default function Budget() {
             Assign every euro of income to specific categories until you reach zero remaining.
           </p>
           
-          <Dialog open={showCreatePeriodDialog} onOpenChange={setShowCreatePeriodDialog}>
-            <DialogTrigger asChild>
-              <Button className="fire-button-primary">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Budget Period
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create New Budget Period</DialogTitle>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Period Name</Label>
-                  <Input
-                    id="name"
-                    value={newPeriod.name}
-                    onChange={(e) => setNewPeriod(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g., January 2025"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="startDate">Start Date</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={newPeriod.startDate}
-                      onChange={(e) => setNewPeriod(prev => ({ ...prev, startDate: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="endDate">End Date</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={newPeriod.endDate}
-                      onChange={(e) => setNewPeriod(prev => ({ ...prev, endDate: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="totalIncome">Expected Income</Label>
-                  <Input
-                    id="totalIncome"
-                    type="number"
-                    step="0.01"
-                    value={newPeriod.totalIncome}
-                    onChange={(e) => setNewPeriod(prev => ({ ...prev, totalIncome: e.target.value }))}
-                    placeholder="0.00"
-                  />
-                </div>
-                
-                <div className="flex space-x-2 pt-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowCreatePeriodDialog(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={() => createPeriodMutation.mutate(newPeriod)}
-                    disabled={createPeriodMutation.isPending}
-                    className="flex-1 fire-button-primary"
-                  >
-                    {createPeriodMutation.isPending ? "Creating..." : "Create"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Dialog open={showSyncDialog} onOpenChange={setShowSyncDialog}>
+              <DialogTrigger asChild>
+                <Button className="fire-button-primary">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Sync Monthly Budget
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+            
+            <Dialog open={showCreatePeriodDialog} onOpenChange={setShowCreatePeriodDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Manual Budget Period
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+          </div>
         </Card>
       </div>
     );
@@ -508,17 +466,7 @@ export default function Budget() {
                   return (
                     <div 
                       key={category.id} 
-                      className="p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 cursor-pointer"
-                      onClick={() => {
-                        setEditingCategory(category);
-                        setCategoryData({
-                          categoryId: category.categoryId.toString(),
-                          allocatedAmount: category.allocatedAmount,
-                          priority: category.priority.toString(),
-                          isFixed: category.isFixed,
-                        });
-                        setShowCategoryDialog(true);
-                      }}
+                      className="p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-3">
@@ -530,13 +478,39 @@ export default function Budget() {
                             <Badge variant="outline">Fixed</Badge>
                           )}
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium text-neutral-800">
-                            {formatCurrency(category.allocatedAmount)}
-                          </p>
-                          <p className="text-xs text-neutral-500">
-                            {formatCurrency(category.spentAmount)} spent
-                          </p>
+                        <div className="flex items-center space-x-2">
+                          <div className="text-right">
+                            <p className="font-medium text-neutral-800">
+                              {formatCurrency(category.allocatedAmount)}
+                            </p>
+                            <p className="text-xs text-neutral-500">
+                              {formatCurrency(category.spentAmount)} spent
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingCategory(category);
+                              setCategoryData({
+                                categoryId: category.categoryId.toString(),
+                                allocatedAmount: category.allocatedAmount,
+                                priority: category.priority.toString(),
+                                isFixed: category.isFixed,
+                              });
+                              setShowCategoryDialog(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteCategoryMutation.mutate(category.id)}
+                            disabled={deleteCategoryMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                       
@@ -564,116 +538,119 @@ export default function Budget() {
       </div>
 
       {/* Add/Edit Category Dialog */}
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {editingCategory ? 'Edit Budget Category' : 'Add Budget Category'}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="category">Category</Label>
-            <Select 
-              value={categoryData.categoryId} 
-              onValueChange={(value) => setCategoryData(prev => ({ ...prev, categoryId: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableCategories.map((cat: any) => (
-                  <SelectItem key={cat.id} value={cat.id.toString()}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCategory ? 'Edit Budget Category' : 'Add Budget Category'}
+            </DialogTitle>
+          </DialogHeader>
           
-          <div>
-            <Label htmlFor="amount">Allocated Amount</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              value={categoryData.allocatedAmount}
-              onChange={(e) => setCategoryData(prev => ({ ...prev, allocatedAmount: e.target.value }))}
-              placeholder="0.00"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="priority">Priority</Label>
-            <Select 
-              value={categoryData.priority} 
-              onValueChange={(value) => setCategoryData(prev => ({ ...prev, priority: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Need (Essential)</SelectItem>
-                <SelectItem value="2">Want (Discretionary)</SelectItem>
-                <SelectItem value="3">Save (Future Goals)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="isFixed"
-              checked={categoryData.isFixed}
-              onChange={(e) => setCategoryData(prev => ({ ...prev, isFixed: e.target.checked }))}
-              className="rounded"
-            />
-            <Label htmlFor="isFixed">Fixed expense (same amount each period)</Label>
-          </div>
-          
-          <div className="flex space-x-2 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => {
-                setShowCategoryDialog(false);
-                setEditingCategory(null);
-                setCategoryData({ categoryId: "", allocatedAmount: "", priority: "1", isFixed: false });
-              }}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                if (editingCategory) {
-                  updateCategoryMutation.mutate({
-                    id: editingCategory.id,
-                    data: {
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Select 
+                value={categoryData.categoryId} 
+                onValueChange={(value) => setCategoryData(prev => ({ ...prev, categoryId: value }))}
+                disabled={!!editingCategory}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCategories.map((cat: any) => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="amount">Allocated Amount</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                value={categoryData.allocatedAmount}
+                onChange={(e) => setCategoryData(prev => ({ ...prev, allocatedAmount: e.target.value }))}
+                placeholder="0.00"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="priority">Priority</Label>
+              <Select 
+                value={categoryData.priority} 
+                onValueChange={(value) => setCategoryData(prev => ({ ...prev, priority: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Need (Essential)</SelectItem>
+                  <SelectItem value="2">Want (Discretionary)</SelectItem>
+                  <SelectItem value="3">Save (Future Goals)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isFixed"
+                checked={categoryData.isFixed}
+                onChange={(e) => setCategoryData(prev => ({ ...prev, isFixed: e.target.checked }))}
+                className="rounded"
+              />
+              <Label htmlFor="isFixed">Fixed expense (same amount each period)</Label>
+            </div>
+            
+            <div className="flex space-x-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowCategoryDialog(false);
+                  setEditingCategory(null);
+                  setCategoryData({ categoryId: "", allocatedAmount: "", priority: "1", isFixed: false });
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (editingCategory) {
+                    updateCategoryMutation.mutate({
+                      id: editingCategory.id,
+                      data: {
+                        allocatedAmount: categoryData.allocatedAmount,
+                        priority: parseInt(categoryData.priority),
+                        isFixed: categoryData.isFixed,
+                      }
+                    });
+                  } else {
+                    addCategoryMutation.mutate({
+                      categoryId: parseInt(categoryData.categoryId),
                       allocatedAmount: categoryData.allocatedAmount,
                       priority: parseInt(categoryData.priority),
                       isFixed: categoryData.isFixed,
-                    }
-                  });
-                } else {
-                  addCategoryMutation.mutate({
-                    categoryId: parseInt(categoryData.categoryId),
-                    allocatedAmount: categoryData.allocatedAmount,
-                    priority: parseInt(categoryData.priority),
-                    isFixed: categoryData.isFixed,
-                  });
-                }
-              }}
-              disabled={updateCategoryMutation.isPending || addCategoryMutation.isPending}
-              className="flex-1 fire-button-primary"
-            >
-              {(updateCategoryMutation.isPending || addCategoryMutation.isPending) ? "Saving..." : "Save"}
-            </Button>
+                    });
+                  }
+                }}
+                disabled={updateCategoryMutation.isPending || addCategoryMutation.isPending}
+                className="flex-1 fire-button-primary"
+              >
+                {(updateCategoryMutation.isPending || addCategoryMutation.isPending) ? "Saving..." : "Save"}
+              </Button>
+            </div>
           </div>
-        </div>
-      </DialogContent>
+        </DialogContent>
+      </Dialog>
 
-      {/* Create Period Dialog Content */}
+      {/* Create Period Dialog */}
       <Dialog open={showCreatePeriodDialog} onOpenChange={setShowCreatePeriodDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>

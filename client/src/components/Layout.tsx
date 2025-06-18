@@ -1,5 +1,7 @@
 import { Link, useLocation } from "wouter";
-import { Flame, TrendingUp, Upload, University, Tags, Calculator, ArrowLeftRight, Target, Bitcoin, User } from "lucide-react";
+import { Flame, TrendingUp, Upload, University, Tags, Calculator, ArrowLeftRight, Target, Bitcoin, User, Menu, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: TrendingUp },
@@ -18,6 +20,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const isActive = (href: string) => {
     if (href === "/") return location === "/";
@@ -27,16 +30,28 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen flex bg-neutral-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-sm border-r border-neutral-200 flex flex-col">
+      <aside className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-white shadow-sm border-r border-neutral-200 flex flex-col transition-all duration-300`}>
         <div className="p-6 border-b border-neutral-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-              <Flame className="text-white" size={20} />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                <Flame className="text-white" size={20} />
+              </div>
+              {!sidebarCollapsed && (
+                <div>
+                  <h1 className="text-lg font-semibold text-neutral-800">FIRE Budget</h1>
+                  <p className="text-xs text-neutral-400">Financial Independence</p>
+                </div>
+              )}
             </div>
-            <div>
-              <h1 className="text-lg font-semibold text-neutral-800">FIRE Budget</h1>
-              <p className="text-xs text-neutral-400">Financial Independence</p>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="p-2 hover:bg-neutral-100"
+            >
+              {sidebarCollapsed ? <Menu size={16} /> : <X size={16} />}
+            </Button>
           </div>
         </div>
         
