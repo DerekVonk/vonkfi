@@ -386,10 +386,9 @@ export class DatabaseStorage implements IStorage {
       role: budgetAccounts.role,
       targetBalance: budgetAccounts.targetBalance,
       allocatedAmount: budgetAccounts.allocatedAmount,
-      accountName: accounts.customName,
-      accountHolderName: accounts.accountHolderName,
-      bankName: accounts.bankName,
-      balance: accounts.balance,
+      accountName: accounts.customName || accounts.accountHolderName,
+      bankName: accounts.bankName || '',
+      balance: accounts.balance || '0',
     })
     .from(budgetAccounts)
     .leftJoin(accounts, eq(budgetAccounts.accountId, accounts.id))
@@ -413,9 +412,9 @@ export class DatabaseStorage implements IStorage {
 
     const categories = await db.select().from(budgetCategories).where(eq(budgetCategories.budgetPeriodId, budgetPeriodId));
     
-    const totalAllocated = categories.reduce((sum, cat) => sum + parseFloat(cat.allocatedAmount), 0);
-    const totalSpent = categories.reduce((sum, cat) => sum + parseFloat(cat.spentAmount), 0);
-    const totalIncome = parseFloat(period[0].totalIncome);
+    const totalAllocated = categories.reduce((sum, cat) => sum + parseFloat(cat.allocatedAmount || '0'), 0);
+    const totalSpent = categories.reduce((sum, cat) => sum + parseFloat(cat.spentAmount || '0'), 0);
+    const totalIncome = parseFloat((period[0].totalIncome as string) || '0');
     
     return {
       totalAllocated,

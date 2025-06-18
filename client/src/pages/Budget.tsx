@@ -80,7 +80,7 @@ export default function Budget() {
     enabled: !!activePeriod,
   });
 
-  const { data: availableCategories = [] } = useQuery({
+  const { data: availableCategories = [] } = useQuery<any[]>({
     queryKey: ['/api/categories'],
   });
 
