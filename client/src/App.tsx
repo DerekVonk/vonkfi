@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import Import from "@/pages/Import";
+import ImportHistory from "@/pages/ImportHistory";
 import Accounts from "@/pages/Accounts";
 import Categories from "@/pages/Categories";
 import Budget from "@/pages/Budget";
@@ -20,6 +21,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/import" component={Import} />
+        <Route path="/import-history" component={ImportHistory} />
         <Route path="/accounts" component={Accounts} />
         <Route path="/categories" component={Categories} />
         <Route path="/budget" component={Budget} />

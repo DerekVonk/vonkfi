@@ -150,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.file) {
         try {
           await storage.createImportHistory({
-            userId,
+            userId: userId,
             fileName: req.file.originalname,
             fileSize: req.file.size,
             statementId: "",
