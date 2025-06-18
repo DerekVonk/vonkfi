@@ -124,6 +124,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         results.newTransactions.push(newTransaction);
       }
 
+      // Update goal account balances after processing all transactions
+      await storage.updateGoalAccountBalances(userId);
+
       res.json({
         message: "Statement imported successfully",
         ...results,

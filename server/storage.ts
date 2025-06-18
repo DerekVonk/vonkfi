@@ -197,18 +197,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateGoalAccountBalances(userId: number): Promise<void> {
-    // Update goal current amounts based on linked account balances
+    // Update goal current amounts based on linked account balances calculated from transactions
     const userGoals = await this.getGoalsByUserId(userId);
-    const userAccounts = await this.getAccountsByUserId(userId);
     
     for (const goal of userGoals) {
       if (goal.linkedAccountId) {
-        const linkedAccount = userAccounts.find(acc => acc.id === goal.linkedAccountId);
-        if (linkedAccount) {
-          await db.update(goals)
-            .set({ currentAmount: linkedAccount.balance })
-            .where(eq(goals.id, goal.id));
-        }
+        // Calculate account balance from transactions
+        const accountTransactions = await this.getTransactionsByAccountId(goal.linkedAccountId);
+        const accountBalance = accountTransactions.reduce((sum, transaction) => {
+          return sum + parseFloat(transaction.amount);
+        }, 0);
+        
+        // Update goal current amount with calculated balance
+        await db.update(goals)
+          .set({ currentAmount: accountBalance.toFixed(2) })
+          .where(eq(goals.id, goal.id));
       }
     }
   }
