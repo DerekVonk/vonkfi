@@ -104,6 +104,17 @@ export default function Accounts() {
     return 'bg-gray-100 text-gray-800';
   };
 
+  const formatCurrency = (amount: string | number) => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return new Intl.NumberFormat('en-EU', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(num);
+  };
+
+  const totalBalance = accounts?.reduce((sum, account) => 
+    sum + parseFloat(account.balance || '0'), 0) || 0;
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -140,7 +151,19 @@ export default function Accounts() {
 
       <div className="p-6 space-y-6">
         {/* Account Overview Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Card className="p-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <University className="text-purple-600" size={20} />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-neutral-800">{formatCurrency(totalBalance)}</p>
+                <p className="text-sm text-neutral-400">Total Balance</p>
+              </div>
+            </div>
+          </Card>
+          
           <Card className="p-4">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">

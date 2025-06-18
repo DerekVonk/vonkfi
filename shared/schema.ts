@@ -19,6 +19,7 @@ export const accounts = pgTable("accounts", {
   customName: text("custom_name"),
   accountType: text("account_type"), // checking, savings, investment
   role: text("role"), // income, spending, emergency, goal-specific
+  balance: decimal("balance", { precision: 12, scale: 2 }).default("0"),
   discoveredDate: timestamp("discovered_date").defaultNow(),
   lastSeenDate: timestamp("last_seen_date").defaultNow(),
   isActive: boolean("is_active").default(true),

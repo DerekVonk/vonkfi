@@ -37,6 +37,7 @@ export interface IStorage {
 
   // Data Management
   clearUserData(userId: number): Promise<void>;
+  updateAccountBalances(userId: number): Promise<void>;
   updateGoalAccountBalances(userId: number): Promise<void>;
 
   // Goals
@@ -196,22 +197,41 @@ export class DatabaseStorage implements IStorage {
     // Note: Accounts, categories, goals, and crypto wallets are preserved
   }
 
+  async updateAccountBalances(userId: number): Promise<void> {
+    // Update all account balances based on transaction data
+    const userAccounts = await this.getAccountsByUserId(userId);
+    
+    for (const account of userAccounts) {
+      // Calculate account balance from all transactions
+      const accountTransactions = await this.getTransactionsByAccountId(account.id);
+      const calculatedBalance = accountTransactions.reduce((sum, transaction) => {
+        return sum + parseFloat(transaction.amount);
+      }, 0);
+      
+      // Update account balance
+      await db.update(accounts)
+        .set({ balance: calculatedBalance.toFixed(2) })
+        .where(eq(accounts.id, account.id));
+    }
+  }
+
   async updateGoalAccountBalances(userId: number): Promise<void> {
-    // Update goal current amounts based on linked account balances calculated from transactions
+    // First update all account balances
+    await this.updateAccountBalances(userId);
+    
+    // Then update goal current amounts based on linked account balances
     const userGoals = await this.getGoalsByUserId(userId);
+    const userAccounts = await this.getAccountsByUserId(userId);
     
     for (const goal of userGoals) {
       if (goal.linkedAccountId) {
-        // Calculate account balance from transactions
-        const accountTransactions = await this.getTransactionsByAccountId(goal.linkedAccountId);
-        const accountBalance = accountTransactions.reduce((sum, transaction) => {
-          return sum + parseFloat(transaction.amount);
-        }, 0);
-        
-        // Update goal current amount with calculated balance
-        await db.update(goals)
-          .set({ currentAmount: accountBalance.toFixed(2) })
-          .where(eq(goals.id, goal.id));
+        const linkedAccount = userAccounts.find(acc => acc.id === goal.linkedAccountId);
+        if (linkedAccount) {
+          // Update goal current amount with account balance
+          await db.update(goals)
+            .set({ currentAmount: linkedAccount.balance })
+            .where(eq(goals.id, goal.id));
+        }
       }
     }
   }
