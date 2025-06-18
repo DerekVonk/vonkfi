@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+  <BkToCstmrStmt>
+    <GrpHdr>
+      <MsgId>MSG123456</MsgId>
+      <CreDtTm>2024-01-15T10:30:00</CreDtTm>
+    </GrpHdr>
+    <Stmt>
+      <Id>STMT001</Id>
+      <CreDtTm>2024-01-15T10:30:00</CreDtTm>
+      <Acct>
+        <Id>
+          <IBAN>DE89370400440532013000</IBAN>
+        </Id>
+        <Ownr>
+          <Nm>John Doe</Nm>
+        </Ownr>
+        <Svcr>
+          <FinInstnId>
+            <BIC>COBADEFFXXX</BIC>
+            <Nm>Commerzbank AG</Nm>
+          </FinInstnId>
+        </Svcr>
+      </Acct>
+      <Bal>
+        <Tp>
+          <CdOrPrtry>
+            <Cd>CLBD</Cd>
+          </CdOrPrtry>
+        </Tp>
+        <Amt Ccy="EUR">2500.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt>
+          <Dt>2024-01-15</Dt>
+        </Dt>
+      </Bal>
+      <Ntry>
+        <Amt Ccy="EUR">3500.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt>
+          <Dt>2024-01-15</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2024-01-15</Dt>
+        </ValDt>
+        <NtryDtls>
+          <TxDtls>
+            <Refs>
+              <EndToEndId>SALARY-JAN-2024</EndToEndId>
+            </Refs>
+            <Amt Ccy="EUR">3500.00</Amt>
+            <CdtDbtInd>CRDT</CdtDbtInd>
+            <RltdPties>
+              <Cdtr>
+                <Nm>Tech Corp Ltd</Nm>
+              </Cdtr>
+              <CdtrAcct>
+                <Id>
+                  <IBAN>DE89370400440532013001</IBAN>
+                </Id>
+              </CdtrAcct>
+            </RltdPties>
+            <RmtInf>
+              <Ustrd>Monthly Salary Payment</Ustrd>
+            </RmtInf>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

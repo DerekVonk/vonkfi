@@ -54,6 +54,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
       
+
+      
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
