@@ -67,10 +67,11 @@ export default function Layout({ children }: LayoutProps) {
                         isActive(item.href)
                           ? "fire-sidebar-item-active"
                           : "fire-sidebar-item-inactive"
-                      }`}
+                      } ${sidebarCollapsed ? 'justify-center px-3' : ''}`}
+                      title={sidebarCollapsed ? item.name : ''}
                     >
-                      <Icon className="w-5 h-5 mr-3" />
-                      {item.name}
+                      <Icon className={`w-5 h-5 ${!sidebarCollapsed ? 'mr-3' : ''}`} />
+                      {!sidebarCollapsed && item.name}
                     </div>
                   </Link>
                 </li>
