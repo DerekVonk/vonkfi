@@ -17,6 +17,9 @@ export const api = {
   updateAccount: async (accountId: number, updates: any) => {
     return apiRequest('PATCH', `/api/accounts/${accountId}`, updates);
   },
+  deleteAccount: async (accountId: number, userId: number) => {
+    return apiRequest('DELETE', `/api/accounts/${accountId}?userId=${userId}`);
+  },
   
   // Transactions
   getTransactions: (userId: number, limit?: number) => 

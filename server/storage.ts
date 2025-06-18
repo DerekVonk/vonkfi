@@ -21,6 +21,7 @@ export interface IStorage {
   getAccountByIban(iban: string): Promise<Account | undefined>;
   createAccount(account: InsertAccount): Promise<Account>;
   updateAccount(id: number, updates: Partial<Account>): Promise<Account>;
+  deleteAccount(id: number): Promise<void>;
 
   // Transactions
   getTransactionsByAccountId(accountId: number): Promise<Transaction[]>;
@@ -31,6 +32,11 @@ export interface IStorage {
   // Categories
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: number, updates: Partial<Category>): Promise<Category>;
+  deleteCategory(id: number): Promise<void>;
+
+  // Data Management
+  clearUserData(userId: number): Promise<void>;
 
   // Goals
   getGoalsByUserId(userId: number): Promise<Goal[]>;
@@ -98,6 +104,10 @@ export class DatabaseStorage implements IStorage {
     return account;
   }
 
+  async deleteAccount(id: number): Promise<void> {
+    await db.delete(accounts).where(eq(accounts.id, id));
+  }
+
   // Transactions
   async getTransactionsByAccountId(accountId: number): Promise<Transaction[]> {
     return await db.select().from(transactions).where(eq(transactions.accountId, accountId));
@@ -140,6 +150,45 @@ export class DatabaseStorage implements IStorage {
       .values(insertCategory)
       .returning();
     return category;
+  }
+
+  async updateCategory(id: number, updates: Partial<Category>): Promise<Category> {
+    const [category] = await db
+      .update(categories)
+      .set(updates)
+      .where(eq(categories.id, id))
+      .returning();
+    return category;
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    await db.delete(categories).where(eq(categories.id, id));
+  }
+
+  async clearUserData(userId: number): Promise<void> {
+    // Get user's accounts
+    const userAccounts = await this.getAccountsByUserId(userId);
+    const accountIds = userAccounts.map(acc => acc.id);
+    
+    // Delete transactions for user's accounts
+    if (accountIds.length > 0) {
+      await db.delete(transactions).where(inArray(transactions.accountId, accountIds));
+    }
+    
+    // Delete accounts
+    await db.delete(accounts).where(eq(accounts.userId, userId));
+    
+    // Delete goals
+    await db.delete(goals).where(eq(goals.userId, userId));
+    
+    // Delete allocations
+    await db.delete(allocations).where(eq(allocations.userId, userId));
+    
+    // Delete transfer recommendations
+    await db.delete(transferRecommendations).where(eq(transferRecommendations.userId, userId));
+    
+    // Delete crypto wallets
+    await db.delete(cryptoWallets).where(eq(cryptoWallets.userId, userId));
   }
 
   // Goals

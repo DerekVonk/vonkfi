@@ -155,6 +155,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete account
+  app.delete("/api/accounts/:accountId", async (req, res) => {
+    try {
+      const accountId = parseInt(req.params.accountId);
+      const userId = parseInt(req.query.userId as string);
+      
+      // Check if account has transactions
+      const transactions = await storage.getTransactionsByAccountId(accountId);
+      if (transactions.length > 0) {
+        return res.status(400).json({ 
+          error: "Cannot delete account with existing transactions. Please clear data first." 
+        });
+      }
+      
+      // Check if account is linked to goals
+      const goals = await storage.getGoalsByUserId(userId);
+      const linkedGoals = goals.filter(g => g.linkedAccountId === accountId);
+      if (linkedGoals.length > 0) {
+        return res.status(400).json({ 
+          error: `Cannot delete account linked to ${linkedGoals.length} goal(s). Please unlink first.` 
+        });
+      }
+      
+      await storage.deleteAccount(accountId);
+      res.json({ message: "Account deleted successfully" });
+    } catch (error) {
+      console.error("Account deletion error:", error);
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  });
+
   // Get transactions for user
   app.get("/api/transactions/:userId", async (req, res) => {
     try {
@@ -202,6 +233,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update category
+  app.patch("/api/categories/:categoryId", async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      const updates = req.body;
+      
+      const updated = await storage.updateCategory(categoryId, updates);
+      res.json(updated);
+    } catch (error) {
+      console.error("Category update error:", error);
+      res.status(500).json({ error: "Failed to update category" });
+    }
+  });
+
+  // Delete category
+  app.delete("/api/categories/:categoryId", async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      
+      // Check if category is used in transactions
+      const userId = parseInt(req.query.userId as string);
+      const transactions = await storage.getTransactionsByUserId(userId);
+      const usedInTransactions = transactions.some(t => t.categoryId === categoryId);
+      
+      if (usedInTransactions) {
+        return res.status(400).json({ 
+          error: "Cannot delete category used in transactions. Please clear data or reassign transactions first." 
+        });
+      }
+      
+      await storage.deleteCategory(categoryId);
+      res.json({ message: "Category deleted successfully" });
+    } catch (error) {
+      console.error("Category deletion error:", error);
+      res.status(500).json({ error: "Failed to delete category" });
+    }
+  });
+
+  // Clear all user data
+  app.delete("/api/data/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      await storage.clearUserData(userId);
+      res.json({ message: "All user data cleared successfully" });
+    } catch (error) {
+      console.error("Clear data error:", error);
+      res.status(500).json({ error: "Failed to clear user data" });
+    }
+  });
+
+  // Recalculate dashboard (refresh data)
+  app.post("/api/recalculate/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      // Fetch fresh data and recalculate
+      const [accounts, transactions, goals] = await Promise.all([
+        storage.getAccountsByUserId(userId),
+        storage.getTransactionsByUserId(userId),
+        storage.getGoalsByUserId(userId)
+      ]);
+
+      const fireMetrics = fireCalculator.calculateMetrics(transactions, goals, accounts);
+      const allocation = fireCalculator.calculateAllocationRecommendation(
+        fireMetrics.monthlyIncome,
+        fireMetrics.monthlyExpenses,
+        fireMetrics.bufferStatus.current,
+        goals
+      );
+
+      res.json({
+        message: "Dashboard recalculated successfully",
+        data: {
+          accounts,
+          transactions,
+          goals,
+          fireMetrics,
+          allocation
+        }
+      });
+    } catch (error) {
+      console.error("Recalculate error:", error);
+      res.status(500).json({ error: "Failed to recalculate dashboard" });
+    }
+  });
+
   // Get goals for user
   app.get("/api/goals/:userId", async (req, res) => {
     try {
@@ -217,9 +334,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/goals", async (req, res) => {
     try {
       const goalData = req.body;
+      console.log("Creating goal with data:", goalData);
       const goal = await storage.createGoal(goalData);
       res.json(goal);
     } catch (error) {
+      console.error("Goal creation error:", error);
       res.status(500).json({ error: "Failed to create goal" });
     }
   });
