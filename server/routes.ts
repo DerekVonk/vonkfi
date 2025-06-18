@@ -130,8 +130,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Track import history
       await storage.createImportHistory({
         userId,
-        fileName: file.originalname,
-        fileSize: file.size,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
         statementId: parsedStatement.statementId,
         accountsFound: results.newAccounts.length,
         transactionsImported: results.newTransactions.length,
@@ -147,12 +147,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Import error:", error);
       
       // Track failed import
-      if (file) {
+      if (req.file) {
         try {
           await storage.createImportHistory({
-            userId: parseInt(req.body.userId || "0"),
-            fileName: file.originalname,
-            fileSize: file.size,
+            userId,
+            fileName: req.file.originalname,
+            fileSize: req.file.size,
             statementId: "",
             accountsFound: 0,
             transactionsImported: 0,
@@ -167,6 +167,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to import statement" 
       });
+    }
+  });
+
+  // Get import history for user
+  app.get("/api/imports/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const history = await storage.getImportHistoryByUserId(userId);
+      res.json(history);
+    } catch (error) {
+      console.error("Import history fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch import history" });
     }
   });
 

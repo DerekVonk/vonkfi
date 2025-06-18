@@ -61,7 +61,7 @@ export class BudgetCategoryDeriver {
         priority,
         isFixed,
         categoryId: matchedCategory?.id,
-        merchants: [...new Set(merchantTransactions.map(t => t.merchant || '').filter(Boolean))],
+        merchants: Array.from(new Set(merchantTransactions.map(t => t.merchant || '').filter(Boolean))),
         averageTransaction
       };
 
@@ -184,7 +184,7 @@ export class BudgetCategoryDeriver {
         // Merge into existing category
         similar.totalAmount += category.totalAmount;
         similar.transactionCount += category.transactionCount;
-        similar.merchants = [...new Set([...similar.merchants, ...category.merchants])];
+        similar.merchants = Array.from(new Set([...similar.merchants, ...category.merchants]));
         similar.averageTransaction = similar.totalAmount / similar.transactionCount;
       } else {
         merged.push(category);
