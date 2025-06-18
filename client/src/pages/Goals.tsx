@@ -31,6 +31,8 @@ type CreateGoalForm = z.infer<typeof createGoalSchema>;
 
 export default function Goals() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -73,6 +75,29 @@ export default function Goals() {
       toast({
         title: "Error",
         description: error.message || "Failed to create goal",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateGoalMutation = useMutation({
+    mutationFn: ({ goalId, updates }: { goalId: number; updates: any }) => 
+      api.updateGoal(goalId, updates),
+    onSuccess: () => {
+      toast({
+        title: "Goal Updated",
+        description: "Goal has been updated successfully",
+        duration: 5000,
+      });
+      queryClient.invalidateQueries({ queryKey: [api.getGoals(DEMO_USER_ID)] });
+      queryClient.invalidateQueries({ queryKey: [api.getDashboard(DEMO_USER_ID)] });
+      setShowEditDialog(false);
+      setEditingGoal(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update goal",
         variant: "destructive",
       });
     },
@@ -131,6 +156,26 @@ export default function Goals() {
     if (!accountId) return 'No account linked';
     const account = accounts?.find(a => a.id === accountId);
     return account?.customName || account?.accountHolderName || 'Unknown Account';
+  };
+
+  const handleEditGoal = (goal: Goal) => {
+    setEditingGoal(goal);
+    setShowEditDialog(true);
+  };
+
+  const onEditSubmit = (data: CreateGoalForm) => {
+    if (!editingGoal) return;
+    
+    const updates = {
+      name: data.name,
+      targetAmount: parseFloat(data.targetAmount).toString(),
+      currentAmount: data.currentAmount ? parseFloat(data.currentAmount).toString() : editingGoal.currentAmount,
+      targetDate: data.targetDate || null,
+      linkedAccountId: (data.linkedAccountId && data.linkedAccountId !== "none") ? parseInt(data.linkedAccountId) : null,
+      priority: data.priority ? parseInt(data.priority) : editingGoal.priority,
+    };
+    
+    updateGoalMutation.mutate({ goalId: editingGoal.id, updates });
   };
 
   const activeGoals = goals?.filter(g => !g.isCompleted) || [];
@@ -406,9 +451,17 @@ export default function Goals() {
                     <div key={goal.id} className="p-4 border border-neutral-200 rounded-lg hover:shadow-md transition-shadow">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-sm font-semibold text-neutral-800">{goal.name}</h4>
-                        <Badge className={status.color}>
-                          {status.status}
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          <button 
+                            onClick={() => handleEditGoal(goal)}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            Edit
+                          </button>
+                          <Badge className={status.color}>
+                            {status.status}
+                          </Badge>
+                        </div>
                       </div>
                       
                       <div className="space-y-3">
