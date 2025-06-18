@@ -21,8 +21,8 @@ export default function Import() {
     mutationFn: () => api.clearUserData(DEMO_USER_ID),
     onSuccess: () => {
       toast({
-        title: "Data Cleared",
-        description: "All your financial data has been cleared successfully",
+        title: "Import Data Cleared",
+        description: "Bank statement data cleared. Your account and goal configurations are preserved.",
         duration: 5000,
       });
       queryClient.invalidateQueries();
@@ -175,16 +175,19 @@ export default function Import() {
       <AlertDialog open={showClearDataDialog} onOpenChange={setShowClearDataDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Clear All Data</AlertDialogTitle>
+            <AlertDialogTitle>Clear Imported Data</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to clear all financial data? This will permanently delete:
-              <br />• All imported bank statements and transactions
-              <br />• All accounts and their configurations
-              <br />• All savings goals and progress
-              <br />• All transfer recommendations
-              <br />• All crypto wallet data
+              Are you sure you want to clear imported bank statement data? This will delete:
+              <br />• All imported transactions and bank statements
+              <br />• All transfer recommendations and calculations
+              <br />• Goal progress (amounts reset to 0)
               <br /><br />
-              This action cannot be undone. You will need to re-import your bank statements to start fresh.
+              Your configurations will be preserved:
+              <br />• Account settings and categories
+              <br />• Goal definitions and targets
+              <br />• Crypto wallet configurations
+              <br /><br />
+              You can re-import bank statements to restore your financial data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -194,7 +197,7 @@ export default function Import() {
               className="bg-red-600 hover:bg-red-700"
               disabled={clearDataMutation.isPending}
             >
-              {clearDataMutation.isPending ? "Clearing..." : "Clear All Data"}
+              {clearDataMutation.isPending ? "Clearing..." : "Clear Import Data"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

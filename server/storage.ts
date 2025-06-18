@@ -166,29 +166,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async clearUserData(userId: number): Promise<void> {
+    // Clear only imported bank statement data and calculated metrics
+    // Preserve user configurations: accounts, categories, goals, crypto wallets
+    
     // Get user's accounts
     const userAccounts = await this.getAccountsByUserId(userId);
     const accountIds = userAccounts.map(acc => acc.id);
     
-    // Delete transactions for user's accounts
+    // Delete transactions (imported bank statement data)
     if (accountIds.length > 0) {
       await db.delete(transactions).where(inArray(transactions.accountId, accountIds));
     }
     
-    // Delete accounts
-    await db.delete(accounts).where(eq(accounts.userId, userId));
-    
-    // Delete goals
-    await db.delete(goals).where(eq(goals.userId, userId));
-    
-    // Delete allocations
+    // Delete calculated allocations
     await db.delete(allocations).where(eq(allocations.userId, userId));
     
-    // Delete transfer recommendations
+    // Delete transfer recommendations (calculated data)
     await db.delete(transferRecommendations).where(eq(transferRecommendations.userId, userId));
     
-    // Delete crypto wallets
-    await db.delete(cryptoWallets).where(eq(cryptoWallets.userId, userId));
+    // Reset goal current amounts to 0 but preserve goal configurations
+    const userGoals = await this.getGoalsByUserId(userId);
+    for (const goal of userGoals) {
+      await db.update(goals)
+        .set({ currentAmount: "0", isCompleted: false })
+        .where(eq(goals.id, goal.id));
+    }
+    
+    // Note: Accounts, categories, goals, and crypto wallets are preserved
   }
 
   // Goals
