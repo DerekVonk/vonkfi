@@ -43,15 +43,7 @@ export default function Goals() {
   });
 
   const createGoalMutation = useMutation({
-    mutationFn: (data: any) => api.createGoal({
-      ...data,
-      userId: DEMO_USER_ID,
-      targetAmount: parseFloat(data.targetAmount).toString(),
-      currentAmount: data.currentAmount ? parseFloat(data.currentAmount).toString() : "0",
-      linkedAccountId: (data.linkedAccountId && data.linkedAccountId !== "none") ? parseInt(data.linkedAccountId) : null,
-      priority: data.priority ? parseInt(data.priority) : 1,
-      targetDate: data.targetDate ? new Date(data.targetDate) : null,
-    }),
+    mutationFn: (data: any) => api.createGoal(data),
     onSuccess: async () => {
       toast({
         title: "Goal Created",
@@ -98,8 +90,12 @@ export default function Goals() {
 
   const onSubmit = (data: CreateGoalForm) => {
     const goalData = {
-      ...data,
+      name: data.name,
+      targetAmount: parseFloat(data.targetAmount).toString(),
+      currentAmount: data.currentAmount ? parseFloat(data.currentAmount).toString() : "0",
       targetDate: data.targetDate ? new Date(data.targetDate) : null,
+      linkedAccountId: (data.linkedAccountId && data.linkedAccountId !== "none") ? parseInt(data.linkedAccountId) : null,
+      priority: data.priority ? parseInt(data.priority) : 1,
       userId: DEMO_USER_ID,
     };
     createGoalMutation.mutate(goalData);
