@@ -1,13 +1,58 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, History, AlertCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { Upload, FileText, History, AlertCircle, Trash2, RefreshCw } from "lucide-react";
 import ImportModal from "@/components/ImportModal";
+import { api } from "@/lib/api";
 
 const DEMO_USER_ID = 1;
 
 export default function Import() {
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showClearDataDialog, setShowClearDataDialog] = useState(false);
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const clearDataMutation = useMutation({
+    mutationFn: () => api.clearUserData(DEMO_USER_ID),
+    onSuccess: () => {
+      toast({
+        title: "Data Cleared",
+        description: "All your financial data has been cleared successfully",
+      });
+      queryClient.invalidateQueries();
+      setShowClearDataDialog(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to clear data",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const recalculateMutation = useMutation({
+    mutationFn: () => api.recalculateDashboard(DEMO_USER_ID),
+    onSuccess: () => {
+      toast({
+        title: "Dashboard Recalculated",
+        description: "All financial calculations have been refreshed",
+      });
+      queryClient.invalidateQueries();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to recalculate dashboard",
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <>
@@ -21,10 +66,28 @@ export default function Import() {
             </p>
           </div>
           
-          <Button onClick={() => setShowImportModal(true)} className="fire-button-primary">
-            <Upload className="w-4 h-4 mr-2" />
-            Import New Statement
-          </Button>
+          <div className="flex space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={() => recalculateMutation.mutate()}
+              disabled={recalculateMutation.isPending}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              {recalculateMutation.isPending ? "Recalculating..." : "Recalculate"}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowClearDataDialog(true)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear All Data
+            </Button>
+            <Button onClick={() => setShowImportModal(true)} className="fire-button-primary">
+              <Upload className="w-4 h-4 mr-2" />
+              Import New Statement
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -105,6 +168,35 @@ export default function Import() {
         onClose={() => setShowImportModal(false)}
         userId={DEMO_USER_ID}
       />
+
+      {/* Clear Data Confirmation */}
+      <AlertDialog open={showClearDataDialog} onOpenChange={setShowClearDataDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear All Data</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to clear all financial data? This will permanently delete:
+              <br />• All imported bank statements and transactions
+              <br />• All accounts and their configurations
+              <br />• All savings goals and progress
+              <br />• All transfer recommendations
+              <br />• All crypto wallet data
+              <br /><br />
+              This action cannot be undone. You will need to re-import your bank statements to start fresh.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => clearDataMutation.mutate()}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={clearDataMutation.isPending}
+            >
+              {clearDataMutation.isPending ? "Clearing..." : "Clear All Data"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
