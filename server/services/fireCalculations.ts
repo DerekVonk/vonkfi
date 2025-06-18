@@ -63,7 +63,7 @@ export class FireCalculator {
 
     // Calculate current buffer
     const emergencyFundGoal = goals.find(g => g.name.toLowerCase().includes('emergency'));
-    const currentBuffer = emergencyFundGoal ? parseFloat(emergencyFundGoal.currentAmount) : 0;
+    const currentBuffer = emergencyFundGoal ? parseFloat(emergencyFundGoal.currentAmount || '0') : 0;
     
     let bufferStatus: 'below' | 'optimal' | 'above' = 'optimal';
     if (currentBuffer < this.BUFFER_MIN) bufferStatus = 'below';
@@ -72,7 +72,7 @@ export class FireCalculator {
     // Calculate FIRE progress
     const annualExpenses = avgExpenses * 12;
     const fireTarget = annualExpenses * this.FIRE_TARGET_MULTIPLE;
-    const totalSavings = goals.reduce((sum, goal) => sum + parseFloat(goal.currentAmount), 0);
+    const totalSavings = goals.reduce((sum, goal) => sum + parseFloat(goal.currentAmount || '0'), 0);
     const fireProgress = Math.min(totalSavings / fireTarget, 1);
 
     // Calculate time to FIRE
@@ -227,7 +227,9 @@ export class FireCalculator {
 
     // Sort goals by priority and urgency
     const sortedGoals = goals.sort((a, b) => {
-      if (a.priority !== b.priority) return a.priority - b.priority;
+      const aPriority = a.priority || 1;
+      const bPriority = b.priority || 1;
+      if (aPriority !== bPriority) return aPriority - bPriority;
       
       // If same priority, prioritize by target date
       if (a.targetDate && b.targetDate) {
@@ -240,7 +242,7 @@ export class FireCalculator {
     // Allocate proportionally based on remaining target amounts
     const goalDeficits = sortedGoals.map(goal => ({
       goalId: goal.id,
-      deficit: Math.max(0, parseFloat(goal.targetAmount) - parseFloat(goal.currentAmount)),
+      deficit: Math.max(0, parseFloat(goal.targetAmount || '0') - parseFloat(goal.currentAmount || '0')),
     })).filter(g => g.deficit > 0);
 
     const totalDeficit = goalDeficits.reduce((sum, g) => sum + g.deficit, 0);

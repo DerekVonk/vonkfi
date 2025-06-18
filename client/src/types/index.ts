@@ -42,6 +42,13 @@ export interface FireMetrics {
   savingsRate: number;
   fireProgress: number;
   timeToFire: number;
+  currentMonth: string;
+  monthlyBreakdown: {
+    month: string;
+    income: number;
+    expenses: number;
+    savings: number;
+  }[];
   bufferStatus: {
     current: number;
     target: number;
