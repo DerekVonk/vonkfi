@@ -83,7 +83,7 @@ export default function Goals() {
   const onSubmit = (data: CreateGoalForm) => {
     const goalData = {
       ...data,
-      targetDate: data.targetDate ? new Date(data.targetDate).toISOString() : null,
+      targetDate: data.targetDate ? new Date(data.targetDate) : null,
       userId: DEMO_USER_ID,
     };
     createGoalMutation.mutate(goalData);
