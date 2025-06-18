@@ -109,7 +109,15 @@ export default function Goals() {
       name: "",
       targetAmount: "",
       currentAmount: "0",
-      priority: "1",
+    },
+  });
+
+  const editForm = useForm<CreateGoalForm>({
+    resolver: zodResolver(createGoalSchema),
+    defaultValues: {
+      name: "",
+      targetAmount: "",
+      currentAmount: "0",
     },
   });
 
@@ -160,6 +168,16 @@ export default function Goals() {
 
   const handleEditGoal = (goal: Goal) => {
     setEditingGoal(goal);
+    
+    // Populate edit form with existing goal data
+    editForm.reset({
+      name: goal.name,
+      targetAmount: goal.targetAmount,
+      currentAmount: goal.currentAmount,
+      targetDate: goal.targetDate || "",
+      linkedAccountId: goal.linkedAccountId ? goal.linkedAccountId.toString() : "none",
+    });
+    
     setShowEditDialog(true);
   };
 
@@ -172,7 +190,6 @@ export default function Goals() {
       currentAmount: data.currentAmount ? parseFloat(data.currentAmount).toString() : editingGoal.currentAmount,
       targetDate: data.targetDate || null,
       linkedAccountId: (data.linkedAccountId && data.linkedAccountId !== "none") ? parseInt(data.linkedAccountId) : null,
-      priority: data.priority ? parseInt(data.priority) : (editingGoal.priority || 1),
     };
     
     updateGoalMutation.mutate({ goalId: editingGoal.id, updates });
@@ -572,10 +589,10 @@ export default function Goals() {
             <DialogTitle>Edit Savings Goal</DialogTitle>
           </DialogHeader>
           
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-4">
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
               <FormField
-                control={form.control}
+                control={editForm.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
@@ -593,7 +610,7 @@ export default function Goals() {
               />
               
               <FormField
-                control={form.control}
+                control={editForm.control}
                 name="targetAmount"
                 render={({ field }) => (
                   <FormItem>
@@ -602,8 +619,7 @@ export default function Goals() {
                       <Input 
                         type="number" 
                         placeholder="5000" 
-                        {...field} 
-                        defaultValue={editingGoal?.targetAmount || ""}
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -612,7 +628,7 @@ export default function Goals() {
               />
               
               <FormField
-                control={form.control}
+                control={editForm.control}
                 name="currentAmount"
                 render={({ field }) => (
                   <FormItem>
@@ -621,8 +637,7 @@ export default function Goals() {
                       <Input 
                         type="number" 
                         placeholder="0" 
-                        {...field} 
-                        defaultValue={editingGoal?.currentAmount || "0"}
+                        {...field}
                         disabled={!!editingGoal?.linkedAccountId}
                       />
                     </FormControl>
@@ -637,7 +652,7 @@ export default function Goals() {
               />
               
               <FormField
-                control={form.control}
+                control={editForm.control}
                 name="targetDate"
                 render={({ field }) => (
                   <FormItem>
@@ -645,8 +660,7 @@ export default function Goals() {
                     <FormControl>
                       <Input 
                         type="date" 
-                        {...field} 
-                        defaultValue={editingGoal?.targetDate || ""}
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -655,14 +669,14 @@ export default function Goals() {
               />
               
               <FormField
-                control={form.control}
+                control={editForm.control}
                 name="linkedAccountId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Linked Account (Optional)</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={editingGoal?.linkedAccountId?.toString() || "none"}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
