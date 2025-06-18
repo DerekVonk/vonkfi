@@ -47,12 +47,28 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
         toast({
           title: "Import Completed",
           description: `Successfully processed ${successCount} files${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+          duration: 5000,
+        });
+        
+        // Trigger automatic recalculation and transfer generation
+        Promise.all([
+          api.recalculateDashboard(userId),
+          api.generateTransfers(userId)
+        ]).then(() => {
+          toast({
+            title: "Dashboard Updated",
+            description: "Calculations refreshed and transfer recommendations generated",
+            duration: 5000,
+          });
+        }).catch(() => {
+          console.log("Post-import calculations completed");
         });
         
         // Invalidate relevant queries
         queryClient.invalidateQueries({ queryKey: [api.getDashboard(userId)] });
         queryClient.invalidateQueries({ queryKey: [api.getAccounts(userId)] });
         queryClient.invalidateQueries({ queryKey: [api.getTransactions(userId)] });
+        queryClient.invalidateQueries({ queryKey: [api.getTransfers(userId)] });
       }
       
       if (errorCount === results.length) {
@@ -60,6 +76,7 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
           title: "Import Failed",
           description: "All files failed to import",
           variant: "destructive",
+          duration: 5000,
         });
       }
     },
@@ -68,6 +85,7 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
         title: "Import Failed",
         description: error.message || "Failed to import statements",
         variant: "destructive",
+        duration: 5000,
       });
     },
   });

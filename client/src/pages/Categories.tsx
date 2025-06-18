@@ -58,6 +58,7 @@ export default function Categories() {
       toast({
         title: "Category Created",
         description: "New category has been created successfully",
+        duration: 5000,
       });
       queryClient.invalidateQueries({ queryKey: [api.getCategories()] });
       setShowCreateDialog(false);

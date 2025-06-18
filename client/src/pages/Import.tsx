@@ -23,6 +23,7 @@ export default function Import() {
       toast({
         title: "Data Cleared",
         description: "All your financial data has been cleared successfully",
+        duration: 5000,
       });
       queryClient.invalidateQueries();
       setShowClearDataDialog(false);
@@ -42,6 +43,7 @@ export default function Import() {
       toast({
         title: "Dashboard Recalculated",
         description: "All financial calculations have been refreshed",
+        duration: 5000,
       });
       queryClient.invalidateQueries();
     },
