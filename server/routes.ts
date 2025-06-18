@@ -276,7 +276,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
       await storage.clearUserData(userId);
-      res.json({ message: "All user data cleared successfully" });
+      
+      // Recalculate dashboard after clearing data
+      const [accounts, transactions, goals] = await Promise.all([
+        storage.getAccountsByUserId(userId),
+        storage.getTransactionsByUserId(userId),
+        storage.getGoalsByUserId(userId)
+      ]);
+
+      const fireCalculator = new FireCalculator();
+      const fireMetrics = fireCalculator.calculateMetrics(transactions, goals, accounts);
+      
+      res.json({ 
+        message: "Import data cleared and dashboard recalculated",
+        recalculatedData: {
+          accounts: accounts.length,
+          transactions: transactions.length,
+          goals: goals.length,
+          fireMetrics: fireMetrics
+        }
+      });
     } catch (error) {
       console.error("Clear data error:", error);
       res.status(500).json({ error: "Failed to clear user data" });
