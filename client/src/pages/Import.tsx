@@ -22,7 +22,7 @@ export default function Import() {
     onSuccess: () => {
       toast({
         title: "Import Data Cleared",
-        description: "Bank statement data cleared. Your account and goal configurations are preserved.",
+        description: "Bank statement data cleared and dashboard recalculated. Your configurations are preserved.",
         duration: 5000,
       });
       queryClient.invalidateQueries();

@@ -63,37 +63,41 @@ describe('CAMT.053 Import Accuracy Tests', () => {
       .expect(200);
 
     const transactions = transactionsResponse.body.transactions;
-    expect(transactions).toHaveLength(8); // 8 transactions in the XML
+    expect(transactions).toHaveLength(expectedCamtData.expectedTotals.totalTransactions);
 
-    // Test specific transaction details
-    const applePayTransaction = transactions.find((t: any) => 
-      t.description?.includes('Apple Pay') && t.description?.includes('Celly Shop')
-    );
-    expect(applePayTransaction).toBeDefined();
-    expect(parseFloat(applePayTransaction.amount)).toBe(-35.00);
-    expect(applePayTransaction.date).toBe('2025-01-02');
-    expect(applePayTransaction.type).toBe('debit');
+    // Verify each transaction matches expected data
+    expectedCamtData.transactions.forEach((expectedTx, index) => {
+      const actualTx = transactions.find((t: any) => 
+        Math.abs(parseFloat(t.amount) - expectedTx.amount) < 0.01 &&
+        t.date === expectedTx.date
+      );
+      
+      expect(actualTx).toBeDefined();
+      expect(parseFloat(actualTx.amount)).toBeCloseTo(expectedTx.amount, 2);
+      expect(actualTx.date).toBe(expectedTx.date);
+      expect(actualTx.type).toBe(expectedTx.type);
+      
+      if (expectedTx.counterpartyName) {
+        expect(actualTx.counterpartyName).toBe(expectedTx.counterpartyName);
+      }
+      
+      if (expectedTx.merchant) {
+        expect(actualTx.merchant || actualTx.description).toContain(expectedTx.merchant);
+      }
+    });
 
-    const nsTicketTransaction = transactions.find((t: any) => 
-      t.description?.includes('NS Reizigers') || t.counterpartyName?.includes('NS Reizigers')
-    );
-    expect(nsTicketTransaction).toBeDefined();
-    expect(parseFloat(nsTicketTransaction.amount)).toBe(-2.50);
-    expect(nsTicketTransaction.counterpartyName).toBe('NS Reizigers B.V.');
-
-    const bolComTransaction = transactions.find((t: any) => 
-      t.counterpartyName?.includes('bol.com')
-    );
-    expect(bolComTransaction).toBeDefined();
-    expect(parseFloat(bolComTransaction.amount)).toBe(-24.99);
-    expect(bolComTransaction.counterpartyName).toBe('bol.com');
-
-    // Verify total amounts
+    // Verify total amounts match expected data
     const totalDebits = transactions
       .filter((t: any) => t.type === 'debit')
       .reduce((sum: number, t: any) => sum + Math.abs(parseFloat(t.amount)), 0);
     
-    expect(totalDebits).toBeCloseTo(188.04, 2); // Sum of all debit transactions
+    expect(totalDebits).toBeCloseTo(expectedCamtData.expectedTotals.totalDebits, 2);
+    
+    // Verify Apple Pay transaction count
+    const applePayCount = transactions.filter((t: any) => 
+      t.description?.includes('Apple Pay')
+    ).length;
+    expect(applePayCount).toBe(expectedCamtData.expectedTotals.applePayTransactions);
   });
 
   it('should correctly calculate FIRE metrics after CAMT import', async () => {
@@ -119,8 +123,8 @@ describe('CAMT.053 Import Accuracy Tests', () => {
     );
     
     if (january2025Data) {
-      expect(january2025Data.expenses).toBeCloseTo(188.04, 2); // Total expenses from XML
-      expect(january2025Data.income).toBe(0); // No income transactions in this statement
+      expect(january2025Data.expenses).toBeCloseTo(expectedCamtData.expectedTotals.totalDebits, 2);
+      expect(january2025Data.income).toBe(expectedCamtData.expectedTotals.totalCredits);
     }
   });
 
@@ -161,9 +165,9 @@ describe('CAMT.053 Import Accuracy Tests', () => {
 
     const account = accountsResponse.body[0];
     
-    // The XML shows closing balance of 561.54 EUR
-    expect(parseFloat(account.balance)).toBe(561.54);
-    expect(account.currency).toBe('EUR');
+    // Verify closing balance matches CAMT data
+    expect(parseFloat(account.balance)).toBe(expectedCamtData.account.closingBalance);
+    expect(account.currency).toBe(expectedCamtData.account.currency);
   });
 
   it('should recalculate dashboard after data clearing', async () => {
