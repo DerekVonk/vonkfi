@@ -73,6 +73,39 @@ export const allocations = pgTable("allocations", {
   isActive: boolean("is_active").default(true),
 });
 
+// Zero Based Budgeting tables
+export const budgetPeriods = pgTable("budget_periods", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(), // "January 2025", "Q1 2025"
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  totalIncome: decimal("total_income", { precision: 12, scale: 2 }).default("0"),
+  totalAllocated: decimal("total_allocated", { precision: 12, scale: 2 }).default("0"),
+  isActive: boolean("is_active").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const budgetCategories = pgTable("budget_categories", {
+  id: serial("id").primaryKey(),
+  budgetPeriodId: integer("budget_period_id").notNull(),
+  categoryId: integer("category_id").notNull(),
+  allocatedAmount: decimal("allocated_amount", { precision: 12, scale: 2 }).notNull(),
+  spentAmount: decimal("spent_amount", { precision: 12, scale: 2 }).default("0"),
+  priority: integer("priority").default(1), // 1=needs, 2=wants, 3=savings
+  notes: text("notes"),
+  isFixed: boolean("is_fixed").default(false), // for fixed expenses
+});
+
+export const budgetAccounts = pgTable("budget_accounts", {
+  id: serial("id").primaryKey(),
+  budgetPeriodId: integer("budget_period_id").notNull(),
+  accountId: integer("account_id").notNull(),
+  role: text("role").notNull(), // "income", "fixed_expenses", "variable_expenses", "savings"
+  targetBalance: decimal("target_balance", { precision: 12, scale: 2 }),
+  allocatedAmount: decimal("allocated_amount", { precision: 12, scale: 2 }).default("0"),
+});
+
 export const bufferHistory = pgTable("buffer_history", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -145,6 +178,9 @@ export const insertGoalSchema = createInsertSchema(goals).omit({ id: true });
 export const insertAllocationSchema = createInsertSchema(allocations).omit({ id: true });
 export const insertTransferRecommendationSchema = createInsertSchema(transferRecommendations).omit({ id: true, date: true });
 export const insertCryptoWalletSchema = createInsertSchema(cryptoWallets).omit({ id: true });
+export const insertBudgetPeriodSchema = createInsertSchema(budgetPeriods).omit({ id: true, createdAt: true });
+export const insertBudgetCategorySchema = createInsertSchema(budgetCategories).omit({ id: true });
+export const insertBudgetAccountSchema = createInsertSchema(budgetAccounts).omit({ id: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -163,3 +199,9 @@ export type TransferRecommendation = typeof transferRecommendations.$inferSelect
 export type InsertTransferRecommendation = z.infer<typeof insertTransferRecommendationSchema>;
 export type CryptoWallet = typeof cryptoWallets.$inferSelect;
 export type InsertCryptoWallet = z.infer<typeof insertCryptoWalletSchema>;
+export type BudgetPeriod = typeof budgetPeriods.$inferSelect;
+export type InsertBudgetPeriod = z.infer<typeof insertBudgetPeriodSchema>;
+export type BudgetCategory = typeof budgetCategories.$inferSelect;
+export type InsertBudgetCategory = z.infer<typeof insertBudgetCategorySchema>;
+export type BudgetAccount = typeof budgetAccounts.$inferSelect;
+export type InsertBudgetAccount = z.infer<typeof insertBudgetAccountSchema>;

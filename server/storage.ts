@@ -1,14 +1,17 @@
 import { 
   users, accounts, transactions, categories, goals, allocations, 
-  transferRecommendations, cryptoWallets,
+  transferRecommendations, cryptoWallets, budgetPeriods, budgetCategories, budgetAccounts,
   type User, type InsertUser, type Account, type InsertAccount,
   type Transaction, type InsertTransaction, type Category, type InsertCategory,
   type Goal, type InsertGoal, type Allocation, type InsertAllocation,
   type TransferRecommendation, type InsertTransferRecommendation,
-  type CryptoWallet, type InsertCryptoWallet
+  type CryptoWallet, type InsertCryptoWallet,
+  type BudgetPeriod, type InsertBudgetPeriod,
+  type BudgetCategory, type InsertBudgetCategory,
+  type BudgetAccount, type InsertBudgetAccount
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -57,6 +60,19 @@ export interface IStorage {
   // Crypto Wallets
   getCryptoWalletsByUserId(userId: number): Promise<CryptoWallet[]>;
   createCryptoWallet(wallet: InsertCryptoWallet): Promise<CryptoWallet>;
+
+  // Zero Based Budgeting
+  getBudgetPeriodsByUserId(userId: number): Promise<BudgetPeriod[]>;
+  getActiveBudgetPeriod(userId: number): Promise<BudgetPeriod | undefined>;
+  createBudgetPeriod(budgetPeriod: InsertBudgetPeriod): Promise<BudgetPeriod>;
+  updateBudgetPeriod(id: number, updates: Partial<BudgetPeriod>): Promise<BudgetPeriod>;
+  getBudgetCategoriesByPeriod(budgetPeriodId: number): Promise<BudgetCategory[]>;
+  createBudgetCategory(budgetCategory: InsertBudgetCategory): Promise<BudgetCategory>;
+  updateBudgetCategory(id: number, updates: Partial<BudgetCategory>): Promise<BudgetCategory>;
+  getBudgetAccountsByPeriod(budgetPeriodId: number): Promise<BudgetAccount[]>;
+  createBudgetAccount(budgetAccount: InsertBudgetAccount): Promise<BudgetAccount>;
+  updateBudgetAccount(id: number, updates: Partial<BudgetAccount>): Promise<BudgetAccount>;
+  calculateBudgetProgress(budgetPeriodId: number): Promise<{ totalAllocated: number; totalSpent: number; remainingToBudget: number; }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -304,6 +320,108 @@ export class DatabaseStorage implements IStorage {
       .values(insertWallet)
       .returning();
     return wallet;
+  }
+
+  // Zero Based Budgeting methods
+  async getBudgetPeriodsByUserId(userId: number): Promise<BudgetPeriod[]> {
+    return await db.select().from(budgetPeriods).where(eq(budgetPeriods.userId, userId)).orderBy(desc(budgetPeriods.startDate));
+  }
+
+  async getActiveBudgetPeriod(userId: number): Promise<BudgetPeriod | undefined> {
+    const [period] = await db.select().from(budgetPeriods).where(
+      and(eq(budgetPeriods.userId, userId), eq(budgetPeriods.isActive, true))
+    );
+    return period;
+  }
+
+  async createBudgetPeriod(insertBudgetPeriod: InsertBudgetPeriod): Promise<BudgetPeriod> {
+    // Deactivate any existing active periods
+    await db.update(budgetPeriods)
+      .set({ isActive: false })
+      .where(and(eq(budgetPeriods.userId, insertBudgetPeriod.userId), eq(budgetPeriods.isActive, true)));
+
+    const [period] = await db.insert(budgetPeriods).values(insertBudgetPeriod).returning();
+    return period;
+  }
+
+  async updateBudgetPeriod(id: number, updates: Partial<BudgetPeriod>): Promise<BudgetPeriod> {
+    const [updated] = await db.update(budgetPeriods).set(updates).where(eq(budgetPeriods.id, id)).returning();
+    return updated;
+  }
+
+  async getBudgetCategoriesByPeriod(budgetPeriodId: number): Promise<BudgetCategory[]> {
+    return await db.select({
+      id: budgetCategories.id,
+      budgetPeriodId: budgetCategories.budgetPeriodId,
+      categoryId: budgetCategories.categoryId,
+      allocatedAmount: budgetCategories.allocatedAmount,
+      spentAmount: budgetCategories.spentAmount,
+      priority: budgetCategories.priority,
+      notes: budgetCategories.notes,
+      isFixed: budgetCategories.isFixed,
+      categoryName: categories.name,
+      categoryType: categories.type,
+    })
+    .from(budgetCategories)
+    .leftJoin(categories, eq(budgetCategories.categoryId, categories.id))
+    .where(eq(budgetCategories.budgetPeriodId, budgetPeriodId))
+    .orderBy(budgetCategories.priority, categories.name);
+  }
+
+  async createBudgetCategory(insertBudgetCategory: InsertBudgetCategory): Promise<BudgetCategory> {
+    const [budgetCategory] = await db.insert(budgetCategories).values(insertBudgetCategory).returning();
+    return budgetCategory;
+  }
+
+  async updateBudgetCategory(id: number, updates: Partial<BudgetCategory>): Promise<BudgetCategory> {
+    const [updated] = await db.update(budgetCategories).set(updates).where(eq(budgetCategories.id, id)).returning();
+    return updated;
+  }
+
+  async getBudgetAccountsByPeriod(budgetPeriodId: number): Promise<BudgetAccount[]> {
+    return await db.select({
+      id: budgetAccounts.id,
+      budgetPeriodId: budgetAccounts.budgetPeriodId,
+      accountId: budgetAccounts.accountId,
+      role: budgetAccounts.role,
+      targetBalance: budgetAccounts.targetBalance,
+      allocatedAmount: budgetAccounts.allocatedAmount,
+      accountName: accounts.customName,
+      accountHolderName: accounts.accountHolderName,
+      bankName: accounts.bankName,
+      balance: accounts.balance,
+    })
+    .from(budgetAccounts)
+    .leftJoin(accounts, eq(budgetAccounts.accountId, accounts.id))
+    .where(eq(budgetAccounts.budgetPeriodId, budgetPeriodId))
+    .orderBy(budgetAccounts.role);
+  }
+
+  async createBudgetAccount(insertBudgetAccount: InsertBudgetAccount): Promise<BudgetAccount> {
+    const [budgetAccount] = await db.insert(budgetAccounts).values(insertBudgetAccount).returning();
+    return budgetAccount;
+  }
+
+  async updateBudgetAccount(id: number, updates: Partial<BudgetAccount>): Promise<BudgetAccount> {
+    const [updated] = await db.update(budgetAccounts).set(updates).where(eq(budgetAccounts.id, id)).returning();
+    return updated;
+  }
+
+  async calculateBudgetProgress(budgetPeriodId: number): Promise<{ totalAllocated: number; totalSpent: number; remainingToBudget: number; }> {
+    const period = await db.select().from(budgetPeriods).where(eq(budgetPeriods.id, budgetPeriodId)).limit(1);
+    if (!period.length) throw new Error('Budget period not found');
+
+    const categories = await db.select().from(budgetCategories).where(eq(budgetCategories.budgetPeriodId, budgetPeriodId));
+    
+    const totalAllocated = categories.reduce((sum, cat) => sum + parseFloat(cat.allocatedAmount), 0);
+    const totalSpent = categories.reduce((sum, cat) => sum + parseFloat(cat.spentAmount), 0);
+    const totalIncome = parseFloat(period[0].totalIncome);
+    
+    return {
+      totalAllocated,
+      totalSpent,
+      remainingToBudget: totalIncome - totalAllocated,
+    };
   }
 }
 
