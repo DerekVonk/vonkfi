@@ -99,9 +99,6 @@ export interface IStorage {
   createTransferPreference(preference: InsertTransferPreference): Promise<TransferPreference>;
   updateTransferPreference(id: number, updates: Partial<TransferPreference>): Promise<TransferPreference>;
   deleteTransferPreference(id: number): Promise<void>;
-  
-  // Transfer Recommendations Cleanup
-  clearUserTransferRecommendations(userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -537,10 +534,6 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTransferPreference(id: number): Promise<void> {
     await db.delete(transferPreferences).where(eq(transferPreferences.id, id));
-  }
-
-  async clearUserTransferRecommendations(userId: number): Promise<void> {
-    await db.delete(transferRecommendations).where(eq(transferRecommendations.userId, userId));
   }
 }
 

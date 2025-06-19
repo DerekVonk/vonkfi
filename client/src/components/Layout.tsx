@@ -11,9 +11,9 @@ const navigation = [
   { name: "Categories", href: "/categories", icon: Tags },
   { name: "Zero Based Budget", href: "/budget", icon: Calculator },
   { name: "Transfer Instructions", href: "/transfers", icon: ArrowLeftRight },
-  { name: "Transfer Settings", href: "/transfer-preferences", icon: Settings },
   { name: "Goals", href: "/goals", icon: Target },
   { name: "Crypto Portfolio", href: "/crypto", icon: Bitcoin },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 interface LayoutProps {
