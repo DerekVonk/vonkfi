@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, CheckCircle, XCircle, Clock, Download } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { FileText, CheckCircle, XCircle, Clock, Download, ChevronDown, ChevronRight, Calendar, Files } from "lucide-react";
+import { formatDistanceToNow, format, isSameDay } from "date-fns";
+import { useState } from "react";
 
 interface ImportRecord {
   id: number;
@@ -63,11 +65,62 @@ function getStatusBadge(status: string) {
   }
 }
 
+interface ImportGroup {
+  date: string;
+  imports: ImportRecord[];
+  totalFiles: number;
+  totalTransactions: number;
+  totalDuplicates: number;
+  successfulImports: number;
+  failedImports: number;
+}
+
 export default function ImportHistory() {
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   const { data: imports, isLoading, error } = useQuery<ImportRecord[]>({
     queryKey: ["/api/imports/1"], // Using userId 1 for demo
     refetchInterval: 5000, // Refresh every 5 seconds for processing updates
   });
+
+  // Group imports by date
+  const groupedImports: ImportGroup[] = imports ? 
+    Object.entries(
+      imports.reduce((groups, importRecord) => {
+        const date = format(new Date(importRecord.importDate), 'yyyy-MM-dd');
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(importRecord);
+        return groups;
+      }, {} as Record<string, ImportRecord[]>)
+    ).map(([date, groupImports]) => ({
+      date,
+      imports: groupImports.sort((a, b) => new Date(b.importDate).getTime() - new Date(a.importDate).getTime()),
+      totalFiles: groupImports.length,
+      totalTransactions: groupImports.reduce((sum, imp) => sum + (imp.transactionsImported || 0), 0),
+      totalDuplicates: groupImports.reduce((sum, imp) => sum + (imp.duplicatesSkipped || 0), 0),
+      successfulImports: groupImports.filter(imp => imp.status === 'completed').length,
+      failedImports: groupImports.filter(imp => imp.status === 'failed').length,
+    })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    : [];
+
+  // Pagination
+  const totalPages = Math.ceil(groupedImports.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedGroups = groupedImports.slice(startIndex, startIndex + itemsPerPage);
+
+  const toggleGroup = (date: string) => {
+    const newExpanded = new Set(expandedGroups);
+    if (newExpanded.has(date)) {
+      newExpanded.delete(date);
+    } else {
+      newExpanded.add(date);
+    }
+    setExpandedGroups(newExpanded);
+  };
 
   if (isLoading) {
     return (
@@ -120,7 +173,7 @@ export default function ImportHistory() {
           <h1 className="text-2xl font-bold">Import History</h1>
         </div>
         <div className="text-sm text-gray-500">
-          {imports?.length || 0} import{(imports?.length || 0) !== 1 ? 's' : ''} total
+          {imports?.length || 0} import{(imports?.length || 0) !== 1 ? 's' : ''} total across {groupedImports.length} day{groupedImports.length !== 1 ? 's' : ''}
         </div>
       </div>
 
@@ -171,86 +224,174 @@ export default function ImportHistory() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {imports.map((importRecord) => (
-            <Card key={importRecord.id} className="transition-shadow hover:shadow-md">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {getStatusIcon(importRecord.status)}
-                    <div>
-                      <CardTitle className="text-lg">{importRecord.fileName}</CardTitle>
-                      <p className="text-sm text-gray-500">
-                        Imported {formatDistanceToNow(new Date(importRecord.importDate), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                  {getStatusBadge(importRecord.status)}
-                </div>
-              </CardHeader>
-              
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">File Size</p>
-                    <p className="font-medium">{formatFileSize(importRecord.fileSize)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Accounts Found</p>
-                    <p className="font-medium">{importRecord.accountsFound}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Transactions</p>
-                    <p className="font-medium text-green-600">{importRecord.transactionsImported}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Duplicates Skipped</p>
-                    <p className="font-medium text-orange-600">{importRecord.duplicatesSkipped || 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Statement ID</p>
-                    <p className="font-medium text-xs font-mono truncate">
-                      {importRecord.statementId || "N/A"}
-                    </p>
-                  </div>
-                </div>
-
-                {importRecord.status === "failed" && importRecord.errorMessage && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <div className="flex items-start space-x-2">
-                      <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+        <>
+          {/* Grouped Import History */}
+          <div className="space-y-4">
+            {paginatedGroups.map((group) => (
+              <Card key={group.date} className="transition-shadow hover:shadow-md">
+                <CardHeader 
+                  className="pb-3 cursor-pointer"
+                  onClick={() => toggleGroup(group.date)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Calendar className="w-5 h-5 text-blue-600" />
                       <div>
-                        <p className="text-sm font-medium text-red-800">Import Failed</p>
-                        <p className="text-sm text-red-600">{importRecord.errorMessage}</p>
+                        <CardTitle className="text-lg">
+                          {format(new Date(group.date), 'MMMM d, yyyy')}
+                        </CardTitle>
+                        <p className="text-sm text-gray-500">
+                          {group.totalFiles} file{group.totalFiles !== 1 ? 's' : ''} imported
+                        </p>
                       </div>
                     </div>
-                  </div>
-                )}
-
-                {importRecord.status === "completed" && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <p className="text-sm text-green-800">
-                        Successfully imported {importRecord.transactionsImported} transactions
-                        {importRecord.accountsFound > 0 && ` and discovered ${importRecord.accountsFound} account${importRecord.accountsFound !== 1 ? 's' : ''}`}
-                      </p>
+                    <div className="flex items-center space-x-4">
+                      <div className="grid grid-cols-3 gap-4 text-center mr-4">
+                        <div>
+                          <div className="text-sm font-bold text-green-600">{group.totalTransactions}</div>
+                          <div className="text-xs text-gray-500">Transactions</div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-blue-600">{group.successfulImports}</div>
+                          <div className="text-xs text-gray-500">Success</div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-red-600">{group.failedImports}</div>
+                          <div className="text-xs text-gray-500">Failed</div>
+                        </div>
+                      </div>
+                      {expandedGroups.has(group.date) ? 
+                        <ChevronDown className="w-5 h-5 text-gray-400" /> : 
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      }
                     </div>
                   </div>
-                )}
+                </CardHeader>
+                
+                {expandedGroups.has(group.date) && (
+                  <CardContent className="pt-0 border-t border-gray-100">
+                    <div className="space-y-4 mt-4">
+                      {group.imports.map((importRecord) => (
+                        <div key={importRecord.id} className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              {getStatusIcon(importRecord.status)}
+                              <div>
+                                <h4 className="font-medium">{importRecord.fileName}</h4>
+                                <p className="text-sm text-gray-500">
+                                  {format(new Date(importRecord.importDate), 'HH:mm:ss')}
+                                </p>
+                              </div>
+                            </div>
+                            {getStatusBadge(importRecord.status)}
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase tracking-wide">File Size</p>
+                              <p className="font-medium text-sm">{formatFileSize(importRecord.fileSize)}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase tracking-wide">Accounts Found</p>
+                              <p className="font-medium text-sm">{importRecord.accountsFound}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase tracking-wide">Transactions</p>
+                              <p className="font-medium text-sm text-green-600">{importRecord.transactionsImported}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase tracking-wide">Duplicates Skipped</p>
+                              <p className="font-medium text-sm text-orange-600">{importRecord.duplicatesSkipped || 0}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase tracking-wide">Statement ID</p>
+                              <p className="font-medium text-xs font-mono truncate">
+                                {importRecord.statementId || "N/A"}
+                              </p>
+                            </div>
+                          </div>
 
-                {importRecord.status === "processing" && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-blue-500 animate-spin" />
-                      <p className="text-sm text-blue-800">Import in progress...</p>
+                          {importRecord.status === "failed" && importRecord.errorMessage && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                              <div className="flex items-start space-x-2">
+                                <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-red-800">Import Failed</p>
+                                  <p className="text-sm text-red-600">{importRecord.errorMessage}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {importRecord.status === "completed" && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <div className="flex items-center space-x-2">
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <p className="text-sm text-green-800">
+                                  Successfully imported {importRecord.transactionsImported} transactions
+                                  {importRecord.accountsFound > 0 && ` and discovered ${importRecord.accountsFound} account${importRecord.accountsFound !== 1 ? 's' : ''}`}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {importRecord.status === "processing" && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <div className="flex items-center space-x-2">
+                                <Clock className="w-4 h-4 text-blue-500 animate-spin" />
+                                <p className="text-sm text-blue-800">Import in progress...</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  </CardContent>
                 )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, groupedImports.length)} of {groupedImports.length} import sessions
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className="w-10"
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
