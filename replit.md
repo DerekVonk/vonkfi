@@ -102,8 +102,17 @@ The application is built as a full-stack web application with a React frontend a
 
 ## Recent Changes
 
-- June 19, 2025: Fixed Transfer Recommendations Generation + Advanced Import System
-  - **FIXED**: Transfer recommendations generation returning 0 results - expanded buffer account lookup logic
+- June 19, 2025: Comprehensive System Fixes + Advanced Settings Architecture
+  - **FIXED**: Transfer recommendation duplicates - eliminated multiple identical recommendations by marking previous ones as "replaced"
+  - **FIXED**: Category type system - updated legacy "expense" categories to proper "essential" and "discretionary" types
+  - **CREATED**: Comprehensive Settings page with tabbed interface for Transfer Rules, Data Management, and Budget Settings
+  - **ENHANCED**: Navigation structure - replaced individual Transfer Settings with unified Settings hub
+  - **IMPLEMENTED**: Fully functional transfer preferences management with create, edit, delete operations
+  - **RESOLVED**: Transfer generation now properly clears old recommendations before creating new ones
+  - Advanced priority-based transfer destination system with account role matching and goal pattern support
+  - Enhanced UI with proper form validation, error handling, and user feedback throughout settings management
+  - Streamlined navigation by consolidating settings into single comprehensive page
+  - Transfer recommendations generation + Advanced Import System
   - Enhanced transfer generation to recognize goal-specific savings accounts as valid buffer destinations
   - Created comprehensive verification tests confirming transfer recommendation functionality
   - System now generates meaningful €2133.38 buffer transfer recommendations for current user data
