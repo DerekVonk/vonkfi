@@ -198,10 +198,6 @@ export class DatabaseStorage implements IStorage {
     return category;
   }
 
-  async deleteCategory(id: number): Promise<void> {
-    await db.delete(categories).where(eq(categories.id, id));
-  }
-
   async clearUserData(userId: number): Promise<void> {
     // Clear only imported bank statement data and calculated metrics
     // Preserve user configurations: accounts, categories, goals, crypto wallets

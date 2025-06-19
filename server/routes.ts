@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { CamtParser } from "./services/camtParser";
 import { TransactionCategorizer } from "./services/categorization";
 import { FireCalculator } from "./services/fireCalculations";
+import { duplicateDetectionService } from "./services/duplicateDetection";
 import multer from "multer";
 import { z } from "zod";
 
@@ -127,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update goal account balances after processing all transactions
       await storage.updateGoalAccountBalances(userId);
 
-      // Track import history
+      // Track import history with duplicate tracking
       await storage.createImportHistory({
         userId,
         fileName: req.file.originalname,
@@ -135,6 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         statementId: parsedStatement.statementId,
         accountsFound: results.newAccounts.length,
         transactionsImported: results.newTransactions.length,
+        duplicatesSkipped: duplicateCount,
         status: "completed"
       });
 
