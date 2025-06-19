@@ -208,6 +208,22 @@ export const transactionHashes = pgTable("transaction_hashes", {
   uniqueHash: unique("unique_user_hash").on(table.userId, table.hash),
 }));
 
+// Transfer destination preferences
+export const transferPreferences = pgTable("transfer_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  preferenceType: text("preference_type").notNull(), // 'buffer', 'goal', 'investment', 'emergency'
+  priority: integer("priority").notNull(), // 1=highest priority
+  accountId: integer("account_id").references(() => accounts.id),
+  accountRole: text("account_role"), // 'emergency', 'savings', 'checking', etc.
+  goalPattern: text("goal_pattern"), // regex pattern to match goal names
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueUserTypePriority: unique("unique_user_type_priority").on(table.userId, table.preferenceType, table.priority),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertAccountSchema = createInsertSchema(accounts).omit({ id: true, discoveredDate: true, lastSeenDate: true });
@@ -223,6 +239,7 @@ export const insertBudgetAccountSchema = createInsertSchema(budgetAccounts).omit
 export const insertImportBatchSchema = createInsertSchema(importBatches).omit({ id: true, batchDate: true });
 export const insertImportHistorySchema = createInsertSchema(importHistory).omit({ id: true, importDate: true });
 export const insertTransactionHashSchema = createInsertSchema(transactionHashes).omit({ id: true, createdAt: true });
+export const insertTransferPreferenceSchema = createInsertSchema(transferPreferences).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -253,3 +270,5 @@ export type ImportHistory = typeof importHistory.$inferSelect;
 export type InsertImportHistory = z.infer<typeof insertImportHistorySchema>;
 export type TransactionHash = typeof transactionHashes.$inferSelect;
 export type InsertTransactionHash = z.infer<typeof insertTransactionHashSchema>;
+export type TransferPreference = typeof transferPreferences.$inferSelect;
+export type InsertTransferPreference = z.infer<typeof insertTransferPreferenceSchema>;

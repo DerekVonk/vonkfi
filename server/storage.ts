@@ -1,6 +1,6 @@
 import { 
   users, accounts, transactions, categories, goals, allocations, 
-  transferRecommendations, cryptoWallets, budgetPeriods, budgetCategories, budgetAccounts, importHistory, importBatches, transactionHashes,
+  transferRecommendations, cryptoWallets, budgetPeriods, budgetCategories, budgetAccounts, importHistory, importBatches, transactionHashes, transferPreferences,
   type User, type InsertUser, type Account, type InsertAccount,
   type Transaction, type InsertTransaction, type Category, type InsertCategory,
   type Goal, type InsertGoal, type Allocation, type InsertAllocation,
@@ -11,7 +11,8 @@ import {
   type BudgetAccount, type InsertBudgetAccount,
   type ImportHistory, type InsertImportHistory,
   type ImportBatch, type InsertImportBatch,
-  type TransactionHash, type InsertTransactionHash
+  type TransactionHash, type InsertTransactionHash,
+  type TransferPreference, type InsertTransferPreference
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, inArray, and, desc } from "drizzle-orm";
@@ -92,6 +93,12 @@ export interface IStorage {
   getTransactionHashesByUserId(userId: number): Promise<TransactionHash[]>;
   createTransactionHash(transactionHash: InsertTransactionHash): Promise<TransactionHash>;
   createTransactionHashBatch(transactionHashes: InsertTransactionHash[]): Promise<TransactionHash[]>;
+
+  // Transfer Preferences
+  getTransferPreferencesByUserId(userId: number): Promise<TransferPreference[]>;
+  createTransferPreference(preference: InsertTransferPreference): Promise<TransferPreference>;
+  updateTransferPreference(id: number, updates: Partial<TransferPreference>): Promise<TransferPreference>;
+  deleteTransferPreference(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
