@@ -1,6 +1,6 @@
 import { 
   users, accounts, transactions, categories, goals, allocations, 
-  transferRecommendations, cryptoWallets, budgetPeriods, budgetCategories, budgetAccounts, importHistory,
+  transferRecommendations, cryptoWallets, budgetPeriods, budgetCategories, budgetAccounts, importHistory, importBatches, transactionHashes,
   type User, type InsertUser, type Account, type InsertAccount,
   type Transaction, type InsertTransaction, type Category, type InsertCategory,
   type Goal, type InsertGoal, type Allocation, type InsertAllocation,
@@ -9,7 +9,9 @@ import {
   type BudgetPeriod, type InsertBudgetPeriod,
   type BudgetCategory, type InsertBudgetCategory,
   type BudgetAccount, type InsertBudgetAccount,
-  type ImportHistory, type InsertImportHistory
+  type ImportHistory, type InsertImportHistory,
+  type ImportBatch, type InsertImportBatch,
+  type TransactionHash, type InsertTransactionHash
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, inArray, and, desc } from "drizzle-orm";
@@ -79,6 +81,17 @@ export interface IStorage {
   // Import History
   getImportHistoryByUserId(userId: number): Promise<ImportHistory[]>;
   createImportHistory(importHistory: InsertImportHistory): Promise<ImportHistory>;
+  
+  // Import Batches
+  getImportBatchesByUserId(userId: number): Promise<ImportBatch[]>;
+  createImportBatch(importBatch: InsertImportBatch): Promise<ImportBatch>;
+  updateImportBatch(id: number, updates: Partial<ImportBatch>): Promise<ImportBatch>;
+  getImportHistoryByBatchId(batchId: number): Promise<ImportHistory[]>;
+  
+  // Transaction Hashes (Duplicate Detection)
+  getTransactionHashesByUserId(userId: number): Promise<TransactionHash[]>;
+  createTransactionHash(transactionHash: InsertTransactionHash): Promise<TransactionHash>;
+  createTransactionHashBatch(transactionHashes: InsertTransactionHash[]): Promise<TransactionHash[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -440,6 +453,37 @@ export class DatabaseStorage implements IStorage {
   async createImportHistory(insertImportHistory: InsertImportHistory): Promise<ImportHistory> {
     const [result] = await db.insert(importHistory).values(insertImportHistory).returning();
     return result;
+  }
+
+  async getImportBatchesByUserId(userId: number): Promise<ImportBatch[]> {
+    return await db.select().from(importBatches).where(eq(importBatches.userId, userId)).orderBy(desc(importBatches.batchDate));
+  }
+
+  async createImportBatch(insertImportBatch: InsertImportBatch): Promise<ImportBatch> {
+    const [result] = await db.insert(importBatches).values(insertImportBatch).returning();
+    return result;
+  }
+
+  async updateImportBatch(id: number, updates: Partial<ImportBatch>): Promise<ImportBatch> {
+    const [result] = await db.update(importBatches).set(updates).where(eq(importBatches.id, id)).returning();
+    return result;
+  }
+
+  async getImportHistoryByBatchId(batchId: number): Promise<ImportHistory[]> {
+    return await db.select().from(importHistory).where(eq(importHistory.batchId, batchId)).orderBy(desc(importHistory.importDate));
+  }
+
+  async getTransactionHashesByUserId(userId: number): Promise<TransactionHash[]> {
+    return await db.select().from(transactionHashes).where(eq(transactionHashes.userId, userId));
+  }
+
+  async createTransactionHash(insertTransactionHash: InsertTransactionHash): Promise<TransactionHash> {
+    const [result] = await db.insert(transactionHashes).values(insertTransactionHash).returning();
+    return result;
+  }
+
+  async createTransactionHashBatch(insertTransactionHashes: InsertTransactionHash[]): Promise<TransactionHash[]> {
+    return await db.insert(transactionHashes).values(insertTransactionHashes).returning();
   }
 
   async deleteCategory(id: number): Promise<void> {
