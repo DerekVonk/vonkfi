@@ -432,8 +432,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
       
-      // Update goal account balances first to ensure linked goals have current amounts
-      await storage.updateGoalAccountBalances(userId);
+      // Skip automatic balance recalculation to preserve authentic CAMT balance data
+      // Only update goal current amounts based on existing account balances (don't recalculate account balances)
+      const userGoals = await storage.getGoalsByUserId(userId);
+      const userAccounts = await storage.getAccountsByUserId(userId);
+      
+      for (const goal of userGoals) {
+        if (goal.linkedAccountId) {
+          const linkedAccount = userAccounts.find(acc => acc.id === goal.linkedAccountId);
+          if (linkedAccount) {
+            await storage.updateGoal(goal.id, { currentAmount: linkedAccount.balance });
+          }
+        }
+      }
       
       // Fetch fresh data and recalculate
       const [accounts, transactions, goals] = await Promise.all([

@@ -56,30 +56,24 @@ export class CamtParser {
       );
       if (closingBalanceInfo) {
         let amount: number;
-        console.log('CAMT Debug - Closing balance info:', JSON.stringify(closingBalanceInfo, null, 2));
         
         // Handle CAMT balance amount format (with Ccy attribute)
         if (typeof closingBalanceInfo.Amt[0] === 'object') {
           if (closingBalanceInfo.Amt[0]._) {
             // Format: { _: "000000000000561.54", $: { Ccy: "EUR" } }
             amount = parseFloat(closingBalanceInfo.Amt[0]._);
-            console.log('CAMT Debug - Parsed amount from _:', amount);
           } else if (closingBalanceInfo.Amt[0].$) {
             // Direct object with currency attribute
             amount = parseFloat(closingBalanceInfo.Amt[0]);
-            console.log('CAMT Debug - Parsed amount from direct object:', amount);
           } else {
             amount = parseFloat(String(closingBalanceInfo.Amt[0]));
-            console.log('CAMT Debug - Parsed amount from string conversion:', amount);
           }
         } else {
           // Direct string format: "000000000000561.54"
           amount = parseFloat(closingBalanceInfo.Amt[0]);
-          console.log('CAMT Debug - Parsed amount from direct string:', amount);
         }
         const indicator = closingBalanceInfo.CdtDbtInd[0];
         closingBalance = indicator === 'DBIT' ? -amount : amount;
-        console.log('CAMT Debug - Final closing balance:', closingBalance);
       }
 
       const account: Omit<InsertAccount, 'userId'> = {
