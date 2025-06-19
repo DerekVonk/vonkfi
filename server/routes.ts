@@ -205,6 +205,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create import batch
+  app.post("/api/import/batches", async (req, res) => {
+    try {
+      const batch = await storage.createImportBatch(req.body);
+      res.json(batch);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create import batch" });
+    }
+  });
+
+  // Get import batches for user
+  app.get("/api/import/batches/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const batches = await storage.getImportBatchesByUserId(userId);
+      res.json(batches);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch import batches" });
+    }
+  });
+
+  // Get files within a batch (drill-down)
+  app.get("/api/import/batches/:batchId/files", async (req, res) => {
+    try {
+      const batchId = parseInt(req.params.batchId);
+      const files = await storage.getImportHistoryByBatchId(batchId);
+      res.json(files);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch batch files" });
+    }
+  });
+
+  // Update import batch
+  app.patch("/api/import/batches/:batchId", async (req, res) => {
+    try {
+      const batchId = parseInt(req.params.batchId);
+      const batch = await storage.updateImportBatch(batchId, req.body);
+      res.json(batch);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update import batch" });
+    }
+  });
+
   // Get accounts for user
   app.get("/api/accounts/:userId", async (req, res) => {
     try {

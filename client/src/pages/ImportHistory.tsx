@@ -7,14 +7,27 @@ import { formatDistanceToNow } from "date-fns";
 interface ImportRecord {
   id: number;
   userId: number;
+  batchId?: number;
   fileName: string;
   fileSize?: number;
   statementId?: string;
   importDate: string;
   accountsFound: number;
   transactionsImported: number;
+  duplicatesSkipped?: number;
   status: "processing" | "completed" | "failed";
   errorMessage?: string;
+}
+
+interface ImportBatch {
+  id: number;
+  userId: number;
+  batchDate: string;
+  totalFiles: number;
+  totalTransactions: number;
+  accountsAffected: string[];
+  status: string;
+  notes?: string;
 }
 
 function formatFileSize(bytes?: number): string {
