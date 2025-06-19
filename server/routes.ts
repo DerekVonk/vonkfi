@@ -545,20 +545,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No main account found" });
       }
 
-      // Buffer transfer
+      // Buffer transfer - Create buffer recommendation even if no specific emergency account exists
       if (allocation.bufferAllocation > 0) {
+        console.log(`Buffer allocation: ${allocation.bufferAllocation}, looking for buffer account...`);
+        console.log(`Available accounts:`, accounts.map(a => ({ id: a.id, role: a.role, name: a.customName })));
+        console.log(`Available goals:`, goals.map(g => ({ id: g.id, name: g.name, linkedAccountId: g.linkedAccountId })));
+        
+        // Look for emergency account or goal, or suggest creating one
         const bufferAccount = accounts.find(a => a.role === 'emergency') || 
+                             accounts.find(a => a.role === 'savings') ||
+                             accounts.find(a => a.role === 'goal-specific') ||
                              goals.find(g => g.name.toLowerCase().includes('emergency'))?.linkedAccountId;
         
+        console.log(`Found buffer account:`, bufferAccount);
+        
         if (bufferAccount) {
+          const targetAccountId = typeof bufferAccount === 'number' ? bufferAccount : bufferAccount.id;
+          console.log(`Creating transfer recommendation from ${mainAccount.id} to ${targetAccountId}`);
           const rec = await storage.createTransferRecommendation({
             userId,
             fromAccountId: mainAccount.id,
-            toAccountId: typeof bufferAccount === 'number' ? bufferAccount : bufferAccount.id,
+            toAccountId: targetAccountId,
             amount: allocation.bufferAllocation.toString(),
-            purpose: "Emergency buffer maintenance",
+            purpose: "Emergency buffer maintenance - transfer to savings account",
           });
           recommendations.push(rec);
+          console.log(`Buffer transfer recommendation created:`, rec);
+        } else {
+          // Create a recommendation to establish emergency fund
+          console.log(`No buffer account found, creating establishment recommendation`);
+          const rec = await storage.createTransferRecommendation({
+            userId,
+            fromAccountId: mainAccount.id,
+            toAccountId: mainAccount.id, // Self-transfer note
+            amount: allocation.bufferAllocation.toString(),
+            purpose: `Create emergency fund: Set aside €${allocation.bufferAllocation.toFixed(2)} for emergency buffer`,
+          });
+          recommendations.push(rec);
+          console.log(`Buffer establishment recommendation created:`, rec);
         }
       }
 
