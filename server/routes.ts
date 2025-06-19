@@ -523,11 +523,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
       
-      // Clear existing pending recommendations to prevent duplicates
+      // Clear ALL existing recommendations to prevent duplicates
       const existingRecommendations = await storage.getTransferRecommendationsByUserId(userId);
-      const pendingRecommendations = existingRecommendations.filter(r => r.status === 'pending');
-      
-      for (const rec of pendingRecommendations) {
+      for (const rec of existingRecommendations) {
         await storage.updateTransferRecommendationStatus(rec.id, 'replaced');
       }
       
