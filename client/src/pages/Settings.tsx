@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +13,7 @@ import { z } from "zod";
 import { Settings as SettingsIcon, Shield, Target, TrendingUp, Plus, Edit2, Trash2, Database, FileText, Calculator } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import type { Account, Goal } from "@/types";
 import type { TransferPreference } from "@shared/schema";
 
@@ -34,6 +35,7 @@ export default function Settings() {
   const [deletingPreference, setDeletingPreference] = useState<TransferPreference | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const userId = 1;
 
   const { data: preferences, isLoading: preferencesLoading } = useQuery<TransferPreference[]>({
@@ -301,11 +303,24 @@ export default function Settings() {
                 Manage your financial data imports and exports
               </p>
               <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setLocation('/import-history')}
+                >
                   <FileText size={16} className="mr-2" />
                   View Import History
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    toast({
+                      title: "Export Feature",
+                      description: "Data export functionality will be available soon",
+                    });
+                  }}
+                >
                   <Database size={16} className="mr-2" />
                   Export All Data
                 </Button>
@@ -323,11 +338,19 @@ export default function Settings() {
                 Configure your budgeting preferences and defaults
               </p>
               <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setLocation('/categories')}
+                >
                   <Calculator size={16} className="mr-2" />
                   Budget Categories
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setLocation('/budget')}
+                >
                   <Target size={16} className="mr-2" />
                   Default Allocations
                 </Button>
@@ -342,6 +365,9 @@ export default function Settings() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Create Transfer Preference</DialogTitle>
+            <DialogDescription>
+              Set up a new transfer preference to control where your budget allocations are directed.
+            </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit((data) => createPreferenceMutation.mutate(data))} className="space-y-4">
@@ -443,6 +469,9 @@ export default function Settings() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Transfer Preference</DialogTitle>
+            <DialogDescription>
+              Modify the settings for this transfer preference rule.
+            </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit((data) => {
