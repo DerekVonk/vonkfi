@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Flame, TrendingUp, Upload, University, Tags, Calculator, ArrowLeftRight, Target, Bitcoin, User, Menu, X, FileText } from "lucide-react";
+import { Flame, TrendingUp, Upload, University, Tags, Calculator, ArrowLeftRight, Target, Bitcoin, User, Menu, X, FileText, Settings } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,7 @@ const navigation = [
   { name: "Categories", href: "/categories", icon: Tags },
   { name: "Zero Based Budget", href: "/budget", icon: Calculator },
   { name: "Transfer Instructions", href: "/transfers", icon: ArrowLeftRight },
+  { name: "Transfer Settings", href: "/transfer-preferences", icon: Settings },
   { name: "Goals", href: "/goals", icon: Target },
   { name: "Crypto Portfolio", href: "/crypto", icon: Bitcoin },
 ];
