@@ -104,6 +104,14 @@ export default function ImportHistory() {
     );
   }
 
+  const importStats = imports ? {
+    totalImports: imports.length,
+    totalTransactions: imports.reduce((sum, imp) => sum + (imp.transactionsImported || 0), 0),
+    totalDuplicates: imports.reduce((sum, imp) => sum + (imp.duplicatesSkipped || 0), 0),
+    successfulImports: imports.filter(imp => imp.status === 'completed').length,
+    failedImports: imports.filter(imp => imp.status === 'failed').length
+  } : null;
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -115,6 +123,42 @@ export default function ImportHistory() {
           {imports?.length || 0} import{(imports?.length || 0) !== 1 ? 's' : ''} total
         </div>
       </div>
+
+      {/* Import Statistics Summary */}
+      {importStats && importStats.totalImports > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{importStats.totalImports}</div>
+              <div className="text-sm text-gray-500">Total Imports</div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{importStats.totalTransactions}</div>
+              <div className="text-sm text-gray-500">Transactions Imported</div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">{importStats.totalDuplicates}</div>
+              <div className="text-sm text-gray-500">Duplicates Detected</div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{importStats.successfulImports}</div>
+              <div className="text-sm text-gray-500">Successful</div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{importStats.failedImports}</div>
+              <div className="text-sm text-gray-500">Failed</div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {!imports || imports.length === 0 ? (
         <Card>
@@ -146,7 +190,7 @@ export default function ImportHistory() {
               </CardHeader>
               
               <CardContent className="pt-0">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wide">File Size</p>
                     <p className="font-medium">{formatFileSize(importRecord.fileSize)}</p>
@@ -157,7 +201,11 @@ export default function ImportHistory() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Transactions</p>
-                    <p className="font-medium">{importRecord.transactionsImported}</p>
+                    <p className="font-medium text-green-600">{importRecord.transactionsImported}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Duplicates Skipped</p>
+                    <p className="font-medium text-orange-600">{importRecord.duplicatesSkipped || 0}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Statement ID</p>

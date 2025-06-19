@@ -19,13 +19,23 @@ export default function Import() {
 
   const clearDataMutation = useMutation({
     mutationFn: () => api.clearUserData(DEMO_USER_ID),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Force invalidate all relevant queries and trigger refetch
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      await queryClient.invalidateQueries({ queryKey: ['goals'] });
+      await queryClient.invalidateQueries({ queryKey: ['transfers'] });
+      await queryClient.invalidateQueries({ queryKey: ['imports'] });
+      
+      // Force refetch dashboard data
+      await queryClient.refetchQueries({ queryKey: ['dashboard'] });
+      
       toast({
         title: "Import Data Cleared",
         description: "Bank statement data cleared and dashboard recalculated. Your configurations are preserved.",
         duration: 5000,
       });
-      queryClient.invalidateQueries();
       setShowClearDataDialog(false);
     },
     onError: (error: any) => {
@@ -39,13 +49,22 @@ export default function Import() {
 
   const recalculateMutation = useMutation({
     mutationFn: () => api.recalculateDashboard(DEMO_USER_ID),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Force invalidate and refetch all relevant queries
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      await queryClient.invalidateQueries({ queryKey: ['goals'] });
+      await queryClient.invalidateQueries({ queryKey: ['transfers'] });
+      
+      // Force refetch dashboard data
+      await queryClient.refetchQueries({ queryKey: ['dashboard'] });
+      
       toast({
         title: "Dashboard Recalculated",
         description: "All financial calculations have been refreshed",
         duration: 5000,
       });
-      queryClient.invalidateQueries();
     },
     onError: (error: any) => {
       toast({

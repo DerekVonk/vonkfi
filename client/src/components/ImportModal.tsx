@@ -43,11 +43,20 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
       const successCount = results.filter(r => r.success).length;
       const errorCount = results.filter(r => !r.success).length;
       
+      // Calculate duplicate statistics from results
+      const totalDuplicates = results
+        .filter(r => r.success)
+        .reduce((sum, r) => sum + (r.data?.duplicatesSkipped || 0), 0);
+      const totalTransactions = results
+        .filter(r => r.success)
+        .reduce((sum, r) => sum + (r.data?.newTransactions?.length || 0), 0);
+      
       if (successCount > 0) {
+        const duplicateText = totalDuplicates > 0 ? ` (${totalDuplicates} duplicates detected and skipped)` : '';
         toast({
           title: "Import Completed",
-          description: `Successfully processed ${successCount} files${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
-          duration: 5000,
+          description: `Successfully imported ${totalTransactions} transactions from ${successCount} files${duplicateText}${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+          duration: 8000,
         });
         
         // Trigger automatic recalculation and transfer generation
@@ -64,11 +73,16 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
           console.log("Post-import calculations completed");
         });
         
-        // Invalidate relevant queries
-        queryClient.invalidateQueries({ queryKey: [api.getDashboard(userId)] });
-        queryClient.invalidateQueries({ queryKey: [api.getAccounts(userId)] });
-        queryClient.invalidateQueries({ queryKey: [api.getTransactions(userId)] });
-        queryClient.invalidateQueries({ queryKey: [api.getTransfers(userId)] });
+        // Force invalidate and refetch all relevant queries
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        queryClient.invalidateQueries({ queryKey: ['accounts'] });
+        queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        queryClient.invalidateQueries({ queryKey: ['transfers'] });
+        queryClient.invalidateQueries({ queryKey: ['imports'] });
+        queryClient.invalidateQueries({ queryKey: ['goals'] });
+        
+        // Force refetch critical data
+        queryClient.refetchQueries({ queryKey: ['dashboard'] });
       }
       
       if (errorCount === results.length) {
