@@ -510,6 +510,31 @@ export class DatabaseStorage implements IStorage {
   async deleteCategory(id: number): Promise<void> {
     await db.delete(categories).where(eq(categories.id, id));
   }
+
+  // Transfer Preferences
+  async getTransferPreferencesByUserId(userId: number): Promise<TransferPreference[]> {
+    return await db.select()
+      .from(transferPreferences)
+      .where(eq(transferPreferences.userId, userId))
+      .orderBy(transferPreferences.preferenceType, transferPreferences.priority);
+  }
+
+  async createTransferPreference(insertTransferPreference: InsertTransferPreference): Promise<TransferPreference> {
+    const [result] = await db.insert(transferPreferences).values(insertTransferPreference).returning();
+    return result;
+  }
+
+  async updateTransferPreference(id: number, updates: Partial<TransferPreference>): Promise<TransferPreference> {
+    const [result] = await db.update(transferPreferences)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(transferPreferences.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteTransferPreference(id: number): Promise<void> {
+    await db.delete(transferPreferences).where(eq(transferPreferences.id, id));
+  }
 }
 
 export const storage = new DatabaseStorage();

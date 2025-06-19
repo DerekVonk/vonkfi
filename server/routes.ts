@@ -523,10 +523,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
       
-      const [accounts, transactions, goals] = await Promise.all([
+      const [accounts, transactions, goals, transferPreferences] = await Promise.all([
         storage.getAccountsByUserId(userId),
         storage.getTransactionsByUserId(userId),
-        storage.getGoalsByUserId(userId)
+        storage.getGoalsByUserId(userId),
+        storage.getTransferPreferencesByUserId(userId)
       ]);
 
       const fireMetrics = fireCalculator.calculateMetrics(transactions, goals, accounts);
@@ -537,6 +538,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         goals
       );
 
+      // Initialize destination service
+      const { TransferDestinationService } = await import('./services/transferDestinationService.js');
+      const destinationService = new TransferDestinationService();
+
       // Generate transfer recommendations based on allocation
       const recommendations = [];
       const mainAccount = accounts.find(a => a.role === 'income') || accounts[0];
@@ -545,22 +550,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No main account found" });
       }
 
-      // Buffer transfer - Create buffer recommendation even if no specific emergency account exists
+      // Buffer transfer using configurable destination service
       if (allocation.bufferAllocation > 0) {
-        // Look for suitable buffer account: emergency, savings, or goal-specific accounts
-        const bufferAccount = accounts.find(a => a.role === 'emergency') || 
-                             accounts.find(a => a.role === 'savings') ||
-                             accounts.find(a => a.role === 'goal-specific') ||
-                             goals.find(g => g.name.toLowerCase().includes('emergency'))?.linkedAccountId;
+        const destination = destinationService.resolveDestination(
+          'buffer',
+          accounts,
+          goals,
+          transferPreferences
+        );
         
-        if (bufferAccount) {
-          const targetAccountId = typeof bufferAccount === 'number' ? bufferAccount : bufferAccount.id;
+        if (destination) {
           const rec = await storage.createTransferRecommendation({
             userId,
             fromAccountId: mainAccount.id,
-            toAccountId: targetAccountId,
+            toAccountId: destination.accountId,
             amount: allocation.bufferAllocation.toString(),
-            purpose: "Emergency buffer maintenance - transfer to savings account",
+            purpose: destination.purpose,
           });
           recommendations.push(rec);
         } else {
@@ -576,17 +581,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Goal transfers
+      // Goal transfers using configurable destination service
       for (const goalAllocation of allocation.goalAllocations) {
-        const goal = goals.find(g => g.id === goalAllocation.goalId);
-        if (goal && goal.linkedAccountId) {
+        const destination = destinationService.resolveDestination(
+          'goal',
+          accounts,
+          goals,
+          transferPreferences,
+          goalAllocation.goalId
+        );
+        
+        if (destination) {
           const rec = await storage.createTransferRecommendation({
             userId,
             fromAccountId: mainAccount.id,
-            toAccountId: goal.linkedAccountId,
+            toAccountId: destination.accountId,
             amount: goalAllocation.amount.toString(),
-            purpose: `Transfer to ${goal.name}`,
-            goalId: goal.id,
+            purpose: destination.purpose,
+            goalId: goalAllocation.goalId,
           });
           recommendations.push(rec);
         }
@@ -615,6 +627,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updated);
     } catch (error) {
       res.status(500).json({ error: "Failed to update transfer recommendation" });
+    }
+  });
+
+  // Transfer Preferences API Routes
+  app.get("/api/transfer-preferences/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const preferences = await storage.getTransferPreferencesByUserId(userId);
+      res.json(preferences);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch transfer preferences" });
+    }
+  });
+
+  app.post("/api/transfer-preferences", async (req, res) => {
+    try {
+      const preferenceData = req.body;
+      const preference = await storage.createTransferPreference(preferenceData);
+      res.json(preference);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create transfer preference" });
+    }
+  });
+
+  app.patch("/api/transfer-preferences/:preferenceId", async (req, res) => {
+    try {
+      const preferenceId = parseInt(req.params.preferenceId);
+      const updates = req.body;
+      
+      const updated = await storage.updateTransferPreference(preferenceId, updates);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update transfer preference" });
+    }
+  });
+
+  app.delete("/api/transfer-preferences/:preferenceId", async (req, res) => {
+    try {
+      const preferenceId = parseInt(req.params.preferenceId);
+      await storage.deleteTransferPreference(preferenceId);
+      res.json({ message: "Transfer preference deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete transfer preference" });
+    }
+  });
+
+  // Initialize default transfer preferences for a user
+  app.post("/api/transfer-preferences/initialize/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      // Check if user already has preferences
+      const existingPreferences = await storage.getTransferPreferencesByUserId(userId);
+      if (existingPreferences.length > 0) {
+        return res.json({ message: "User already has transfer preferences", preferences: existingPreferences });
+      }
+
+      // Create default preferences
+      const { TransferDestinationService } = await import('./services/transferDestinationService.js');
+      const destinationService = new TransferDestinationService();
+      const defaultPreferences = destinationService.createDefaultPreferences(userId);
+      
+      const createdPreferences = [];
+      for (const pref of defaultPreferences) {
+        const created = await storage.createTransferPreference(pref);
+        createdPreferences.push(created);
+      }
+      
+      res.json({ message: "Default transfer preferences created", preferences: createdPreferences });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to initialize transfer preferences" });
     }
   });
 
