@@ -1,0 +1,293 @@
+CAMT.053 Import Instructions and Tag Reference
+Overview
+CAMT.053 (Cash Management - Bank to Customer Statement) is an ISO 20022 XML standard for bank account statements. This guide explains each tag and provides implementation instructions for the import functionality.
+XML Structure Breakdown
+1. Document Root
+xml<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+
+Purpose: Root element defining the CAMT.053 version
+Import Action: Validate this is a supported CAMT.053 format
+
+2. Statement Container
+xml<BkToCstmrStmt> <!-- Bank to Customer Statement -->
+
+Purpose: Contains all statement data
+Import Action: Main parsing container
+
+3. Group Header (GrpHdr)
+xml<GrpHdr>
+  <MsgId>0533492424.2025-01-31</MsgId>         <!-- Message ID -->
+  <CreDtTm>2025-06-17T21:59:23.72+02:00</CreDtTm> <!-- Creation DateTime -->
+  <MsgPgntn>                                    <!-- Message Pagination -->
+    <PgNb>1</PgNb>                             <!-- Page Number -->
+    <LastPgInd>true</LastPgInd>               <!-- Last Page Indicator -->
+  </MsgPgntn>
+</GrpHdr>
+
+Import Actions:
+
+Store MsgId as unique statement identifier
+Parse CreDtTm for statement generation timestamp
+Check pagination for multi-page statements
+
+
+
+4. Statement Details (Stmt)
+xml<Stmt>
+  <Id>0533492424.2025-01-31</Id>              <!-- Statement ID -->
+  <ElctrncSeqNb>000000000000000115</ElctrncSeqNb> <!-- Electronic Sequence Number -->
+  <CreDtTm>2025-06-17T21:59:23.72+02:00</CreDtTm> <!-- Creation DateTime -->
+
+Import Actions:
+
+Use as primary key for statement
+Track sequence numbers for completeness checks
+
+
+
+5. Account Information (Acct)
+xml<Acct>
+  <Id>
+    <IBAN>NL64ABNA0533492424</IBAN>          <!-- Account IBAN -->
+  </Id>
+  <Ccy>EUR</Ccy>                             <!-- Currency -->
+  <Svcr>                                      <!-- Servicer (Bank) -->
+    <FinInstnId>
+      <BIC>ABNANL2A</BIC>                    <!-- Bank BIC code -->
+    </FinInstnId>
+  </Svcr>
+</Acct>
+
+Import Actions:
+
+Extract IBAN as primary account identifier
+Store currency for multi-currency support
+Extract BIC to identify bank (ABNANL2A = ABN AMRO)
+Create/update account record with this information
+
+
+
+6. Balance Information (Bal)
+xml<Bal>
+  <Tp>                                        <!-- Balance Type -->
+    <CdOrPrtry>
+      <Cd>PRCD</Cd>                          <!-- Code: PRCD = Previous Closing Balance -->
+    </CdOrPrtry>
+  </Tp>
+  <Amt Ccy="EUR">000000000001625.95</Amt>   <!-- Amount (note: divided by 100) -->
+  <CdtDbtInd>CRDT</CdtDbtInd>               <!-- Credit/Debit: CRDT = Credit balance -->
+  <Dt>
+    <Dt>2025-01-30</Dt>                      <!-- Balance Date -->
+  </Dt>
+</Bal>
+
+Balance Types:
+
+PRCD: Previous closing balance (opening balance)
+CLBD: Closing balance (ending balance)
+
+
+Import Actions:
+
+Parse amount (divide by 100: 000000000001625.95 = €1625.95)
+Apply sign based on CdtDbtInd (CRDT = positive, DBIT = negative)
+Update account balance history
+
+
+
+7. Transaction Entry (Ntry)
+xml<Ntry>
+  <Amt Ccy="EUR">000000000000026.00</Amt>   <!-- Transaction Amount -->
+  <CdtDbtInd>DBIT</CdtDbtInd>               <!-- DBIT = Debit (outgoing) -->
+  <Sts>BOOK</Sts>                            <!-- Status: BOOK = Booked -->
+  <BookgDt><Dt>2025-01-31</Dt></BookgDt>    <!-- Booking Date -->
+  <ValDt><Dt>2025-01-31</Dt></ValDt>        <!-- Value Date -->
+  <AcctSvcrRef>5031A1026008371S0PS</AcctSvcrRef> <!-- Bank Reference -->
+
+Import Actions:
+
+Parse amount and apply sign (DBIT = negative, CRDT = positive)
+Use BookgDt as transaction date
+Store AcctSvcrRef as unique transaction ID
+
+
+
+8. Bank Transaction Code (BkTxCd)
+xml<BkTxCd>
+  <Domn>
+    <Cd>PMNT</Cd>                           <!-- Domain: PMNT = Payment -->
+    <Fmly>
+      <Cd>ICDT</Cd>                          <!-- Family: ICDT = Issued Credit Transfer -->
+      <SubFmlyCd>STDO</SubFmlyCd>            <!-- SubFamily: STDO = Standing Order -->
+    </Fmly>
+  </Domn>
+</BkTxCd>
+
+Import Actions:
+
+Use for transaction categorization
+Common codes: PMNT (Payment), CADT (Cash Deposit), CWDL (Cash Withdrawal)
+
+
+
+9. Transaction Details (TxDtls)
+xml<TxDtls>
+  <RltdPties>                                <!-- Related Parties -->
+    <Cdtr>                                   <!-- Creditor (Recipient) -->
+      <Nm>Belastingdienst</Nm>             <!-- Name -->
+    </Cdtr>
+    <CdtrAcct>                              <!-- Creditor Account -->
+      <Id>
+        <IBAN>NL86INGB0002445588</IBAN>
+      </Id>
+    </CdtrAcct>
+  </RltdPties>
+  <RmtInf>                                   <!-- Remittance Information -->
+    <Strd>                                   <!-- Structured -->
+      <CdtrRefInf>
+        <Ref>1146528042626049</Ref>         <!-- Payment Reference -->
+      </CdtrRefInf>
+    </Strd>
+  </RmtInf>
+</TxDtls>
+
+Import Actions:
+
+Extract counterparty name for merchant identification
+Store counterparty IBAN for account discovery
+Parse payment reference for matching recurring payments
+
+
+
+Implementation Instructions
+1. Account Discovery Algorithm
+javascriptfunction discoverAccounts(camtDoc) {
+  const accounts = new Map();
+  
+  // Primary account from statement
+  const primaryAccount = {
+    iban: extractText(camtDoc, 'Stmt > Acct > Id > IBAN'),
+    bic: extractText(camtDoc, 'Stmt > Acct > Svcr > FinInstnId > BIC'),
+    currency: extractText(camtDoc, 'Stmt > Acct > Ccy'),
+    type: 'primary',
+    lastSeen: new Date()
+  };
+  accounts.set(primaryAccount.iban, primaryAccount);
+  
+  // Discover from transactions
+  camtDoc.querySelectorAll('Ntry').forEach(entry => {
+    // Check creditor accounts (money sent to)
+    const creditorIBAN = extractText(entry, 'TxDtls > RltdPties > CdtrAcct > Id > IBAN');
+    const creditorName = extractText(entry, 'TxDtls > RltdPties > Cdtr > Nm');
+    
+    if (creditorIBAN && !accounts.has(creditorIBAN)) {
+      accounts.set(creditorIBAN, {
+        iban: creditorIBAN,
+        holderName: creditorName,
+        type: 'external',
+        firstSeen: new Date()
+      });
+    }
+    
+    // Check debtor accounts (money received from)
+    const debtorIBAN = extractText(entry, 'TxDtls > RltdPties > DbtrAcct > Id > IBAN');
+    const debtorName = extractText(entry, 'TxDtls > RltdPties > Dbtr > Nm');
+    
+    if (debtorIBAN && !accounts.has(debtorIBAN)) {
+      accounts.set(debtorIBAN, {
+        iban: debtorIBAN,
+        holderName: debtorName,
+        type: 'external',
+        firstSeen: new Date()
+      });
+    }
+  });
+  
+  return accounts;
+}
+2. Transaction Import Algorithm
+javascriptfunction importTransactions(camtDoc) {
+  const transactions = [];
+  const accountIBAN = extractText(camtDoc, 'Stmt > Acct > Id > IBAN');
+  
+  camtDoc.querySelectorAll('Ntry').forEach(entry => {
+    const amount = parseAmount(extractText(entry, 'Amt'));
+    const cdtDbtInd = extractText(entry, 'CdtDbtInd');
+    
+    const transaction = {
+      accountIBAN: accountIBAN,
+      amount: cdtDbtInd === 'DBIT' ? -amount : amount,
+      bookingDate: extractText(entry, 'BookgDt > Dt'),
+      valueDate: extractText(entry, 'ValDt > Dt'),
+      reference: extractText(entry, 'AcctSvcrRef'),
+      
+      // Extract counterparty based on transaction direction
+      counterparty: cdtDbtInd === 'DBIT' 
+        ? extractText(entry, 'TxDtls > RltdPties > Cdtr > Nm')
+        : extractText(entry, 'TxDtls > RltdPties > Dbtr > Nm'),
+      
+      counterpartyIBAN: cdtDbtInd === 'DBIT'
+        ? extractText(entry, 'TxDtls > RltdPties > CdtrAcct > Id > IBAN')
+        : extractText(entry, 'TxDtls > RltdPties > DbtrAcct > Id > IBAN'),
+      
+      // Transaction type from bank codes
+      bankTransactionCode: {
+        domain: extractText(entry, 'BkTxCd > Domn > Cd'),
+        family: extractText(entry, 'BkTxCd > Domn > Fmly > Cd'),
+        subFamily: extractText(entry, 'BkTxCd > Domn > Fmly > SubFmlyCd')
+      },
+      
+      // Payment reference
+      paymentReference: extractText(entry, 'TxDtls > RmtInf > Strd > CdtrRefInf > Ref'),
+      
+      // Additional info
+      additionalInfo: extractText(entry, 'AddtlNtryInf')
+    };
+    
+    transactions.push(transaction);
+  });
+  
+  return transactions;
+}
+3. Balance Reconciliation
+javascriptfunction reconcileBalances(camtDoc) {
+  const balances = [];
+  
+  camtDoc.querySelectorAll('Bal').forEach(bal => {
+    const type = extractText(bal, 'Tp > CdOrPrtry > Cd');
+    const amount = parseAmount(extractText(bal, 'Amt'));
+    const cdtDbtInd = extractText(bal, 'CdtDbtInd');
+    const date = extractText(bal, 'Dt > Dt');
+    
+    balances.push({
+      type: type, // PRCD or CLBD
+      amount: cdtDbtInd === 'DBIT' ? -amount : amount,
+      date: date
+    });
+  });
+  
+  return balances;
+}
+4. Amount Parsing
+javascriptfunction parseAmount(amountStr) {
+  // CAMT amounts are stored without decimal separator
+  // 000000000001625.95 means 1625.95
+  return parseFloat(amountStr);
+}
+Key Implementation Notes
+
+Account Discovery: Scan both the main account and all counterparty accounts in transactions
+Amount Handling: Amounts are already in decimal format (unlike some formats that store cents)
+Sign Convention: Use CdtDbtInd to determine positive/negative (CRDT = positive, DBIT = negative)
+Date Handling: Use BookgDt for transaction date, ValDt for interest calculation
+Unique IDs: Use AcctSvcrRef as unique transaction identifier to prevent duplicates
+Multi-Statement: Check GrpHdr > MsgPgntn to handle multi-page statements
+Character Encoding: Ensure UTF-8 support for international characters in names
+
+Error Handling
+
+Validate XML schema before parsing
+Handle missing optional fields gracefully
+Check balance consistency (opening + transactions = closing)
+Alert on duplicate AcctSvcrRef (duplicate import prevention)
+Validate IBANs using modulo-97 algorithm
