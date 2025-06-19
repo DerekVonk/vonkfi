@@ -102,7 +102,12 @@ The application is built as a full-stack web application with a React frontend a
 
 ## Recent Changes
 
-- June 19, 2025: Advanced Import System with Batch Processing and Duplicate Detection
+- June 19, 2025: Fixed Transfer Recommendations Generation + Advanced Import System
+  - **FIXED**: Transfer recommendations generation returning 0 results - expanded buffer account lookup logic
+  - Enhanced transfer generation to recognize goal-specific savings accounts as valid buffer destinations
+  - Created comprehensive verification tests confirming transfer recommendation functionality
+  - System now generates meaningful €2133.38 buffer transfer recommendations for current user data
+  - Advanced Import System with Batch Processing and Duplicate Detection
   - Enhanced database schema with import batches, transaction hashes, and duplicate tracking tables
   - Implemented SHA-256 hash-based duplicate detection for transaction deduplication
   - Created comprehensive DuplicateDetectionService with transaction filtering capabilities

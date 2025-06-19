@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
-import { app } from '../server/index.js';
 import { storage } from '../server/storage.js';
+import express from 'express';
+import { registerRoutes } from '../server/routes.js';
 
 describe('Transfer Recommendations Generation', () => {
   const testUserId = 1;
