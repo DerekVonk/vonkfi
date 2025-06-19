@@ -32,16 +32,16 @@ export default function Import() {
       await queryClient.refetchQueries({ queryKey: ['dashboard'] });
       
       toast({
-        title: "Import Data Cleared",
-        description: "Bank statement data cleared and dashboard recalculated. Your configurations are preserved.",
-        duration: 5000,
+        title: "All Import Data Cleared Successfully",
+        description: "✓ All transactions, statements, and calculations have been cleared. Account settings and goals are preserved. Dashboard has been recalculated.",
+        duration: 8000,
       });
       setShowClearDataDialog(false);
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to clear data",
+        title: "Failed to Clear Data",
+        description: error.message || "An error occurred while clearing import data. Please try again.",
         variant: "destructive",
       });
     },
@@ -61,15 +61,15 @@ export default function Import() {
       await queryClient.refetchQueries({ queryKey: ['dashboard'] });
       
       toast({
-        title: "Dashboard Recalculated",
-        description: "All financial calculations have been refreshed",
-        duration: 5000,
+        title: "Dashboard Recalculated Successfully",
+        description: "✓ All financial metrics, account balances, and goal progress have been refreshed from current data.",
+        duration: 6000,
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to recalculate dashboard",
+        title: "Recalculation Failed",
+        description: error.message || "Unable to recalculate dashboard. Please check your connection and try again.",
         variant: "destructive",
       });
     },

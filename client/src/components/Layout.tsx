@@ -26,6 +26,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const isActive = (href: string) => {
     if (href === "/") return location === "/";
+    if (href === "/import" && location === "/import-history") return false;
     return location.startsWith(href);
   };
 
