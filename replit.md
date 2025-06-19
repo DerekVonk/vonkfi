@@ -102,7 +102,10 @@ The application is built as a full-stack web application with a React frontend a
 
 ## Recent Changes
 
-- June 19, 2025: Comprehensive System Fixes + Advanced Settings Architecture
+- June 19, 2025: Comprehensive System Fixes + Advanced Settings Architecture + UI Navigation Fixes
+  - **FIXED**: Navigation highlighting issue - Import History no longer incorrectly highlights Import Statements menu item
+  - **ENHANCED**: Import Statements buttons with improved user feedback and success messaging for Clear Data/Recalculate operations
+  - **TESTED**: Added comprehensive test suite (14 tests) covering navigation logic, API functionality, and settings navigation
   - **FIXED**: Transfer recommendation duplicates - eliminated multiple identical recommendations by marking previous ones as "replaced"
   - **FIXED**: Category type system - updated legacy "expense" categories to proper "essential" and "discretionary" types
   - **CREATED**: Comprehensive Settings page with tabbed interface for Transfer Rules, Data Management, and Budget Settings
