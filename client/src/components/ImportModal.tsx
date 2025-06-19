@@ -46,10 +46,10 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
       // Calculate duplicate statistics from results
       const totalDuplicates = results
         .filter(r => r.success)
-        .reduce((sum, r) => sum + (r.data?.duplicatesSkipped || 0), 0);
+        .reduce((sum, r) => sum + ((r.data as any)?.duplicatesSkipped || 0), 0);
       const totalTransactions = results
         .filter(r => r.success)
-        .reduce((sum, r) => sum + (r.data?.newTransactions?.length || 0), 0);
+        .reduce((sum, r) => sum + ((r.data as any)?.newTransactions?.length || 0), 0);
       
       if (successCount > 0) {
         const duplicateText = totalDuplicates > 0 ? ` (${totalDuplicates} duplicates detected and skipped)` : '';

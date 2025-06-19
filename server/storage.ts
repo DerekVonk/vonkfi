@@ -206,10 +206,28 @@ export class DatabaseStorage implements IStorage {
     const userAccounts = await this.getAccountsByUserId(userId);
     const accountIds = userAccounts.map(acc => acc.id);
     
+    // Get all user transactions first to delete related hashes
+    let userTransactionIds: number[] = [];
+    if (accountIds.length > 0) {
+      const userTransactions = await db.select({ id: transactions.id })
+        .from(transactions)
+        .where(inArray(transactions.accountId, accountIds));
+      userTransactionIds = userTransactions.map(t => t.id);
+    }
+    
+    // Delete transaction hashes for user's transactions
+    if (userTransactionIds.length > 0) {
+      await db.delete(transactionHashes).where(inArray(transactionHashes.transactionId, userTransactionIds));
+    }
+    
     // Delete transactions (imported bank statement data)
     if (accountIds.length > 0) {
       await db.delete(transactions).where(inArray(transactions.accountId, accountIds));
     }
+    
+    // Delete import history and batches
+    await db.delete(importHistory).where(eq(importHistory.userId, userId));
+    await db.delete(importBatches).where(eq(importBatches.userId, userId));
     
     // Delete calculated allocations
     await db.delete(allocations).where(eq(allocations.userId, userId));
