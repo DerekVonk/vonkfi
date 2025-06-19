@@ -38,8 +38,13 @@ export class CamtParser {
         bal.Tp?.[0]?.CdOrPrtry?.[0]?.Cd?.[0] === 'PRCD'
       );
       if (openingBalanceInfo) {
-        // CAMT amounts are in decimal format (e.g., "000000000001625.95" = €1625.95)
-        const amount = parseFloat(openingBalanceInfo.Amt[0]);
+        // Handle CAMT balance amount parsing (similar to transaction amounts)
+        let amount: number;
+        if (typeof openingBalanceInfo.Amt[0] === 'object' && openingBalanceInfo.Amt[0]._) {
+          amount = parseFloat(openingBalanceInfo.Amt[0]._);
+        } else {
+          amount = parseFloat(openingBalanceInfo.Amt[0]);
+        }
         const indicator = openingBalanceInfo.CdtDbtInd[0];
         openingBalance = indicator === 'DBIT' ? -amount : amount;
       }
@@ -50,7 +55,22 @@ export class CamtParser {
         bal.Tp?.[0]?.CdOrPrtry?.[0]?.Cd?.[0] === 'CLAV'
       );
       if (closingBalanceInfo) {
-        const amount = parseFloat(closingBalanceInfo.Amt[0]);
+        let amount: number;
+        // Handle CAMT balance amount format (with Ccy attribute)
+        if (typeof closingBalanceInfo.Amt[0] === 'object') {
+          if (closingBalanceInfo.Amt[0]._) {
+            // Format: { _: "000000000000561.54", $: { Ccy: "EUR" } }
+            amount = parseFloat(closingBalanceInfo.Amt[0]._);
+          } else if (closingBalanceInfo.Amt[0].$) {
+            // Direct object with currency attribute
+            amount = parseFloat(closingBalanceInfo.Amt[0]);
+          } else {
+            amount = parseFloat(String(closingBalanceInfo.Amt[0]));
+          }
+        } else {
+          // Direct string format: "000000000000561.54"
+          amount = parseFloat(closingBalanceInfo.Amt[0]);
+        }
         const indicator = closingBalanceInfo.CdtDbtInd[0];
         closingBalance = indicator === 'DBIT' ? -amount : amount;
       }
@@ -73,8 +93,24 @@ export class CamtParser {
 
       for (const entry of entries) {
         // Parse transaction amount from <Ntry> elements (per CAMT.053 spec)
-        const amount = parseFloat(entry.Amt[0]);
-        const currency = entry.Amt[0].$.Ccy || 'EUR';
+        // Handle both object and direct value formats for CAMT amounts
+        let amount: number;
+        let currency: string;
+        
+        if (typeof entry.Amt[0] === 'object' && entry.Amt[0]._) {
+          // XML parser format: { _: "value", $: { Ccy: "EUR" } }
+          amount = parseFloat(entry.Amt[0]._);
+          currency = entry.Amt[0].$.Ccy || 'EUR';
+        } else if (typeof entry.Amt[0] === 'string') {
+          // Direct string format
+          amount = parseFloat(entry.Amt[0]);
+          currency = entry.Amt[0].$.Ccy || 'EUR';
+        } else {
+          // Fallback - extract from nested structure
+          amount = parseFloat(entry.Amt[0]);
+          currency = 'EUR';
+        }
+        
         const creditDebitIndicator = entry.CdtDbtInd[0];
         const finalAmount = creditDebitIndicator === 'DBIT' ? -amount : amount;
         
