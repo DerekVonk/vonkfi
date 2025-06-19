@@ -11,6 +11,7 @@ import Accounts from "@/pages/Accounts";
 import Categories from "@/pages/Categories";
 import Budget from "@/pages/Budget";
 import Transfers from "@/pages/Transfers";
+import TransferPreferences from "@/pages/TransferPreferences";
 import Goals from "@/pages/Goals";
 import Crypto from "@/pages/Crypto";
 import NotFound from "@/pages/not-found";
@@ -26,6 +27,7 @@ function Router() {
         <Route path="/categories" component={Categories} />
         <Route path="/budget" component={Budget} />
         <Route path="/transfers" component={Transfers} />
+        <Route path="/transfer-preferences" component={TransferPreferences} />
         <Route path="/goals" component={Goals} />
         <Route path="/crypto" component={Crypto} />
         <Route component={NotFound} />

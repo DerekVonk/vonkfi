@@ -13,15 +13,16 @@ import { z } from "zod";
 import { Settings, Plus, Target, Shield, TrendingUp, Edit2, Trash2, AlertCircle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { Account, Goal, TransferPreference } from "@/types";
+import type { Account, Goal } from "@/types";
+import type { TransferPreference } from "@shared/schema";
 
 const createPreferenceSchema = z.object({
   userId: z.number(),
-  allocationType: z.enum(["buffer", "goal", "investment"]),
+  preferenceType: z.enum(["buffer", "goal", "investment", "emergency"]),
   priority: z.number().min(1).max(10),
-  targetType: z.enum(["account_role", "specific_account", "goal_pattern"]),
-  targetValue: z.string().min(1, "Target value is required"),
-  description: z.string().optional(),
+  accountId: z.number().optional(),
+  accountRole: z.string().optional(),
+  goalPattern: z.string().optional(),
 });
 
 type CreatePreferenceForm = z.infer<typeof createPreferenceSchema>;
@@ -146,11 +147,9 @@ export default function TransferPreferences() {
     resolver: zodResolver(createPreferenceSchema),
     defaultValues: {
       userId,
-      allocationType: "buffer",
+      preferenceType: "buffer",
       priority: 1,
-      targetType: "account_role",
-      targetValue: "",
-      description: "",
+      accountRole: "",
     },
   });
 
@@ -158,11 +157,9 @@ export default function TransferPreferences() {
     resolver: zodResolver(createPreferenceSchema),
     defaultValues: {
       userId,
-      allocationType: "buffer",
+      preferenceType: "buffer",
       priority: 1,
-      targetType: "account_role",
-      targetValue: "",
-      description: "",
+      accountRole: "",
     },
   });
 
@@ -170,11 +167,11 @@ export default function TransferPreferences() {
     setEditingPreference(preference);
     editForm.reset({
       userId: preference.userId,
-      allocationType: preference.allocationType as "buffer" | "goal" | "investment",
+      preferenceType: preference.preferenceType as "buffer" | "goal" | "investment" | "emergency",
       priority: preference.priority,
-      targetType: preference.targetType as "account_role" | "specific_account" | "goal_pattern",
-      targetValue: preference.targetValue,
-      description: preference.description || "",
+      accountId: preference.accountId || undefined,
+      accountRole: preference.accountRole || "",
+      goalPattern: preference.goalPattern || "",
     });
   };
 
@@ -202,7 +199,7 @@ export default function TransferPreferences() {
         return `Role: ${preference.targetValue}`;
       case 'specific_account':
         const account = accounts?.find(a => a.id.toString() === preference.targetValue);
-        return account ? `Account: ${account.name}` : `Account ID: ${preference.targetValue}`;
+        return account ? `Account: ${account.customName || account.accountHolderName}` : `Account ID: ${preference.targetValue}`;
       case 'goal_pattern':
         return `Pattern: ${preference.targetValue}`;
       default:
