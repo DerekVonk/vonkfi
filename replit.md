@@ -102,6 +102,20 @@ The application is built as a full-stack web application with a React frontend a
 
 ## Recent Changes
 
+- June 19, 2025: Advanced Import System with Batch Processing and Duplicate Detection
+  - Enhanced database schema with import batches, transaction hashes, and duplicate tracking tables
+  - Implemented SHA-256 hash-based duplicate detection for transaction deduplication
+  - Created comprehensive DuplicateDetectionService with transaction filtering capabilities
+  - Added batch import functionality with drill-down capabilities for individual file inspection
+  - Enhanced import routes with automatic duplicate detection and prevention
+  - Implemented batch management API routes for creating, viewing, and updating import batches
+  - Added comprehensive test suite covering duplicate detection, batch processing, and error handling
+  - Updated Import History page to display duplicate statistics and batch information
+  - Fixed category editing and deletion functionality with proper API routes and UI dialogs
+  - Removed redundant import history from Import Statements page, creating dedicated Import History page
+  - Implemented complete CRUD operations for categories with proper error handling
+  - Enhanced storage interface with batch processing and duplicate detection methods
+
 - June 18, 2025: PostgreSQL database integration and comprehensive functionality enhancement
   - Replaced in-memory storage with persistent PostgreSQL database
   - Added DatabaseStorage implementation with full CRUD operations
