@@ -123,8 +123,28 @@ export default function Categories() {
     },
   });
 
+  const editForm = useForm<CreateCategoryForm>({
+    resolver: zodResolver(createCategorySchema),
+    defaultValues: {
+      name: "",
+      type: "discretionary",
+      color: categoryColors[0],
+    },
+  });
+
   const onSubmit = (data: CreateCategoryForm) => {
     createCategoryMutation.mutate(data);
+  };
+
+  // Initialize edit form when editing category changes
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category);
+    editForm.reset({
+      name: category.name,
+      type: category.type as "income" | "essential" | "discretionary" | "transfer",
+      color: category.color || categoryColors[0],
+      icon: category.icon || undefined,
+    });
   };
 
   const getCategoryTypeColor = (type: string) => {
@@ -379,7 +399,7 @@ export default function Categories() {
                       </div>
                       
                       <div className="flex space-x-1">
-                        <Button variant="ghost" size="sm" onClick={() => setEditingCategory(category)}>
+                        <Button variant="ghost" size="sm" onClick={() => handleEditCategory(category)}>
                           <Edit2 size={14} />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setDeletingCategory(category)} className="text-red-600 hover:text-red-700">
@@ -414,8 +434,8 @@ export default function Categories() {
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit((data) => {
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit((data) => {
               if (editingCategory) {
                 updateCategoryMutation.mutate({
                   id: editingCategory.id,
@@ -424,7 +444,7 @@ export default function Categories() {
               }
             })} className="space-y-4">
               <FormField
-                control={form.control}
+                control={editForm.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
@@ -432,11 +452,7 @@ export default function Categories() {
                     <FormControl>
                       <Input 
                         placeholder="Enter category name" 
-                        {...field} 
-                        value={editingCategory?.name || field.value}
-                        onChange={(e) => {
-                          field.onChange(e);
-                        }}
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -445,13 +461,13 @@ export default function Categories() {
               />
               
               <FormField
-                control={form.control}
+                control={editForm.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category Type</FormLabel>
                     <Select 
-                      value={editingCategory?.type || field.value} 
+                      value={field.value} 
                       onValueChange={field.onChange}
                     >
                       <FormControl>
@@ -466,6 +482,32 @@ export default function Categories() {
                         <SelectItem value="transfer">Transfer</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color</FormLabel>
+                    <FormControl>
+                      <div className="flex space-x-2">
+                        {categoryColors.map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            className={`w-8 h-8 rounded-full border-2 ${
+                              field.value === color ? 'border-gray-400' : 'border-gray-200'
+                            }`}
+                            style={{ backgroundColor: color }}
+                            onClick={() => field.onChange(color)}
+                          />
+                        ))}
+                      </div>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
