@@ -147,22 +147,7 @@ export default function Import() {
           </CardContent>
         </Card>
 
-        {/* Import History */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <History className="w-5 h-5" />
-              <span>Import History</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-gray-500">
-              <History size={32} className="mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No imports yet</p>
-              <p className="text-xs text-gray-400">Your import history will appear here</p>
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
 
       <ImportModal 

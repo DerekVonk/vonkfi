@@ -73,6 +73,47 @@ export default function Categories() {
     },
   });
 
+  const updateCategoryMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<CreateCategoryForm> }) => 
+      api.updateCategory(id, data),
+    onSuccess: () => {
+      toast({
+        title: "Category Updated",
+        description: "Category has been updated successfully",
+        duration: 5000,
+      });
+      queryClient.invalidateQueries({ queryKey: [api.getCategories()] });
+      setEditingCategory(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update category",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: number) => api.deleteCategory(id),
+    onSuccess: () => {
+      toast({
+        title: "Category Deleted",
+        description: "Category has been deleted successfully",
+        duration: 5000,
+      });
+      queryClient.invalidateQueries({ queryKey: [api.getCategories()] });
+      setDeletingCategory(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete category",
+        variant: "destructive",
+      });
+    },
+  });
+
   const form = useForm<CreateCategoryForm>({
     resolver: zodResolver(createCategorySchema),
     defaultValues: {
