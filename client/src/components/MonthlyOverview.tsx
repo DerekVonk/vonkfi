@@ -37,6 +37,19 @@ export default function MonthlyOverview({ dashboardData }: MonthlyOverviewProps)
 
   const getMonthlyData = () => {
     const monthKey = selectedMonth.toISOString().substring(0, 7); // YYYY-MM format
+    const currentMonthKey = new Date().toISOString().substring(0, 7);
+    
+    // If looking at current month, always use the live fireMetrics data
+    if (monthKey === currentMonthKey) {
+      return {
+        income: dashboardData?.fireMetrics.monthlyIncome || 0,
+        expenses: dashboardData?.fireMetrics.monthlyExpenses || 0,
+        savings: (dashboardData?.fireMetrics.monthlyIncome || 0) - (dashboardData?.fireMetrics.monthlyExpenses || 0),
+        savingsRate: dashboardData?.fireMetrics.savingsRate || 0
+      };
+    }
+    
+    // For historical months, look in monthlyBreakdown
     const monthData = dashboardData?.fireMetrics.monthlyBreakdown?.find(
       m => m.month === monthKey
     );
@@ -50,12 +63,12 @@ export default function MonthlyOverview({ dashboardData }: MonthlyOverviewProps)
       };
     }
 
-    // Fallback to current month data if selected month not found
+    // No data available for this month
     return {
-      income: dashboardData?.fireMetrics.monthlyIncome || 0,
-      expenses: dashboardData?.fireMetrics.monthlyExpenses || 0,
-      savings: (dashboardData?.fireMetrics.monthlyIncome || 0) - (dashboardData?.fireMetrics.monthlyExpenses || 0),
-      savingsRate: dashboardData?.fireMetrics.savingsRate || 0
+      income: 0,
+      expenses: 0,
+      savings: 0,
+      savingsRate: 0
     };
   };
 

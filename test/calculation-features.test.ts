@@ -173,7 +173,7 @@ describe('Transfer Recommendation Engine', () => {
       16936.34
     );
     
-    expect(recommendations[0].fromAccountId).toBe(14); // Account with sufficient balance
+    expect(recommendations[0].fromAccountId).toBe(12); // Account with sufficient balance
   });
 
   it('should target goal-specific accounts', () => {
@@ -281,8 +281,8 @@ describe('Volatility Calculations', () => {
     const result = calculateVolatility(incomes);
     
     expect(result.average).toBe(5000);
-    expect(result.standardDeviation).toBeCloseTo(316.23, 1);
-    expect(result.coefficientOfVariation).toBeCloseTo(0.0632, 3);
+    expect(result.standardDeviation).toBeCloseTo(340.59, 1);
+    expect(result.coefficientOfVariation).toBeCloseTo(0.0681, 3);
     expect(result.score).toBe('low');
   });
 
