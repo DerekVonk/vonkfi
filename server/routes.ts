@@ -94,9 +94,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           results.newAccounts.push(newAccount);
         } else {
-          // Update last seen date
+          // Update last seen date and preserve CAMT balance from <Bal> tags
           await storage.updateAccount(existingAccount.id, {
             lastSeenDate: new Date(),
+            balance: accountData.balance, // Preserve authentic CAMT balance
           });
         }
       }
@@ -138,8 +139,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       //   await storage.createTransactionHashBatch(hashRecords);
       // }
 
-      // Update goal account balances after processing all transactions
-      await storage.updateGoalAccountBalances(userId);
+      // Skip balance recalculation to preserve authentic CAMT balance data from <Bal> tags
+      // The CAMT parser extracts the correct closing balance directly from the bank statement
+      // await storage.updateGoalAccountBalances(userId);
 
       // Track import history with duplicate tracking
       await storage.createImportHistory({
