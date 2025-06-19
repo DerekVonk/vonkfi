@@ -302,6 +302,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/categories/:categoryId", async (req, res) => {
     try {
       const categoryId = parseInt(req.params.categoryId);
+      await storage.deleteCategory(categoryId);
+      res.json({ message: "Category deleted successfully" });
+    } catch (error) {
+      console.error("Category deletion error:", error);
+      res.status(500).json({ error: "Failed to delete category" });
+    }
+  });
+
+  // Delete category
+  app.delete("/api/categories/:categoryId", async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
       
       // Check if category is used in transactions
       const userId = parseInt(req.query.userId as string);

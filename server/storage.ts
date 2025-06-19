@@ -441,6 +441,10 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db.insert(importHistory).values(insertImportHistory).returning();
     return result;
   }
+
+  async deleteCategory(id: number): Promise<void> {
+    await db.delete(categories).where(eq(categories.id, id));
+  }
 }
 
 export const storage = new DatabaseStorage();

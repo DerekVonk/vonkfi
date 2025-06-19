@@ -36,8 +36,8 @@ export const api = {
   updateCategory: async (categoryId: number, updates: any) => {
     return apiRequest('PATCH', `/api/categories/${categoryId}`, updates);
   },
-  deleteCategory: async (categoryId: number, userId: number) => {
-    return apiRequest('DELETE', `/api/categories/${categoryId}?userId=${userId}`);
+  deleteCategory: async (categoryId: number) => {
+    return apiRequest('DELETE', `/api/categories/${categoryId}`);
   },
   
   // Goals
