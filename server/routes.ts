@@ -70,10 +70,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const xmlContent = req.file.buffer.toString('utf-8');
       const parsedStatement = await camtParser.parseFile(xmlContent);
 
+      // Get existing transaction hashes for duplicate detection
+      const existingHashes = await storage.getTransactionHashesByUserId(userId);
+      
+      // Filter out duplicate transactions
+      const { uniqueTransactions, duplicateCount } = await duplicateDetectionService.filterDuplicates(
+        parsedStatement.transactions,
+        userId,
+        existingHashes
+      );
+
+      console.log(`Found ${duplicateCount} duplicate transactions, importing ${uniqueTransactions.length} unique transactions`);
+
       const results = {
         newAccounts: [] as any[],
         newTransactions: [] as any[],
-        categorySuggestions: [] as any[]
+        categorySuggestions: [] as any[],
+        duplicatesSkipped: duplicateCount
       };
 
       // Process accounts
@@ -98,8 +111,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categories = await storage.getCategories();
       const categorizer = new TransactionCategorizer(categories);
 
-      // Process transactions
-      for (const transactionData of parsedStatement.transactions) {
+      // Process unique transactions only
+      for (const transactionData of uniqueTransactions) {
         const account = await storage.getAccountByIban(parsedStatement.accounts[0].iban);
         if (!account) continue;
 
@@ -123,6 +136,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         results.newTransactions.push(newTransaction);
+      }
+
+      // Create transaction hashes for the imported transactions
+      if (results.newTransactions.length > 0) {
+        const hashRecords = duplicateDetectionService.createHashRecords(results.newTransactions, userId);
+        await storage.createTransactionHashBatch(hashRecords);
       }
 
       // Update goal account balances after processing all transactions
@@ -151,13 +170,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Track failed import
       if (req.file) {
         try {
+          const userId = parseInt(req.params.userId);
           await storage.createImportHistory({
-            userId: userId,
+            userId,
             fileName: req.file.originalname,
             fileSize: req.file.size,
             statementId: "",
             accountsFound: 0,
             transactionsImported: 0,
+            duplicatesSkipped: 0,
             status: "failed",
             errorMessage: error instanceof Error ? error.message : "Unknown error"
           });

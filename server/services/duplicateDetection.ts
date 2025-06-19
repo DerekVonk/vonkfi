@@ -62,11 +62,11 @@ export class DuplicateDetectionService {
    * Filters out duplicate transactions from import batch
    */
   async filterDuplicates(
-    transactions: InsertTransaction[],
+    transactions: any[],
     userId: number,
     existingHashes: TransactionHash[]
   ): Promise<{
-    uniqueTransactions: InsertTransaction[];
+    uniqueTransactions: any[];
     duplicateCount: number;
     duplicateHashes: string[];
   }> {
