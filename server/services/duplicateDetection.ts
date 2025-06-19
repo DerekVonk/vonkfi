@@ -13,13 +13,14 @@ export class DuplicateDetectionService {
    * Uses: date, amount, merchant, counterparty IBAN, reference
    */
   createTransactionHash(transaction: InsertTransaction | Transaction): string {
+    // Create hash without accountId for import-time duplicate detection
     const hashInput = [
       transaction.date?.toISOString() || '',
       transaction.amount?.toString() || '',
       transaction.merchant || '',
       transaction.counterpartyIban || '',
       transaction.reference || '',
-      transaction.accountId?.toString() || ''
+      transaction.statementId || '' // Use statementId instead of accountId for CAMT imports
     ].join('|');
 
     return createHash('sha256').update(hashInput).digest('hex');

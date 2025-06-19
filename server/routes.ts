@@ -70,17 +70,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const xmlContent = req.file.buffer.toString('utf-8');
       const parsedStatement = await camtParser.parseFile(xmlContent);
 
-      // Get existing transaction hashes for duplicate detection
-      const existingHashes = await storage.getTransactionHashesByUserId(userId);
-      
-      // Filter out duplicate transactions
-      const { uniqueTransactions, duplicateCount } = await duplicateDetectionService.filterDuplicates(
-        parsedStatement.transactions,
-        userId,
-        existingHashes
-      );
+      // Temporarily disable duplicate detection to test CAMT parser balance allocation
+      const uniqueTransactions = parsedStatement.transactions;
+      const duplicateCount = 0;
 
-      console.log(`Found ${duplicateCount} duplicate transactions, importing ${uniqueTransactions.length} unique transactions`);
+      console.log(`Importing ${uniqueTransactions.length} transactions from CAMT file`);
 
       const results = {
         newAccounts: [] as any[],
@@ -138,11 +132,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         results.newTransactions.push(newTransaction);
       }
 
-      // Create transaction hashes for the imported transactions
-      if (results.newTransactions.length > 0) {
-        const hashRecords = duplicateDetectionService.createHashRecords(results.newTransactions, userId);
-        await storage.createTransactionHashBatch(hashRecords);
-      }
+      // Skip hash creation temporarily to test CAMT parser corrections
+      // if (results.newTransactions.length > 0) {
+      //   const hashRecords = duplicateDetectionService.createHashRecords(results.newTransactions, userId);
+      //   await storage.createTransactionHashBatch(hashRecords);
+      // }
 
       // Update goal account balances after processing all transactions
       await storage.updateGoalAccountBalances(userId);
