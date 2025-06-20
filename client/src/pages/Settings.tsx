@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Settings as SettingsIcon, Shield, Target, TrendingUp, Plus, Edit2, Trash2, Database, FileText, Calculator } from "lucide-react";
+import { Settings as SettingsIcon, Shield, Target, TrendingUp, Plus, Edit2, Trash2, Database, FileText, Calculator, Brain } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -29,7 +29,7 @@ const createPreferenceSchema = z.object({
 type CreatePreferenceForm = z.infer<typeof createPreferenceSchema>;
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState<"transfer" | "data" | "budget">("transfer");
+  const [activeTab, setActiveTab] = useState<"transfer" | "data" | "budget" | "ai">("transfer");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingPreference, setEditingPreference] = useState<TransferPreference | null>(null);
   const [deletingPreference, setDeletingPreference] = useState<TransferPreference | null>(null);
