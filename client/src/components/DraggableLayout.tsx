@@ -61,7 +61,7 @@ export default function DraggableLayout({ dashboardData }: DraggableLayoutProps)
               <p className="text-xs text-gray-400">Import a bank statement to get started</p>
             </div>
           ) : (
-            dashboardData?.accounts?.map((account) => (
+            dashboardData?.accounts?.map((account: Account) => (
               <div key={account.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
                 <div>
                   <p className="text-sm font-medium text-neutral-800">
@@ -94,7 +94,7 @@ export default function DraggableLayout({ dashboardData }: DraggableLayoutProps)
               <p className="text-xs text-gray-400">Recommendations appear after importing transactions</p>
             </div>
           ) : (
-            dashboardData.transferRecommendations.slice(0, 3).map((transfer) => (
+            dashboardData.transferRecommendations.slice(0, 3).map((transfer: TransferRecommendation) => (
               <div key={transfer.id} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-blue-800">
@@ -126,7 +126,7 @@ export default function DraggableLayout({ dashboardData }: DraggableLayoutProps)
               <p className="text-xs text-gray-400">Create your first goal to start tracking progress</p>
             </div>
           ) : (
-            dashboardData.goals.slice(0, 3).map((goal) => {
+            dashboardData.goals.slice(0, 3).map((goal: Goal) => {
               const progress = parseFloat(goal.currentAmount || "0") / parseFloat(goal.targetAmount);
               const progressPercentage = Math.min(progress * 100, 100);
               
