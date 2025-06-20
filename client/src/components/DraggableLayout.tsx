@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GripVertical, ArrowUp, ArrowDown, PiggyBank, Shield, Flame, TrendingUp, CheckCircle, Clock, ArrowLeftRight, Target } from "lucide-react";
-import type { DashboardData } from "@/types";
+import type { DashboardData, Account, TransferRecommendation, Goal } from "@/types";
 import IncomeVolatilityChart from "./charts/IncomeVolatilityChart";
 import MonthlyOverview from "./MonthlyOverview";
 import AIVasteLastenInsights from "./AIVasteLastenInsights";

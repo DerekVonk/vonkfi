@@ -289,6 +289,17 @@ export default function Settings() {
             <Calculator size={16} className="inline mr-2" />
             Budget Settings
           </button>
+          <button
+            onClick={() => setActiveTab("ai")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === "ai"
+                ? "bg-white text-neutral-800 shadow-sm"
+                : "text-neutral-600 hover:text-neutral-800"
+            }`}
+          >
+            <Brain size={16} className="inline mr-2" />
+            AI Features
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -356,6 +367,190 @@ export default function Settings() {
                 </Button>
               </div>
             </Card>
+          </div>
+        )}
+
+        {activeTab === "ai" && (
+          <div className="space-y-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <Brain className="w-6 h-6 text-blue-600" />
+              <h2 className="text-lg font-semibold text-neutral-800">AI Features Configuration</h2>
+            </div>
+
+            {/* AI Vaste Lasten Settings */}
+            <Card className="p-6">
+              <h3 className="text-md font-medium text-neutral-800 mb-4 flex items-center space-x-2">
+                <Target className="w-5 h-5 text-blue-600" />
+                <span>Vaste Lasten AI Optimization</span>
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Enable Fixed Expense Analysis</label>
+                    <p className="text-xs text-neutral-500">Automatically analyze transaction patterns to identify recurring fixed expenses</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Seasonal Adjustments</label>
+                    <p className="text-xs text-neutral-500">Apply seasonal factors to expense predictions (winter heating, etc.)</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Anomaly Detection</label>
+                    <p className="text-xs text-neutral-500">Alert when fixed expenses deviate significantly from patterns</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-700 block mb-2">Analysis Lookback Period</label>
+                  <select className="w-32 p-2 border border-neutral-300 rounded-md text-sm">
+                    <option value="6">6 months</option>
+                    <option value="12" selected>12 months</option>
+                    <option value="24">24 months</option>
+                  </select>
+                  <p className="text-xs text-neutral-500 mt-1">How far back to analyze transaction history</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-700 block mb-2">Confidence Threshold</label>
+                  <select className="w-32 p-2 border border-neutral-300 rounded-md text-sm">
+                    <option value="0.6">60%</option>
+                    <option value="0.7" selected>70%</option>
+                    <option value="0.8">80%</option>
+                    <option value="0.9">90%</option>
+                  </select>
+                  <p className="text-xs text-neutral-500 mt-1">Minimum confidence level for expense pattern recognition</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* AI Transfer Recommendations Settings */}
+            <Card className="p-6">
+              <h3 className="text-md font-medium text-neutral-800 mb-4 flex items-center space-x-2">
+                <TrendingUp className="w-5 h-5 text-purple-600" />
+                <span>Smart Transfer Recommendations</span>
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Auto-Generate Recommendations</label>
+                    <p className="text-xs text-neutral-500">Automatically create transfer recommendations based on account balances</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Priority-Based Sorting</label>
+                    <p className="text-xs text-neutral-500">Sort recommendations by urgency and financial impact</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Goal Integration</label>
+                    <p className="text-xs text-neutral-500">Consider savings goals when generating transfer recommendations</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-700 block mb-2">Refresh Frequency</label>
+                  <select className="w-40 p-2 border border-neutral-300 rounded-md text-sm">
+                    <option value="60">Every minute</option>
+                    <option value="300" selected>Every 5 minutes</option>
+                    <option value="900">Every 15 minutes</option>
+                    <option value="3600">Every hour</option>
+                  </select>
+                  <p className="text-xs text-neutral-500 mt-1">How often to update AI recommendations</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Dashboard Integration Settings */}
+            <Card className="p-6">
+              <h3 className="text-md font-medium text-neutral-800 mb-4 flex items-center space-x-2">
+                <SettingsIcon className="w-5 h-5 text-gray-600" />
+                <span>Dashboard Integration</span>
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Show AI Insights Widget</label>
+                    <p className="text-xs text-neutral-500">Display AI Vaste Lasten insights on the main dashboard</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Show Transfer Recommendations Widget</label>
+                    <p className="text-xs text-neutral-500">Display AI transfer recommendations on the main dashboard</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Real-time Updates</label>
+                    <p className="text-xs text-neutral-500">Update AI insights automatically when new data is available</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-700 block mb-2">Widget Position Priority</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center space-x-2">
+                      <input type="radio" name="ai-priority" value="top" defaultChecked className="h-4 w-4 text-blue-600" />
+                      <label className="text-sm text-neutral-700">High Priority (Top)</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="radio" name="ai-priority" value="middle" className="h-4 w-4 text-blue-600" />
+                      <label className="text-sm text-neutral-700">Medium Priority</label>
+                    </div>
+                  </div>
+                  <p className="text-xs text-neutral-500 mt-1">Where to position AI widgets on the dashboard</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Advanced AI Settings */}
+            <Card className="p-6">
+              <h3 className="text-md font-medium text-neutral-800 mb-4 flex items-center space-x-2">
+                <Brain className="w-5 h-5 text-indigo-600" />
+                <span>Advanced AI Configuration</span>
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Machine Learning Optimization</label>
+                    <p className="text-xs text-neutral-500">Allow AI to learn from your spending patterns and improve over time</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Predictive Cash Flow</label>
+                    <p className="text-xs text-neutral-500">Predict future cash flow needs based on historical patterns</p>
+                  </div>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-700 block mb-2">AI Processing Mode</label>
+                  <select className="w-40 p-2 border border-neutral-300 rounded-md text-sm">
+                    <option value="conservative">Conservative</option>
+                    <option value="balanced" selected>Balanced</option>
+                    <option value="aggressive">Aggressive</option>
+                  </select>
+                  <p className="text-xs text-neutral-500 mt-1">How aggressively AI should optimize your finances</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Save Settings */}
+            <div className="flex justify-end space-x-3">
+              <Button variant="outline">Reset to Defaults</Button>
+              <Button className="fire-button-primary">Save AI Settings</Button>
+            </div>
           </div>
         )}
       </div>
