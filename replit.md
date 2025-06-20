@@ -102,6 +102,13 @@ The application is built as a full-stack web application with a React frontend a
 
 ## Recent Changes
 
+- June 20, 2025: Application Rebranded to VonkFi
+  - **RENAMED**: Complete application rebranding from "FIRE Budget Application" to "VonkFi"
+  - **UPDATED**: All user-facing text, titles, and branding elements throughout the codebase
+  - **CHANGED**: HTML title, layout headers, dashboard subtitle, and settings descriptions
+  - Application now consistently branded as "VonkFi - Personal Finance Management System"
+  - Maintains FIRE (Financial Independence, Retire Early) methodology focus with new modern branding
+
 - June 20, 2025: Generic AI Features Implementation with LLM Configuration Options
   - **REFACTORED**: Renamed "Vaste Lasten" specific AI features to generic "Fixed Expense" optimization
   - **CREATED**: Configurable AI system supporting any user-selected accounts for optimization

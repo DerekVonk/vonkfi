@@ -247,7 +247,7 @@ export default function Settings() {
           <div>
             <h1 className="text-2xl font-bold text-neutral-800">Settings</h1>
             <p className="text-sm text-neutral-400 mt-1">
-              Configure your FIRE budget application preferences
+              Configure your VonkFi application preferences
             </p>
           </div>
         </div>
