@@ -1220,8 +1220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fromAccountId: parseInt(fromAccountId),
         toAccountId: parseInt(toAccountId),
         amount: parseFloat(amount).toFixed(2),
-        reason: `AI Optimized: ${reason}`,
-        priority: type === 'vaste_lasten' ? 1 : type === 'emergency_buffer' ? 2 : 3,
+        purpose: `AI Optimized: ${reason}`,
         status: 'pending'
       });
 

@@ -82,19 +82,35 @@ interface IntelligentRecommendation {
 export default function VasteLastenAI() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
-  const { data: fixedExpenses, isLoading: expensesLoading } = useQuery({
+  const { data: fixedExpenses, isLoading: expensesLoading } = useQuery<{
+    patterns: FixedExpensePattern[];
+    totalPatterns: number;
+    highConfidencePatterns: number;
+    monthlyTotal: number;
+  }>({
     queryKey: [`/api/ai/fixed-expenses/${DEMO_USER_ID}`],
   });
 
-  const { data: prediction, isLoading: predictionLoading } = useQuery({
+  const { data: prediction, isLoading: predictionLoading } = useQuery<VasteLastenPrediction>({
     queryKey: [`/api/ai/vaste-lasten-prediction/${DEMO_USER_ID}`],
   });
 
-  const { data: intelligentRecommendations, isLoading: recommendationsLoading } = useQuery({
+  const { data: intelligentRecommendations, isLoading: recommendationsLoading } = useQuery<{
+    recommendations: IntelligentRecommendation[];
+    totalRecommendations: number;
+    highPriorityRecommendations: number;
+    totalAmount: number;
+    vasteLastenRecommendations: number;
+  }>({
     queryKey: [`/api/ai/intelligent-transfers/${DEMO_USER_ID}`],
   });
 
-  const { data: anomalies, isLoading: anomaliesLoading } = useQuery({
+  const { data: anomalies, isLoading: anomaliesLoading } = useQuery<{
+    anomalies: any[];
+    totalAnomalies: number;
+    highSeverityAnomalies: number;
+    recentAnomalies: number;
+  }>({
     queryKey: [`/api/ai/expense-anomalies/${DEMO_USER_ID}`],
   });
 
@@ -175,7 +191,7 @@ export default function VasteLastenAI() {
 
         <TabsContent value="overview" className="space-y-6">
           {/* Prediction Summary */}
-          {prediction && (
+          {prediction && prediction.monthlyRequirement !== undefined && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="border-blue-200">
                 <CardHeader className="pb-3">
@@ -235,7 +251,7 @@ export default function VasteLastenAI() {
           )}
 
           {/* Upcoming Expenses */}
-          {prediction?.upcomingExpenses && prediction.upcomingExpenses.length > 0 && (
+          {prediction && prediction.upcomingExpenses && prediction.upcomingExpenses.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -245,7 +261,7 @@ export default function VasteLastenAI() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {prediction.upcomingExpenses.slice(0, 6).map((expense, index) => (
+                  {prediction.upcomingExpenses.slice(0, 6).map((expense: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-2 h-2 rounded-full bg-blue-500"></div>
@@ -271,7 +287,7 @@ export default function VasteLastenAI() {
         </TabsContent>
 
         <TabsContent value="patterns" className="space-y-6">
-          {fixedExpenses?.patterns && (
+          {fixedExpenses && fixedExpenses.patterns && (
             <Card>
               <CardHeader>
                 <CardTitle>Detected Fixed Expense Patterns</CardTitle>
@@ -319,7 +335,7 @@ export default function VasteLastenAI() {
         </TabsContent>
 
         <TabsContent value="recommendations" className="space-y-6">
-          {intelligentRecommendations?.recommendations && (
+          {intelligentRecommendations && intelligentRecommendations.recommendations && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
