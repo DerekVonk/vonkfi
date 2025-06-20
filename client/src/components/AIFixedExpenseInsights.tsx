@@ -2,17 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  Brain, 
-  TrendingUp, 
-  AlertTriangle, 
-  Calendar, 
-  Target,
-  Shield,
-  Zap
-} from "lucide-react";
-import { format } from "date-fns";
+import { Brain, Target, TrendingUp, AlertTriangle } from "lucide-react";
 
 const DEMO_USER_ID = 1;
 
@@ -27,7 +17,7 @@ interface FixedExpensePrediction {
     type: 'fixed' | 'variable';
   }[];
   recommendedBufferAmount: number;
-  targetAccounts: string[]; // User-configurable accounts for optimization
+  targetAccounts: string[];
 }
 
 export default function AIFixedExpenseInsights() {
@@ -67,7 +57,7 @@ export default function AIFixedExpenseInsights() {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center space-x-2">
             <Brain className="w-5 h-5 text-blue-600" />
-            <span>AI Vaste Lasten Insights</span>
+            <span>AI Fixed Expense Insights</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -87,7 +77,7 @@ export default function AIFixedExpenseInsights() {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center space-x-2">
             <Brain className="w-5 h-5 text-blue-600" />
-            <span>AI Vaste Lasten Insights</span>
+            <span>AI Fixed Expense Insights</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -105,7 +95,7 @@ export default function AIFixedExpenseInsights() {
         <CardTitle className="text-lg flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Brain className="w-5 h-5 text-blue-600" />
-            <span>AI Vaste Lasten Insights</span>
+            <span>AI Fixed Expense Insights</span>
           </div>
           <Badge variant="outline" className="text-blue-600 border-blue-200">
             AI Powered
@@ -132,70 +122,67 @@ export default function AIFixedExpenseInsights() {
           <div className="space-y-2">
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <TrendingUp className="w-4 h-4" />
-              <span>Seasonal Impact</span>
+              <span>Buffer Recommendation</span>
             </div>
-            <div className={`text-2xl font-bold ${prediction.seasonalAdjustment >= 0 ? 'text-orange-600' : 'text-green-600'}`}>
-              {prediction.seasonalAdjustment >= 0 ? '+' : ''}{formatCurrency(prediction.seasonalAdjustment)}
+            <div className="text-2xl font-bold text-green-600">
+              {formatCurrency(prediction.recommendedBufferAmount)}
             </div>
             <div className="text-xs text-gray-500">
-              {prediction.seasonalAdjustment >= 0 ? 'Higher winter costs' : 'Lower seasonal costs'}
+              Safety buffer for variations
             </div>
           </div>
         </div>
 
-        {/* Recommended Buffer */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-          <div className="flex items-center space-x-2 mb-1">
-            <Shield className="w-4 h-4 text-green-600" />
-            <span className="text-sm font-medium text-green-800">Recommended Buffer</span>
+        {/* Seasonal Adjustment */}
+        {Math.abs(prediction.seasonalAdjustment) > 10 && (
+          <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="flex items-center space-x-2 text-sm text-yellow-800">
+              <AlertTriangle className="w-4 h-4" />
+              <span>Seasonal Adjustment</span>
+            </div>
+            <p className="text-sm text-yellow-700 mt-1">
+              {prediction.seasonalAdjustment > 0 ? 'Increase' : 'Decrease'} by{' '}
+              {formatCurrency(Math.abs(prediction.seasonalAdjustment))} for seasonal variations
+            </p>
           </div>
-          <div className="text-lg font-bold text-green-600">
-            {formatCurrency(prediction.recommendedBufferAmount)}
+        )}
+
+        {/* Anomalies Alert */}
+        {anomalies && anomalies.totalAnomalies > 0 && (
+          <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-sm text-red-800">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Expense Anomalies Detected</span>
+              </div>
+              <Badge variant="destructive" className="text-xs">
+                {anomalies.totalAnomalies}
+              </Badge>
+            </div>
+            <p className="text-sm text-red-700 mt-1">
+              {anomalies.highSeverityAnomalies} high severity, {anomalies.recentAnomalies} recent
+            </p>
           </div>
-          <div className="text-xs text-green-700">
-            2.5 months of fixed expenses coverage
-          </div>
-        </div>
+        )}
 
         {/* Upcoming Expenses */}
-        {prediction.upcomingExpenses && prediction.upcomingExpenses.length > 0 && (
+        {prediction.upcomingExpenses.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-              <Calendar className="w-4 h-4" />
-              <span>Next Fixed Expenses (30 days)</span>
-            </div>
+            <h4 className="text-sm font-medium text-gray-700">Upcoming Fixed Expenses</h4>
             <div className="space-y-2 max-h-32 overflow-y-auto">
-              {prediction.upcomingExpenses.slice(0, 4).map((expense: any, index: number) => (
-                <div key={index} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                    <span className="truncate max-w-[120px]">{expense.merchant}</span>
+              {prediction.upcomingExpenses.slice(0, 3).map((expense, index) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div>
+                    <p className="text-sm font-medium">{expense.merchant}</p>
+                    <p className="text-xs text-gray-500">{expense.date}</p>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium">{formatCurrency(expense.amount)}</div>
-                    <div className="text-xs text-gray-500">
-                      {format(new Date(expense.date), 'MMM d')}
-                    </div>
+                  <div className="text-sm font-medium">
+                    {formatCurrency(expense.amount)}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        )}
-
-        {/* Anomaly Alert */}
-        {anomalies && anomalies.recentAnomalies > 0 && (
-          <Alert className="border-orange-200 bg-orange-50">
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">
-                  {anomalies.recentAnomalies} expense anomal{anomalies.recentAnomalies === 1 ? 'y' : 'ies'} detected
-                </span>
-                <Zap className="w-4 h-4" />
-              </div>
-            </AlertDescription>
-          </Alert>
         )}
       </CardContent>
     </Card>
