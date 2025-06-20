@@ -1254,7 +1254,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const analyzer = new FixedExpenseAnalyzer();
-      const prediction = await analyzer.analyzeFixedExpenses(transactions, accountIds);
+      const categories = await storage.getCategories();
+      const prediction = analyzer.predictVasteLastenRequirements(transactions, categories);
       
       res.json({
         monthlyRequirement: prediction.monthlyRequirement,

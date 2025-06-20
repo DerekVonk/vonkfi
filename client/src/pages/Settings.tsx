@@ -478,7 +478,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-sm font-medium text-neutral-700">Show AI Insights Widget</label>
-                    <p className="text-xs text-neutral-500">Display AI Vaste Lasten insights on the main dashboard</p>
+                    <p className="text-xs text-neutral-500">Display AI Fixed Expense insights on the main dashboard</p>
                   </div>
                   <input type="checkbox" defaultChecked className="h-4 w-4 text-blue-600" />
                 </div>
