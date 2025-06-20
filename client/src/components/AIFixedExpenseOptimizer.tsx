@@ -35,7 +35,7 @@ interface FixedExpensePattern {
   transactionCount: number;
 }
 
-interface VasteLastenPrediction {
+interface FixedExpensePrediction {
   monthlyRequirement: number;
   seasonalAdjustment: number;
   confidenceScore: number;
@@ -60,7 +60,7 @@ interface IntelligentRecommendation {
   reason: string;
   priority: 'high' | 'medium' | 'low';
   urgency: 'immediate' | 'weekly' | 'monthly';
-  type: 'vaste_lasten' | 'emergency_buffer' | 'goal_funding' | 'optimization';
+  type: 'fixed_expense' | 'emergency_buffer' | 'goal_funding' | 'optimization';
   confidence: number;
   expectedImpact: {
     savingsRate: number;
@@ -79,7 +79,7 @@ interface IntelligentRecommendation {
   };
 }
 
-export default function VasteLastenAI() {
+export default function AIFixedExpenseOptimizer() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   const { data: fixedExpenses, isLoading: expensesLoading } = useQuery<{
@@ -91,8 +91,8 @@ export default function VasteLastenAI() {
     queryKey: [`/api/ai/fixed-expenses/${DEMO_USER_ID}`],
   });
 
-  const { data: prediction, isLoading: predictionLoading } = useQuery<VasteLastenPrediction>({
-    queryKey: [`/api/ai/vaste-lasten-prediction/${DEMO_USER_ID}`],
+  const { data: prediction, isLoading: predictionLoading } = useQuery<FixedExpensePrediction>({
+    queryKey: [`/api/ai/fixed-expense-prediction/${DEMO_USER_ID}`],
   });
 
   const { data: intelligentRecommendations, isLoading: recommendationsLoading } = useQuery<{
@@ -100,7 +100,7 @@ export default function VasteLastenAI() {
     totalRecommendations: number;
     highPriorityRecommendations: number;
     totalAmount: number;
-    vasteLastenRecommendations: number;
+    fixedExpenseRecommendations: number;
   }>({
     queryKey: [`/api/ai/intelligent-transfers/${DEMO_USER_ID}`],
   });
