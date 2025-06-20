@@ -31,8 +31,8 @@ interface FixedExpensePrediction {
 }
 
 export default function AIFixedExpenseInsights() {
-  const { data: prediction, isLoading } = useQuery<VasteLastenPrediction>({
-    queryKey: [`/api/ai/vaste-lasten-prediction/${DEMO_USER_ID}`],
+  const { data: prediction, isLoading } = useQuery<FixedExpensePrediction>({
+    queryKey: [`/api/ai/fixed-expense-prediction/${DEMO_USER_ID}`],
     refetchInterval: 300000, // Refresh every 5 minutes
   });
 

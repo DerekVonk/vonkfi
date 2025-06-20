@@ -1235,6 +1235,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generic AI Fixed Expense Prediction (replaces Vaste Lasten specific endpoint)
+  app.get("/api/ai/fixed-expense-prediction/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const targetAccounts = req.query.accounts as string; // Comma-separated account IDs
+      
+      const accounts = await storage.getAccountsByUserId(userId);
+      const transactions = await storage.getTransactionsByUserId(userId);
+      
+      // Parse target accounts from query parameter or use all accounts
+      let accountIds: number[] = [];
+      if (targetAccounts) {
+        accountIds = targetAccounts.split(',').map(id => parseInt(id.trim()));
+      } else {
+        // Default to all accounts with specific roles if no target accounts specified
+        accountIds = accounts.filter(a => a.role === 'fixed_expenses' || a.role === 'checking').map(a => a.id);
+      }
+      
+      const analyzer = new FixedExpenseAnalyzer();
+      const prediction = await analyzer.analyzeFixedExpenses(transactions, accountIds);
+      
+      res.json({
+        monthlyRequirement: prediction.monthlyRequirement,
+        seasonalAdjustment: prediction.seasonalAdjustment,
+        confidenceScore: prediction.confidenceScore,
+        upcomingExpenses: prediction.upcomingExpenses,
+        recommendedBufferAmount: prediction.recommendedBufferAmount,
+        targetAccounts: accountIds.map(id => accounts.find(a => a.id === id)?.customName || `Account ${id}`),
+        analysisMethod: 'pattern_recognition', // Could be 'llm' if LLM is enabled
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Fixed expense prediction error:", error);
+      res.status(500).json({ error: "Failed to predict fixed expenses" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

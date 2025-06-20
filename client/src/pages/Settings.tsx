@@ -377,11 +377,11 @@ export default function Settings() {
               <h2 className="text-lg font-semibold text-neutral-800">AI Features Configuration</h2>
             </div>
 
-            {/* AI Vaste Lasten Settings */}
+            {/* AI Fixed Expense Settings */}
             <Card className="p-6">
               <h3 className="text-md font-medium text-neutral-800 mb-4 flex items-center space-x-2">
                 <Target className="w-5 h-5 text-blue-600" />
-                <span>Vaste Lasten AI Optimization</span>
+                <span>Fixed Expense AI Optimization</span>
               </h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -513,6 +513,59 @@ export default function Settings() {
               </div>
             </Card>
 
+            {/* LLM Integration Settings */}
+            <Card className="p-6">
+              <h3 className="text-md font-medium text-neutral-800 mb-4 flex items-center space-x-2">
+                <Brain className="w-5 h-5 text-purple-600" />
+                <span>Large Language Model (LLM) Integration</span>
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Enable LLM Analysis</label>
+                    <p className="text-xs text-neutral-500">Use advanced language models for deeper financial insights and explanations</p>
+                  </div>
+                  <input type="checkbox" className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-700 block mb-2">LLM Provider</label>
+                  <select className="w-48 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="none">
+                    <option value="none">Pattern Recognition Only</option>
+                    <option value="openai">OpenAI GPT-4</option>
+                    <option value="anthropic">Anthropic Claude</option>
+                    <option value="local">Local Model</option>
+                  </select>
+                  <p className="text-xs text-neutral-500 mt-1">Choose your preferred LLM provider for enhanced analysis</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-700 block mb-2">API Key</label>
+                  <input 
+                    type="password" 
+                    placeholder="Enter your LLM API key" 
+                    className="w-full p-2 border border-neutral-300 rounded-md text-sm"
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">Required for OpenAI or Anthropic integration</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-700 block mb-2">Analysis Depth</label>
+                  <select className="w-32 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="standard">
+                    <option value="basic">Basic</option>
+                    <option value="standard">Standard</option>
+                    <option value="detailed">Detailed</option>
+                    <option value="comprehensive">Comprehensive</option>
+                  </select>
+                  <p className="text-xs text-neutral-500 mt-1">More detailed analysis uses more API credits</p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-neutral-700">Natural Language Explanations</label>
+                    <p className="text-xs text-neutral-500">Generate human-readable explanations for AI recommendations</p>
+                  </div>
+                  <input type="checkbox" className="h-4 w-4 text-blue-600" />
+                </div>
+              </div>
+            </Card>
+
             {/* Advanced AI Settings */}
             <Card className="p-6">
               <h3 className="text-md font-medium text-neutral-800 mb-4 flex items-center space-x-2">
@@ -542,6 +595,24 @@ export default function Settings() {
                     <option value="aggressive">Aggressive</option>
                   </select>
                   <p className="text-xs text-neutral-500 mt-1">How aggressively AI should optimize your finances</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-700 block mb-2">Target Account Selection</label>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="fixed-expenses" defaultChecked className="h-4 w-4 text-blue-600" />
+                      <label htmlFor="fixed-expenses" className="text-sm text-neutral-700">Fixed Expenses Accounts</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="checking" defaultChecked className="h-4 w-4 text-blue-600" />
+                      <label htmlFor="checking" className="text-sm text-neutral-700">Checking Accounts</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="savings" className="h-4 w-4 text-blue-600" />
+                      <label htmlFor="savings" className="text-sm text-neutral-700">Savings Accounts</label>
+                    </div>
+                  </div>
+                  <p className="text-xs text-neutral-500 mt-1">Select which account types to include in AI optimization</p>
                 </div>
               </div>
             </Card>

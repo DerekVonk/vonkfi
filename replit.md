@@ -102,6 +102,18 @@ The application is built as a full-stack web application with a React frontend a
 
 ## Recent Changes
 
+- June 20, 2025: Generic AI Features Implementation with LLM Configuration Options
+  - **REFACTORED**: Renamed "Vaste Lasten" specific AI features to generic "Fixed Expense" optimization
+  - **CREATED**: Configurable AI system supporting any user-selected accounts for optimization
+  - **IMPLEMENTED**: Comprehensive LLM integration options in settings (OpenAI, Anthropic, Local models)
+  - **ADDED**: AI Features tab in Settings with full configuration control
+  - **ENHANCED**: AIFixedExpenseInsights component with configurable target accounts
+  - **CREATED**: Generic /api/ai/fixed-expense-prediction endpoint supporting account selection
+  - **ADDED**: LLM provider selection, API key configuration, and analysis depth controls
+  - **IMPLEMENTED**: Target account selection for AI optimization (not hardcoded to "Vaste Lasten")
+  - AI system now works with pattern recognition by default, with optional LLM enhancement
+  - Full user control over which accounts receive AI optimization analysis
+
 - June 19, 2025: AI-Enhanced Vaste Lasten Optimization System + Monthly Overview Transaction Allocation Fix
   - **FIXED**: Monthly Overview transaction allocation bug - removed hardcoded January 2025 logic that caused transactions imported in June to appear in both January and June
   - **IMPLEMENTED**: Comprehensive AI-Enhanced Fixed Expense Analysis System
