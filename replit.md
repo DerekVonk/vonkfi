@@ -1,8 +1,8 @@
-# FIRE Budget Application - Personal Finance Management System
+# VonkFi - Personal Finance Management System
 
 ## Overview
 
-This is a comprehensive personal finance management application focused on the FIRE (Financial Independence, Retire Early) methodology. The system helps users track accounts, categorize transactions, set financial goals, and receive intelligent transfer recommendations to optimize their financial journey toward independence.
+VonkFi is a comprehensive personal finance management application focused on the FIRE (Financial Independence, Retire Early) methodology. The system helps users track accounts, categorize transactions, set financial goals, and receive intelligent transfer recommendations to optimize their financial journey toward independence.
 
 The application is built as a full-stack web application with a React frontend and Express.js backend, using PostgreSQL for data persistence and featuring automated CAMT.053 bank statement processing.
 

@@ -49,7 +49,7 @@ export default function Dashboard() {
             <h2 className="text-xl sm:text-2xl font-semibold text-neutral-800">Dashboard</h2>
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1 space-y-1 sm:space-y-0">
               <p className="text-sm text-neutral-400">
-                Your path to Financial Independence, Retire Early
+                Your path to FIRE with VonkFi
               </p>
               <div className="flex items-center space-x-2 text-sm text-neutral-500">
                 <Clock size={14} />

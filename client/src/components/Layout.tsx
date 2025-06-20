@@ -42,7 +42,7 @@ export default function Layout({ children }: LayoutProps) {
               </div>
               {!sidebarCollapsed && (
                 <div>
-                  <h1 className="text-lg font-semibold text-neutral-800">FIRE Budget</h1>
+                  <h1 className="text-lg font-semibold text-neutral-800">VonkFi</h1>
                   <p className="text-xs text-neutral-400">Financial Independence</p>
                 </div>
               )}
