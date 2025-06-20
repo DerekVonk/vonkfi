@@ -5,6 +5,8 @@ import { CamtParser } from "./services/camtParser";
 import { TransactionCategorizer } from "./services/categorization";
 import { FireCalculator } from "./services/fireCalculations";
 import { duplicateDetectionService } from "./services/duplicateDetection";
+import { FixedExpenseAnalyzer } from "./services/fixedExpenseAnalyzer";
+import { IntelligentTransferOptimizer } from "./services/intelligentTransferOptimizer";
 import multer from "multer";
 import { z } from "zod";
 
@@ -13,6 +15,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 export async function registerRoutes(app: Express): Promise<Server> {
   const camtParser = new CamtParser();
   const fireCalculator = new FireCalculator();
+  const fixedExpenseAnalyzer = new FixedExpenseAnalyzer();
+  const intelligentTransferOptimizer = new IntelligentTransferOptimizer();
 
   // Get or create default user for development with error handling
   let defaultUser;
@@ -1066,6 +1070,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to recalculate dashboard" });
+    }
+  });
+
+  // AI-Enhanced Vaste Lasten Optimization Endpoints
+  
+  // Analyze fixed expense patterns
+  app.get("/api/ai/fixed-expenses/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const lookbackMonths = parseInt(req.query.months as string) || 12;
+      
+      const [transactions, categories] = await Promise.all([
+        storage.getTransactionsByUserId(userId),
+        storage.getCategories()
+      ]);
+
+      const patterns = fixedExpenseAnalyzer.analyzeFixedExpensePatterns(
+        transactions, categories, lookbackMonths
+      );
+
+      res.json({
+        patterns,
+        totalPatterns: patterns.length,
+        highConfidencePatterns: patterns.filter(p => p.confidence > 0.7).length,
+        monthlyTotal: patterns.reduce((sum, p) => sum + p.averageAmount, 0)
+      });
+    } catch (error) {
+      console.error("Fixed expense analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze fixed expenses" });
+    }
+  });
+
+  // Predict Vaste Lasten requirements
+  app.get("/api/ai/vaste-lasten-prediction/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const targetMonth = req.query.month ? new Date(req.query.month as string) : undefined;
+      
+      const [transactions, categories] = await Promise.all([
+        storage.getTransactionsByUserId(userId),
+        storage.getCategories()
+      ]);
+
+      const prediction = fixedExpenseAnalyzer.predictVasteLastenRequirements(
+        transactions, categories, targetMonth
+      );
+
+      res.json(prediction);
+    } catch (error) {
+      console.error("Vaste Lasten prediction error:", error);
+      res.status(500).json({ error: "Failed to predict Vaste Lasten requirements" });
+    }
+  });
+
+  // Detect fixed expense anomalies
+  app.get("/api/ai/expense-anomalies/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      const [transactions, categories] = await Promise.all([
+        storage.getTransactionsByUserId(userId),
+        storage.getCategories()
+      ]);
+
+      const patterns = fixedExpenseAnalyzer.analyzeFixedExpensePatterns(transactions, categories);
+      const anomalies = fixedExpenseAnalyzer.detectFixedExpenseAnomalies(transactions, patterns);
+
+      res.json({
+        anomalies,
+        totalAnomalies: anomalies.length,
+        highSeverityAnomalies: anomalies.filter(a => a.severity === 'high').length,
+        recentAnomalies: anomalies.filter(a => 
+          new Date(a.date) >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        ).length
+      });
+    } catch (error) {
+      console.error("Expense anomaly detection error:", error);
+      res.status(500).json({ error: "Failed to detect expense anomalies" });
+    }
+  });
+
+  // Generate intelligent transfer recommendations
+  app.get("/api/ai/intelligent-transfers/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      const [transactions, accounts, goals, preferences, categories] = await Promise.all([
+        storage.getTransactionsByUserId(userId),
+        storage.getAccountsByUserId(userId),
+        storage.getGoalsByUserId(userId),
+        storage.getTransferPreferencesByUserId(userId),
+        storage.getCategories()
+      ]);
+
+      const recommendations = await intelligentTransferOptimizer.generateIntelligentRecommendations(
+        userId, transactions, accounts, goals, preferences, categories
+      );
+
+      res.json({
+        recommendations,
+        totalRecommendations: recommendations.length,
+        highPriorityRecommendations: recommendations.filter(r => r.priority === 'high').length,
+        totalAmount: recommendations.reduce((sum, r) => sum + parseFloat(r.amount), 0),
+        vasteLastenRecommendations: recommendations.filter(r => r.type === 'vaste_lasten').length
+      });
+    } catch (error) {
+      console.error("Intelligent transfer generation error:", error);
+      res.status(500).json({ error: "Failed to generate intelligent transfers" });
+    }
+  });
+
+  // Optimize cash flow across accounts
+  app.get("/api/ai/cashflow-optimization/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      const [accounts, transactions, goals] = await Promise.all([
+        storage.getAccountsByUserId(userId),
+        storage.getTransactionsByUserId(userId),
+        storage.getGoalsByUserId(userId)
+      ]);
+
+      const optimization = await intelligentTransferOptimizer.optimizeCashFlow(
+        accounts, transactions, goals
+      );
+
+      res.json(optimization);
+    } catch (error) {
+      console.error("Cash flow optimization error:", error);
+      res.status(500).json({ error: "Failed to optimize cash flow" });
+    }
+  });
+
+  // Execute AI-recommended transfer (creates transfer recommendation)
+  app.post("/api/ai/execute-transfer/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { fromAccountId, toAccountId, amount, reason, type } = req.body;
+
+      // Validate input
+      if (!fromAccountId || !toAccountId || !amount || !reason) {
+        return res.status(400).json({ error: "Missing required transfer parameters" });
+      }
+
+      // Create transfer recommendation based on AI analysis
+      const transferRecommendation = await storage.createTransferRecommendation({
+        userId,
+        fromAccountId: parseInt(fromAccountId),
+        toAccountId: parseInt(toAccountId),
+        amount: parseFloat(amount).toFixed(2),
+        reason: `AI Optimized: ${reason}`,
+        priority: type === 'vaste_lasten' ? 1 : type === 'emergency_buffer' ? 2 : 3,
+        status: 'pending'
+      });
+
+      res.json({
+        message: "AI transfer recommendation created successfully",
+        recommendation: transferRecommendation,
+        type: type || 'optimization'
+      });
+    } catch (error) {
+      console.error("AI transfer execution error:", error);
+      res.status(500).json({ error: "Failed to execute AI transfer recommendation" });
     }
   });
 
