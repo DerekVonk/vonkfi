@@ -16,7 +16,7 @@ import { format } from "date-fns";
 
 const DEMO_USER_ID = 1;
 
-interface VasteLastenPrediction {
+interface FixedExpensePrediction {
   monthlyRequirement: number;
   seasonalAdjustment: number;
   confidenceScore: number;
@@ -27,9 +27,10 @@ interface VasteLastenPrediction {
     type: 'fixed' | 'variable';
   }[];
   recommendedBufferAmount: number;
+  targetAccounts: string[]; // User-configurable accounts for optimization
 }
 
-export default function AIVasteLastenInsights() {
+export default function AIFixedExpenseInsights() {
   const { data: prediction, isLoading } = useQuery<VasteLastenPrediction>({
     queryKey: [`/api/ai/vaste-lasten-prediction/${DEMO_USER_ID}`],
     refetchInterval: 300000, // Refresh every 5 minutes

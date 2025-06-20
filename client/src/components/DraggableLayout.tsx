@@ -5,7 +5,7 @@ import { GripVertical, ArrowUp, ArrowDown, PiggyBank, Shield, Flame, TrendingUp,
 import type { DashboardData, Account, TransferRecommendation, Goal } from "@/types";
 import IncomeVolatilityChart from "./charts/IncomeVolatilityChart";
 import MonthlyOverview from "./MonthlyOverview";
-import AIVasteLastenInsights from "./AIVasteLastenInsights";
+import AIFixedExpenseInsights from "./AIFixedExpenseInsights";
 import AITransferRecommendations from "./AITransferRecommendations";
 
 interface DashboardComponent {
@@ -156,10 +156,10 @@ export default function DraggableLayout({ dashboardData }: DraggableLayoutProps)
       )
     },
     {
-      id: 'ai-vaste-lasten',
-      title: 'AI Vaste Lasten Insights',
+      id: 'ai-fixed-expense',
+      title: 'AI Fixed Expense Insights',
       order: 6,
-      component: <AIVasteLastenInsights />
+      component: <AIFixedExpenseInsights />
     },
     {
       id: 'ai-transfer-recommendations',

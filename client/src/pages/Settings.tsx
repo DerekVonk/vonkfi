@@ -407,18 +407,18 @@ export default function Settings() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-neutral-700 block mb-2">Analysis Lookback Period</label>
-                  <select className="w-32 p-2 border border-neutral-300 rounded-md text-sm">
+                  <select className="w-32 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="12">
                     <option value="6">6 months</option>
-                    <option value="12" selected>12 months</option>
+                    <option value="12">12 months</option>
                     <option value="24">24 months</option>
                   </select>
                   <p className="text-xs text-neutral-500 mt-1">How far back to analyze transaction history</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-neutral-700 block mb-2">Confidence Threshold</label>
-                  <select className="w-32 p-2 border border-neutral-300 rounded-md text-sm">
+                  <select className="w-32 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="0.7">
                     <option value="0.6">60%</option>
-                    <option value="0.7" selected>70%</option>
+                    <option value="0.7">70%</option>
                     <option value="0.8">80%</option>
                     <option value="0.9">90%</option>
                   </select>
@@ -457,9 +457,9 @@ export default function Settings() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-neutral-700 block mb-2">Refresh Frequency</label>
-                  <select className="w-40 p-2 border border-neutral-300 rounded-md text-sm">
+                  <select className="w-40 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="300">
                     <option value="60">Every minute</option>
-                    <option value="300" selected>Every 5 minutes</option>
+                    <option value="300">Every 5 minutes</option>
                     <option value="900">Every 15 minutes</option>
                     <option value="3600">Every hour</option>
                   </select>
@@ -536,9 +536,9 @@ export default function Settings() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-neutral-700 block mb-2">AI Processing Mode</label>
-                  <select className="w-40 p-2 border border-neutral-300 rounded-md text-sm">
+                  <select className="w-40 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="balanced">
                     <option value="conservative">Conservative</option>
-                    <option value="balanced" selected>Balanced</option>
+                    <option value="balanced">Balanced</option>
                     <option value="aggressive">Aggressive</option>
                   </select>
                   <p className="text-xs text-neutral-500 mt-1">How aggressively AI should optimize your finances</p>
