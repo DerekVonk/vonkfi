@@ -614,11 +614,16 @@ export default function Settings() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-neutral-700 block mb-2">AI Processing Mode</label>
-                  <select className="w-40 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="balanced">
-                    <option value="conservative">Conservative</option>
-                    <option value="balanced">Balanced</option>
-                    <option value="aggressive">Aggressive</option>
-                  </select>
+                  <Select defaultValue="balanced">
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="conservative">Conservative</SelectItem>
+                      <SelectItem value="balanced">Balanced</SelectItem>
+                      <SelectItem value="aggressive">Aggressive</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-neutral-500 mt-1">How aggressively AI should optimize your finances</p>
                 </div>
                 <div>
