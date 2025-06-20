@@ -407,21 +407,31 @@ export default function Settings() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-neutral-700 block mb-2">Analysis Lookback Period</label>
-                  <select className="w-32 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="12">
-                    <option value="6">6 months</option>
-                    <option value="12">12 months</option>
-                    <option value="24">24 months</option>
-                  </select>
+                  <Select defaultValue="12">
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="6">6 months</SelectItem>
+                      <SelectItem value="12">12 months</SelectItem>
+                      <SelectItem value="24">24 months</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-neutral-500 mt-1">How far back to analyze transaction history</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-neutral-700 block mb-2">Confidence Threshold</label>
-                  <select className="w-32 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="0.7">
-                    <option value="0.6">60%</option>
-                    <option value="0.7">70%</option>
-                    <option value="0.8">80%</option>
-                    <option value="0.9">90%</option>
-                  </select>
+                  <Select defaultValue="0.7">
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0.6">60%</SelectItem>
+                      <SelectItem value="0.7">70%</SelectItem>
+                      <SelectItem value="0.8">80%</SelectItem>
+                      <SelectItem value="0.9">90%</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-neutral-500 mt-1">Minimum confidence level for expense pattern recognition</p>
                 </div>
               </div>
@@ -457,12 +467,17 @@ export default function Settings() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-neutral-700 block mb-2">Refresh Frequency</label>
-                  <select className="w-40 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="300">
-                    <option value="60">Every minute</option>
-                    <option value="300">Every 5 minutes</option>
-                    <option value="900">Every 15 minutes</option>
-                    <option value="3600">Every hour</option>
-                  </select>
+                  <Select defaultValue="300">
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="60">Every minute</SelectItem>
+                      <SelectItem value="300">Every 5 minutes</SelectItem>
+                      <SelectItem value="900">Every 15 minutes</SelectItem>
+                      <SelectItem value="3600">Every hour</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-neutral-500 mt-1">How often to update AI recommendations</p>
                 </div>
               </div>
@@ -529,12 +544,17 @@ export default function Settings() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-neutral-700 block mb-2">LLM Provider</label>
-                  <select className="w-48 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="none">
-                    <option value="none">Pattern Recognition Only</option>
-                    <option value="openai">OpenAI GPT-4</option>
-                    <option value="anthropic">Anthropic Claude</option>
-                    <option value="local">Local Model</option>
-                  </select>
+                  <Select defaultValue="none">
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Pattern Recognition Only</SelectItem>
+                      <SelectItem value="openai">OpenAI GPT-4</SelectItem>
+                      <SelectItem value="anthropic">Anthropic Claude</SelectItem>
+                      <SelectItem value="local">Local Model</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-neutral-500 mt-1">Choose your preferred LLM provider for enhanced analysis</p>
                 </div>
                 <div>
@@ -548,12 +568,17 @@ export default function Settings() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-neutral-700 block mb-2">Analysis Depth</label>
-                  <select className="w-32 p-2 border border-neutral-300 rounded-md text-sm" defaultValue="standard">
-                    <option value="basic">Basic</option>
-                    <option value="standard">Standard</option>
-                    <option value="detailed">Detailed</option>
-                    <option value="comprehensive">Comprehensive</option>
-                  </select>
+                  <Select defaultValue="standard">
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="basic">Basic</SelectItem>
+                      <SelectItem value="standard">Standard</SelectItem>
+                      <SelectItem value="detailed">Detailed</SelectItem>
+                      <SelectItem value="comprehensive">Comprehensive</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-neutral-500 mt-1">More detailed analysis uses more API credits</p>
                 </div>
                 <div className="flex items-center justify-between">
