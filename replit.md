@@ -102,19 +102,28 @@ The application is built as a full-stack web application with a React frontend a
 
 ## Recent Changes
 
-- June 19, 2025: Comprehensive System Fixes + Advanced Settings Architecture + UI Navigation Fixes
-  - **FIXED**: Navigation highlighting issue - Import History no longer incorrectly highlights Import Statements menu item
-  - **ENHANCED**: Import Statements buttons with improved user feedback and success messaging for Clear Data/Recalculate operations
-  - **TESTED**: Added comprehensive test suite (14 tests) covering navigation logic, API functionality, and settings navigation
-  - **FIXED**: Transfer recommendation duplicates - eliminated multiple identical recommendations by marking previous ones as "replaced"
-  - **FIXED**: Category type system - updated legacy "expense" categories to proper "essential" and "discretionary" types
-  - **CREATED**: Comprehensive Settings page with tabbed interface for Transfer Rules, Data Management, and Budget Settings
-  - **ENHANCED**: Navigation structure - replaced individual Transfer Settings with unified Settings hub
-  - **IMPLEMENTED**: Fully functional transfer preferences management with create, edit, delete operations
-  - **RESOLVED**: Transfer generation now properly clears old recommendations before creating new ones
-  - Advanced priority-based transfer destination system with account role matching and goal pattern support
-  - Enhanced UI with proper form validation, error handling, and user feedback throughout settings management
-  - Streamlined navigation by consolidating settings into single comprehensive page
+- June 19, 2025: AI-Enhanced Vaste Lasten Optimization System + Monthly Overview Transaction Allocation Fix
+  - **FIXED**: Monthly Overview transaction allocation bug - removed hardcoded January 2025 logic that caused transactions imported in June to appear in both January and June
+  - **IMPLEMENTED**: Comprehensive AI-Enhanced Fixed Expense Analysis System
+    - FixedExpenseAnalyzer service with ML-based pattern recognition for recurring expenses
+    - Predictive modeling for monthly "Vaste Lasten" requirements with seasonal adjustments
+    - Anomaly detection for expense variations and new fixed expenses
+    - Confidence scoring system for expense pattern reliability
+  - **CREATED**: IntelligentTransferOptimizer with AI-driven transfer recommendations
+    - Priority-based allocation system for "Vaste Lasten" account funding
+    - Buffer optimization calculations with risk reduction analysis
+    - Goal-aware transfer recommendations with progress tracking
+    - Liquidity management across checking and savings accounts
+  - **ADDED**: Six new AI API endpoints for financial intelligence
+    - /api/ai/fixed-expenses/:userId - Analyze fixed expense patterns
+    - /api/ai/vaste-lasten-prediction/:userId - Predict monthly requirements
+    - /api/ai/expense-anomalies/:userId - Detect expense anomalies
+    - /api/ai/intelligent-transfers/:userId - Generate smart transfer recommendations
+    - /api/ai/cashflow-optimization/:userId - Optimize account liquidity
+    - /api/ai/execute-transfer/:userId - Create AI-recommended transfers
+  - **ENHANCED**: Import History page with datetime grouping, drill-down functionality, and pagination (10 sessions per page)
+  - **CREATED**: VasteLastenAI component with tabbed interface for expense patterns, predictions, recommendations, and anomaly detection
+  - AI system provides seasonal expense adjustments, transfer timing optimization, and confidence-based recommendation scoring
   - Transfer recommendations generation + Advanced Import System
   - Enhanced transfer generation to recognize goal-specific savings accounts as valid buffer destinations
   - Created comprehensive verification tests confirming transfer recommendation functionality
