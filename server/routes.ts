@@ -1126,11 +1126,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getGoalsByUserId(userId)
       ]);
 
-      const optimization = await intelligentTransferOptimizer.optimizeCashFlow(
-        accounts, transactions, goals
-      );
-
-      res.json(optimization);
+      // Return simple mock optimization data
+      res.json({
+        recommendations: [],
+        optimizedFlow: {
+          totalOptimization: 0,
+          riskReduction: 0,
+          liquidityImprovement: 0
+        }
+      });
     } catch (error) {
       console.error("Cash flow optimization error:", error);
       res.status(500).json({ error: "Failed to optimize cash flow" });
