@@ -152,7 +152,7 @@ export default function AIFixedExpenseOptimizer() {
       <div className="space-y-6">
         <div className="flex items-center space-x-2">
           <Brain className="w-6 h-6 text-blue-600" />
-          <h2 className="text-2xl font-bold">AI-Enhanced Vaste Lasten Optimization</h2>
+          <h2 className="text-2xl font-bold">AI-Enhanced Fixed Expense Optimization</h2>
         </div>
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map(i => (
@@ -174,7 +174,7 @@ export default function AIFixedExpenseOptimizer() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Brain className="w-6 h-6 text-blue-600" />
-          <h2 className="text-2xl font-bold">AI-Enhanced Vaste Lasten Optimization</h2>
+          <h2 className="text-2xl font-bold">AI-Enhanced Fixed Expense Optimization</h2>
         </div>
         <Badge variant="outline" className="text-blue-600 border-blue-200">
           Powered by AI
@@ -347,7 +347,7 @@ export default function AIFixedExpenseOptimizer() {
                 <p className="text-sm text-gray-600">
                   Total amount: {formatCurrency(intelligentRecommendations.totalAmount)} • 
                   High priority: {intelligentRecommendations.highPriorityRecommendations} • 
-                  Vaste Lasten specific: {intelligentRecommendations.vasteLastenRecommendations}
+                  Fixed expense specific: {intelligentRecommendations.fixedExpenseRecommendations}
                 </p>
               </CardHeader>
               <CardContent>
