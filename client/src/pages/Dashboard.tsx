@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Clock } from "lucide-react";
 import { api } from "@/lib/api";
@@ -7,10 +7,11 @@ import type { DashboardData } from "@/types";
 import ImportModal from "@/components/ImportModal";
 import DraggableLayout from "@/components/DraggableLayout";
 import OutdatedDataNotification from "@/components/OutdatedDataNotification";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 const DEMO_USER_ID = 1;
 
-export default function Dashboard() {
+const Dashboard = memo(function Dashboard() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   
@@ -26,18 +27,27 @@ export default function Dashboard() {
     queryKey: [api.getDashboard(DEMO_USER_ID)],
   });
 
+  // Memoize formatted current date time to prevent unnecessary re-renders
+  const formattedDateTime = useMemo(() => {
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    };
+    const timeOptions: Intl.DateTimeFormatOptions = {
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    
+    return {
+      date: currentDateTime.toLocaleDateString('en-EU', dateOptions),
+      time: currentDateTime.toLocaleTimeString('en-EU', timeOptions)
+    };
+  }, [currentDateTime]);
+
   if (isLoading) {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="animate-pulse space-y-4 sm:space-y-6">
-          <div className="h-6 sm:h-8 bg-gray-200 rounded w-1/2 sm:w-1/4"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            <div className="h-48 sm:h-64 bg-gray-200 rounded-xl"></div>
-            <div className="lg:col-span-2 h-48 sm:h-64 bg-gray-200 rounded-xl"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingSkeleton variant="dashboard" />;
   }
 
   return (
@@ -54,15 +64,7 @@ export default function Dashboard() {
               <div className="flex items-center space-x-2 text-sm text-neutral-500">
                 <Clock size={14} />
                 <span>
-                  {currentDateTime.toLocaleDateString('en-EU', { 
-                    weekday: 'short',
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })} • {currentDateTime.toLocaleTimeString('en-EU', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
+                  {formattedDateTime.date} • {formattedDateTime.time}
                 </span>
               </div>
             </div>
@@ -90,4 +92,6 @@ export default function Dashboard() {
       />
     </>
   );
-}
+});
+
+export default Dashboard;

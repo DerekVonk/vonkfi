@@ -1,21 +1,28 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { memo, useMemo, useCallback } from "react";
 import type { FireMetrics } from "@/types";
 
 interface IncomeVolatilityChartProps {
   data?: FireMetrics;
 }
 
-export default function IncomeVolatilityChart({ data }: IncomeVolatilityChartProps) {
-  // Generate sample data for the volatility chart
-  // In a real app, this would come from actual historical data
-  const generateChartData = () => {
+const IncomeVolatilityChart = memo(function IncomeVolatilityChart({ data }: IncomeVolatilityChartProps) {
+  // Memoize chart data generation to prevent recalculation on every render
+  const chartData = useMemo(() => {
     const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const baseIncome = data?.volatility.average || 4120;
     const stdDev = data?.volatility.standardDeviation || 315;
     
+    // Use a seed for consistent "random" data
+    let seed = 123;
+    const seededRandom = () => {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+    
     return months.map((month, index) => {
-      // Generate realistic income variation
-      const variation = (Math.random() - 0.5) * stdDev * 2;
+      // Generate realistic income variation with seeded random
+      const variation = (seededRandom() - 0.5) * stdDev * 2;
       const income = baseIncome + variation;
       
       return {
@@ -26,17 +33,15 @@ export default function IncomeVolatilityChart({ data }: IncomeVolatilityChartPro
         lowerBound: Math.round(baseIncome - stdDev),
       };
     });
-  };
+  }, [data?.volatility.average, data?.volatility.standardDeviation]);
 
-  const chartData = generateChartData();
-
-  const formatCurrency = (value: number) => {
+  const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('en-EU', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
     }).format(value);
-  };
+  }, []);
 
   return (
     <div className="h-48">
@@ -108,4 +113,6 @@ export default function IncomeVolatilityChart({ data }: IncomeVolatilityChartPro
       </ResponsiveContainer>
     </div>
   );
-}
+});
+
+export default IncomeVolatilityChart;
