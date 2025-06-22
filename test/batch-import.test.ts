@@ -1,15 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
-import { createServer } from 'http';
+import { Server } from 'http';
 import express from 'express';
+import type { Express } from 'express';
 import { registerRoutes } from '../server/routes';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { duplicateDetectionService } from '../server/services/duplicateDetection';
 
 describe('Batch Import and Duplicate Detection Tests', () => {
-  let app: express.Application;
-  let server: ReturnType<typeof createServer>;
+  let app: Express;
+  let server: Server;
 
   beforeEach(async () => {
     app = express();
@@ -156,7 +157,7 @@ describe('Batch Import and Duplicate Detection Tests', () => {
     it('should track duplicate statistics in import history', async () => {
       const userId = 1;
       
-      // Get import history after duplicate detection test
+      // Get import history after a duplicate detection test
       const historyResponse = await request(app)
         .get(`/api/imports/${userId}`)
         .expect(200);
@@ -326,7 +327,7 @@ describe('Batch Import and Duplicate Detection Tests', () => {
     it('should track failed imports in history', async () => {
       const userId = 1;
 
-      // Check import history for failed imports
+      // Check the import history for failed imports
       const historyResponse = await request(app)
         .get(`/api/imports/${userId}`)
         .expect(200);

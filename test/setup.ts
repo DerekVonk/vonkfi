@@ -60,7 +60,11 @@ beforeAll(async () => {
     console.log('Test database connected successfully');
     dbConnectionFailed = false;
   } catch (error) {
-    console.warn('Test database connection failed:', error.message);
+    if (error instanceof Error) {
+      console.warn('Operation failed:', error.message);
+    } else {
+      console.warn('Unknown error:', String(error));
+    }
     dbConnectionFailed = true;
 
     // Always use mock storage when database connection fails

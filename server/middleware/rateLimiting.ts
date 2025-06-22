@@ -65,7 +65,7 @@ export class RateLimiter {
 
   private cleanup(): void {
     const now = Date.now();
-    for (const [key, entry] of this.requests.entries()) {
+    for (const [key, entry] of Array.from(this.requests.entries())) {
       if (entry.resetTime < now) {
         this.requests.delete(key);
       }
@@ -108,19 +108,20 @@ export class RateLimiter {
       // Handle response tracking if configured
       if (this.config.skipSuccessfulRequests || this.config.skipFailedRequests) {
         const originalSend = res.send;
-        res.send = function(body) {
+        const rateLimiter = this;
+        res.send = function(body: any) {
           const statusCode = res.statusCode;
           
           // Skip counting based on response status
           if (
-            (this.config.skipSuccessfulRequests && statusCode < 400) ||
-            (this.config.skipFailedRequests && statusCode >= 400)
+            (rateLimiter.config.skipSuccessfulRequests && statusCode < 400) ||
+            (rateLimiter.config.skipFailedRequests && statusCode >= 400)
           ) {
             entry.count--;
           }
           
           return originalSend.call(res, body);
-        }.bind(this);
+        };
       }
 
       next();

@@ -348,7 +348,7 @@ export const validateRateLimit = (maxRequests: number, windowMs: number) => {
     const windowStart = now - windowMs;
 
     // Clean up expired entries
-    for (const [key, value] of requests.entries()) {
+    for (const [key, value] of Array.from(requests.entries())) {
       if (value.resetTime < now) {
         requests.delete(key);
       }

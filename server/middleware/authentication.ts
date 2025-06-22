@@ -19,6 +19,16 @@ declare global {
   }
 }
 
+// Extend express-session types
+declare module 'express-session' {
+  interface SessionData {
+    userId?: number;
+    username?: string;
+    loginTime?: Date;
+    csrfToken?: string;
+  }
+}
+
 // Session configuration
 const MemoryStoreConstructor = MemoryStore(session);
 
@@ -215,16 +225,6 @@ export class SessionManager {
   }
 }
 
-/**
- * Extend session type definitions
- */
-declare module 'express-session' {
-  interface SessionData {
-    userId: number;
-    username: string;
-    loginTime: Date;
-  }
-}
 
 /**
  * Security headers middleware

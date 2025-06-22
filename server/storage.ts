@@ -15,7 +15,7 @@ import {
   type TransferPreference, type InsertTransferPreference
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, inArray, and, desc, leftJoin, sql } from "drizzle-orm";
+import { eq, inArray, and, desc, sql } from "drizzle-orm";
 import { hashPassword, verifyPassword, needsRehash } from "./utils/passwordSecurity";
 
 // Performance monitoring utility
@@ -530,7 +530,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Validation: Check sufficient funds
-      const sourceBalance = parseFloat(sourceAccount.balance);
+      const sourceBalance = parseFloat(sourceAccount.balance || '0');
       if (sourceBalance < amount) {
         return { success: false, message: "Insufficient funds in source account" };
       }
@@ -563,7 +563,7 @@ export class DatabaseStorage implements IStorage {
 
       // Update account balances
       const newSourceBalance = (sourceBalance - amount).toString();
-      const newDestinationBalance = (parseFloat(destinationAccount.balance) + amount).toString();
+      const newDestinationBalance = (parseFloat(destinationAccount.balance || '0') + amount).toString();
 
       await Promise.all([
         this.updateAccount(fromAccountId, { balance: newSourceBalance }),
@@ -641,7 +641,7 @@ export class DatabaseStorage implements IStorage {
       categoryType: categories.type,
     })
     .from(budgetCategories)
-    .leftJoin(categories, eq(budgetCategories.categoryId, categories.id))
+    .innerJoin(categories, eq(budgetCategories.categoryId, categories.id))
     .where(eq(budgetCategories.budgetPeriodId, budgetPeriodId))
     .orderBy(budgetCategories.priority, categories.name);
   }
@@ -669,7 +669,7 @@ export class DatabaseStorage implements IStorage {
       balance: accounts.balance || '0',
     })
     .from(budgetAccounts)
-    .leftJoin(accounts, eq(budgetAccounts.accountId, accounts.id))
+    .innerJoin(accounts, eq(budgetAccounts.accountId, accounts.id))
     .where(eq(budgetAccounts.budgetPeriodId, budgetPeriodId))
     .orderBy(budgetAccounts.role);
   }
@@ -784,7 +784,7 @@ export class DatabaseStorage implements IStorage {
   }> {
     return QueryPerformanceMonitor.timeQuery('getDashboardDataOptimized', async () => {
       // Query 1: Get all basic user data in parallel
-      const [accounts, goals, categories, transferRecommendations] = await Promise.all([
+      const [userAccounts, userGoals, allCategories, userTransferRecommendations] = await Promise.all([
         QueryPerformanceMonitor.timeQuery('accounts', () => this.getAccountsByUserId(userId)),
         QueryPerformanceMonitor.timeQuery('goals', () => this.getGoalsByUserId(userId)),
         QueryPerformanceMonitor.timeQuery('categories', () => this.getCategories()),
@@ -812,18 +812,18 @@ export class DatabaseStorage implements IStorage {
           })
           .from(transactions)
           .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-          .leftJoin(categories, eq(transactions.categoryId, categories.id))
+          .innerJoin(categories, eq(transactions.categoryId, categories.id))
           .where(eq(accounts.userId, userId))
           .orderBy(desc(transactions.date))
           .limit(10)
       );
 
       return {
-        accounts,
+        accounts: userAccounts,
         transactions: transactionsWithCategories,
-        goals,
-        categories,
-        transferRecommendations
+        goals: userGoals,
+        categories: allCategories,
+        transferRecommendations: userTransferRecommendations
       };
     });
   }
@@ -851,7 +851,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(transactions)
         .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-        .leftJoin(categories, eq(transactions.categoryId, categories.id))
+        .innerJoin(categories, eq(transactions.categoryId, categories.id))
         .where(eq(accounts.userId, userId))
         .orderBy(desc(transactions.date))
         .limit(limit)

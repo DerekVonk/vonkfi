@@ -91,13 +91,13 @@ export default function Accounts() {
     });
   };
 
-  const getAccountIcon = (accountType: string, role: string | null) => {
+  const getAccountIcon = (accountType: string | null, role: string | null) => {
     if (role === 'emergency') return Shield;
     if (accountType === 'savings') return PiggyBank;
     return CreditCard;
   };
 
-  const getAccountTypeColor = (accountType: string, role: string | null) => {
+  const getAccountTypeColor = (accountType: string | null, role: string | null) => {
     if (role === 'emergency') return 'bg-orange-100 text-orange-800';
     if (role === 'income') return 'bg-green-100 text-green-800';
     if (accountType === 'savings') return 'bg-blue-100 text-blue-800';

@@ -25,11 +25,14 @@ const Transfers = memo(function Transfers() {
   });
 
   const generateTransfersMutation = useMutation({
-    mutationFn: () => api.generateTransfers(DEMO_USER_ID),
-    onSuccess: (response) => {
+    mutationFn: async () => {
+      const response = await api.generateTransfers(DEMO_USER_ID);
+      return await response.json();
+    },
+    onSuccess: (data) => {
       toast({
         title: "Transfer Recommendations Generated",
-        description: `Generated ${response.data?.recommendations?.length || 0} transfer recommendations`,
+        description: `Generated ${data?.recommendations?.length || 0} transfer recommendations`,
       });
       queryClient.invalidateQueries({ queryKey: [api.getTransfers(DEMO_USER_ID)] });
     },
@@ -71,7 +74,7 @@ const Transfers = memo(function Transfers() {
     return account ? `...${account.iban.slice(-4)}` : '';
   }, [accounts]);
 
-  const getStatusColor = useCallback((status: string) => {
+  const getStatusColor = useCallback((status: string | null) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-blue-100 text-blue-800';
@@ -80,7 +83,7 @@ const Transfers = memo(function Transfers() {
     }
   }, []);
 
-  const getStatusIcon = useCallback((status: string) => {
+  const getStatusIcon = useCallback((status: string | null) => {
     switch (status) {
       case 'completed': return CheckCircle;
       case 'pending': return Clock;
@@ -89,8 +92,8 @@ const Transfers = memo(function Transfers() {
     }
   }, []);
 
-  const formatCurrency = useCallback((amount: number | string) => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  const formatCurrency = useCallback((amount: number | string | null) => {
+    const num = typeof amount === 'string' ? parseFloat(amount || '0') : (amount || 0);
     return new Intl.NumberFormat('en-EU', {
       style: 'currency',
       currency: 'EUR',
@@ -101,8 +104,8 @@ const Transfers = memo(function Transfers() {
   const transferStats = useMemo(() => {
     const pendingTransfers = transfers?.filter(t => t.status === 'pending') || [];
     const completedTransfers = transfers?.filter(t => t.status === 'completed') || [];
-    const totalValue = transfers?.reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
-    const completedValue = completedTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    const totalValue = transfers?.reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) || 0;
+    const completedValue = completedTransfers.reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0);
     const progressPercentage = totalValue > 0 ? (completedValue / totalValue) * 100 : 0;
     
     return {

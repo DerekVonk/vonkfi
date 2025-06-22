@@ -2,7 +2,7 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import express from 'express';
 import {storage} from '../server/storage';
 import {registerRoutes} from '../server/routes';
-import { dbConnectionFailed } from './setup';
+import {dbConnectionFailed} from './setup';
 
 const app = express();
 app.use(express.json());
@@ -33,7 +33,11 @@ describe('Budget Management Tests', () => {
             // Clean up any existing data
             await storage.clearUserData(testUserId);
         } catch (error) {
-            console.warn('Database setup failed, skipping database tests:', error.message);
+            if (error instanceof Error) {
+                console.warn('Operation failed:', error.message);
+            } else {
+                console.warn('Unknown error:', String(error));
+            }
             process.env.SKIP_DB_TESTS = 'true';
             return;
         }

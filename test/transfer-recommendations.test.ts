@@ -442,7 +442,7 @@ describe('Transfer Recommendations Generation', () => {
     });
 
     it('should handle completed goals correctly', async () => {
-      // Create main account
+      // Create the main account
       const mainAccount = await request(app)
         .post('/api/accounts')
         .send({

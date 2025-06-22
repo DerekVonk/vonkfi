@@ -28,7 +28,7 @@ import session from "express-session";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-export async function registerRoutes(app: e.Application): Promise<Server> {
+export async function registerRoutes(app: Express): Promise<Server> {
   const camtParser = new CamtParser();
   const fireCalculator = new FireCalculator();
 
@@ -71,7 +71,7 @@ export async function registerRoutes(app: e.Application): Promise<Server> {
     }
   } catch (error) {
     console.error("Failed to initialize default user:", error);
-    // Continue without default user for now
+    // Continue without a default user for now
   }
 
   // Dashboard data endpoint - OPTIMIZED (Reduced from 5+ queries to 2-3 queries)
@@ -486,6 +486,17 @@ export async function registerRoutes(app: e.Application): Promise<Server> {
     })
   );
 
+  // Constants for HTTP status codes and error messages
+  const HTTP_STATUS_NOT_FOUND = 404;
+  const CATEGORY_NOT_FOUND_MESSAGE = "Category not found";
+
+  // Helper function to throw an error if category is not found
+  const throwIfCategoryNotFound = (category: unknown): void => {
+    if (!category) {
+      throw new AppError(CATEGORY_NOT_FOUND_MESSAGE, HTTP_STATUS_NOT_FOUND);
+    }
+  };
+
   // Delete category
   app.delete("/api/categories/:categoryId", 
     validateRequest({ 
@@ -509,11 +520,13 @@ export async function registerRoutes(app: e.Application): Promise<Server> {
         }
       }
 
-      const result = await storage.deleteCategory(Number(categoryId));
+      // First check if the category exists
+      const categories = await storage.getCategories();
+      const category = categories.find(c => c.id === Number(categoryId));
+      throwIfCategoryNotFound(category);
 
-      if (!result) {
-        throw new AppError("Category not found", 404);
-      }
+      // Then delete it
+      await storage.deleteCategory(Number(categoryId));
 
       logger.info('Category deleted successfully', {
         categoryId,
@@ -642,7 +655,7 @@ export async function registerRoutes(app: e.Application): Promise<Server> {
       logger.info('Goal created successfully', {
         goalId: goal.id,
         goalName: goal.name,
-        target: goal.target,
+        target: goal.targetAmount,
         priority: goal.priority,
       });
 

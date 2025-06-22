@@ -26,7 +26,7 @@ export interface ErrorResponse {
 }
 
 // Async handler wrapper to catch async errors
-export const asyncHandler = (fn: Function) => {
+export const asyncHandler = <T>(fn: (req: Request, res: Response, next?: NextFunction) => Promise<T>) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };

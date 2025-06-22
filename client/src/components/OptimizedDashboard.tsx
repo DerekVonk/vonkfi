@@ -313,7 +313,11 @@ const OptimizedDashboard = memo(({ userId }: { userId: number }) => {
   // Use React Query for optimized data fetching with caching
   const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ['dashboard', userId],
-    queryFn: () => api.get(`/dashboard/${userId}`),
+    queryFn: async () => {
+      const response = await fetch(api.getDashboard(userId), { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch dashboard');
+      return response.json();
+    },
     staleTime: 30000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
