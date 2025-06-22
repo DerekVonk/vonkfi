@@ -25,8 +25,39 @@ export class CamtParser {
       const iban = accountInfo.Id[0].IBAN[0];
       const accountHolder = accountInfo.Ownr?.[0]?.Nm?.[0] || 'Unknown';
       const bankInfo = accountInfo.Svcr?.[0];
-      const bankName = bankInfo?.FinInstnId?.[0]?.Nm?.[0] || 'Unknown Bank';
+      
+      // Try to extract bank name from multiple sources
+      let bankName = bankInfo?.FinInstnId?.[0]?.Nm?.[0];
+      
+      // If no bank name found in the service provider, try alternative locations
+      if (!bankName) {
+        // Check if there's bank information in the statement header
+        bankName = document.BkToCstmrStmt?.[0]?.GrpHdr?.[0]?.MsgRcpt?.[0]?.Nm?.[0] ||
+                  document.BkToCstmrStmt?.[0]?.GrpHdr?.[0]?.InstgAgt?.[0]?.FinInstnId?.[0]?.Nm?.[0];
+      }
+      
+      // Fallback to BIC-based bank identification if available
       const bic = bankInfo?.FinInstnId?.[0]?.BIC?.[0];
+      if (!bankName && bic) {
+        // Map common BIC codes to bank names
+        const bicToBankMap: Record<string, string> = {
+          'ABNANL2A': 'ABN AMRO Bank',
+          'INGBNL2A': 'ING Bank',
+          'RABONL2U': 'Rabobank',
+          'DEUTNL2N': 'Deutsche Bank Nederland',
+          'SNSBNL2A': 'SNS Bank',
+          'ASNBNL21': 'ASN Bank',
+          'BUNQNL2A': 'bunq',
+          'REVOLUT21': 'Revolut',
+          'TRIONL2U': 'Triodos Bank',
+          'FBHLLUX': 'Banque et Caisse d\'Epargne de l\'Etat',
+          'BCMCLUX': 'Banque et Caisse d\'Epargne de l\'Etat',
+        };
+        bankName = bicToBankMap[bic] || bic;
+      }
+      
+      // Final fallback
+      bankName = bankName || 'Unknown Bank';
 
       // Extract balance information from CAMT <Bal> tags (per specification)
       let openingBalance = 0;

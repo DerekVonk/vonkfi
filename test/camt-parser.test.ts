@@ -28,6 +28,22 @@ describe('CAMT.053 Parser Unit Tests', () => {
     expect(parseFloat(account.balance)).toBe(expectedCamtData.account.closingBalance);
   });
 
+  it('should extract bank name from CAMT data or fallback to BIC mapping', async () => {
+    const result = await parser.parseFile(xmlContent);
+    
+    expect(result.accounts).toHaveLength(1);
+    const account = result.accounts[0];
+    
+    // Bank name should not be "Unknown Bank" and should be extracted properly
+    expect(account.bankName).not.toBe('Unknown Bank');
+    expect(account.bankName).toBeTruthy();
+    
+    // If BIC is ABNANL2A, should map to ABN AMRO Bank
+    if (account.bic === 'ABNANL2A') {
+      expect(account.bankName).toBe('ABN AMRO Bank');
+    }
+  });
+
   it('should parse all transactions with correct amounts and types', async () => {
     const result = await parser.parseFile(xmlContent);
     

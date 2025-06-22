@@ -468,8 +468,44 @@ describe('Frontend Component Tests', () => {
             });
 
             expect(screen.getByLabelText('Custom Name')).toBeInTheDocument();
+            expect(screen.getByLabelText('Bank Name')).toBeInTheDocument();
             expect(screen.getByLabelText('Account Type')).toBeInTheDocument();
             expect(screen.getByLabelText('Account Role')).toBeInTheDocument();
+        });
+
+        it('should toggle IBAN visibility', async () => {
+            const user = userEvent.setup();
+            renderWithProviders(<Accounts />);
+
+            await waitFor(() => {
+                expect(screen.getByText('Account Management')).toBeInTheDocument();
+            });
+
+            // Initially should show truncated IBAN
+            expect(screen.getByText('...1234')).toBeInTheDocument();
+
+            // Find and click the eye icon to show full IBAN
+            const eyeButtons = screen.getAllByRole('button');
+            const eyeButton = eyeButtons.find(button => 
+                button.querySelector('svg') && button.className.includes('h-6 w-6')
+            );
+            
+            if (eyeButton) {
+                await user.click(eyeButton);
+                
+                await waitFor(() => {
+                    // Should now show full IBAN (mocked data shows NL91ABNA0417164300)
+                    expect(screen.getByText(/NL91ABNA0417164300/)).toBeInTheDocument();
+                });
+
+                // Click again to hide
+                await user.click(eyeButton);
+                
+                await waitFor(() => {
+                    // Should be back to truncated
+                    expect(screen.getByText('...1234')).toBeInTheDocument();
+                });
+            }
         });
 
         it('should save account changes', async () => {

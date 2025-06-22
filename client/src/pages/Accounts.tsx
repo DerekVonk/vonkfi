@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { University, Settings, CreditCard, PiggyBank, Shield, Edit2, Trash2 } from "lucide-react";
+import { University, Settings, CreditCard, PiggyBank, Shield, Edit2, Trash2, Eye, EyeOff } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Account } from "@/types";
 
@@ -18,10 +18,12 @@ const DEMO_USER_ID = 1;
 export default function Accounts() {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
+  const [visibleIbans, setVisibleIbans] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState({
     customName: "",
     accountType: "",
     role: "",
+    bankName: "",
   });
   
   const { toast } = useToast();
@@ -80,6 +82,19 @@ export default function Accounts() {
       customName: account.customName || "",
       accountType: account.accountType || "",
       role: account.role || "",
+      bankName: account.bankName || "",
+    });
+  };
+
+  const toggleIbanVisibility = (accountId: number) => {
+    setVisibleIbans(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(accountId)) {
+        newSet.delete(accountId);
+      } else {
+        newSet.add(accountId);
+      }
+      return newSet;
     });
   };
 
@@ -256,7 +271,22 @@ export default function Accounts() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs sm:text-sm text-neutral-600">IBAN</span>
-                      <span className="text-xs sm:text-sm font-mono">...{account.iban.slice(-4)}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs sm:text-sm font-mono">
+                          {visibleIbans.has(account.id) ? account.iban : `...${account.iban.slice(-4)}`}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => toggleIbanVisibility(account.id)}
+                        >
+                          {visibleIbans.has(account.id) ? 
+                            <EyeOff size={12} /> : 
+                            <Eye size={12} />
+                          }
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs sm:text-sm text-neutral-600">Type</span>
@@ -335,6 +365,16 @@ export default function Accounts() {
                 value={formData.customName}
                 onChange={(e) => setFormData(prev => ({ ...prev, customName: e.target.value }))}
                 placeholder="Enter custom name for this account"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="bankName">Bank Name</Label>
+              <Input
+                id="bankName"
+                value={formData.bankName}
+                onChange={(e) => setFormData(prev => ({ ...prev, bankName: e.target.value }))}
+                placeholder="Enter bank name"
               />
             </div>
             
