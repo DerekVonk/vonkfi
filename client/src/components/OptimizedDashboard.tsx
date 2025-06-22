@@ -34,6 +34,23 @@ interface FireMetrics {
   savingsRate: number;
   fireProgress: number;
   yearsToFire: number;
+  monthlyBreakdown: {
+    month: string;
+    income: number;
+    expenses: number;
+    savings: number;
+  }[];
+  bufferStatus: {
+    current: number;
+    target: number;
+    status: 'below' | 'optimal' | 'above';
+  };
+  volatility: {
+    average: number;
+    standardDeviation: number;
+    coefficientOfVariation: number;
+    score: 'low' | 'medium' | 'high';
+  };
 }
 
 interface DashboardData {

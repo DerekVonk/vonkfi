@@ -40,19 +40,19 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
   const monthData = useMemo(() => {
     const monthKey = selectedMonth.toISOString().substring(0, 7); // YYYY-MM format
     const currentMonthKey = new Date().toISOString().substring(0, 7);
-    
+
     // If looking at current month, always use the live fireMetrics data
     if (monthKey === currentMonthKey) {
       return {
-        income: dashboardData?.fireMetrics.monthlyIncome || 0,
-        expenses: dashboardData?.fireMetrics.monthlyExpenses || 0,
-        savings: (dashboardData?.fireMetrics.monthlyIncome || 0) - (dashboardData?.fireMetrics.monthlyExpenses || 0),
-        savingsRate: dashboardData?.fireMetrics.savingsRate || 0
+        income: dashboardData?.data?.fireMetrics?.monthlyIncome || 0,
+        expenses: dashboardData?.data?.fireMetrics?.monthlyExpenses || 0,
+        savings: (dashboardData?.data?.fireMetrics?.monthlyIncome || 0) - (dashboardData?.data?.fireMetrics?.monthlyExpenses || 0),
+        savingsRate: dashboardData?.data?.fireMetrics?.savingsRate || 0
       };
     }
-    
+
     // For historical months, look in monthlyBreakdown
-    const monthData = dashboardData?.fireMetrics.monthlyBreakdown?.find(
+    const monthData = dashboardData?.data?.fireMetrics?.monthlyBreakdown?.find(
       m => m.month === monthKey
     );
 
@@ -72,7 +72,7 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
       savings: 0,
       savingsRate: 0
     };
-  }, [selectedMonth, dashboardData?.fireMetrics]);
+  }, [selectedMonth, dashboardData?.data?.fireMetrics]);
 
   const isCurrentMonth = useMemo(() => {
     return selectedMonth.toISOString().substring(0, 7) === new Date().toISOString().substring(0, 7);
@@ -94,7 +94,7 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
         >
           <ChevronLeft size={16} />
         </Button>
-        
+
         <div className="text-center">
           <h3 className="font-medium text-neutral-800">
             {formattedMonth}
@@ -103,7 +103,7 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
             <p className="text-xs text-green-600">Current Month</p>
           )}
         </div>
-        
+
         <Button
           variant="ghost"
           size="sm"
@@ -129,7 +129,7 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
             {isCurrentMonth ? 'Current month' : 'Historical'}
           </div>
         </div>
-        
+
         <div className="text-center">
           <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center mx-auto mb-3">
             <ArrowDown className="text-neutral-600" size={20} />
@@ -155,7 +155,7 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
             {formatPercentage(monthData.savingsRate)} rate
           </div>
         </div>
-        
+
         <div className="text-center">
           <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center mx-auto mb-3">
             <ArrowLeftRight className="text-orange-500" size={20} />

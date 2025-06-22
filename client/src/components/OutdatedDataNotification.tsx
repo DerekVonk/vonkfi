@@ -16,10 +16,10 @@ export default function OutdatedDataNotification({ dashboardData, userId }: Outd
 
   // Check if data is outdated (more than 1 month old)
   const isDataOutdated = () => {
-    if (!dashboardData?.fireMetrics.currentMonth) return false;
+    if (!dashboardData?.fireMetrics?.currentMonth) return false;
     
     const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
-    const dataMonth = dashboardData.fireMetrics.currentMonth;
+    const dataMonth = dashboardData.fireMetrics!.currentMonth;
     
     const current = new Date(currentMonth + "-01");
     const data = new Date(dataMonth + "-01");
@@ -42,7 +42,7 @@ export default function OutdatedDataNotification({ dashboardData, userId }: Outd
         <AlertDescription className="flex items-center justify-between">
           <div className="text-orange-800">
             <strong>Bank statements may be outdated.</strong> Your calculations are based on data from{" "}
-            {new Date(dashboardData?.fireMetrics.currentMonth + "-01").toLocaleDateString('en-EU', { 
+            {new Date(dashboardData?.fireMetrics?.currentMonth + "-01").toLocaleDateString('en-EU', { 
               month: 'long', 
               year: 'numeric' 
             })}. Import recent statements for accurate insights.

@@ -1,25 +1,31 @@
 # Multi-stage build for VonkFi application
 FROM node:18-alpine AS base
+RUN apk add --no-cache libc6-compat
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
+RUN npm rebuild bcrypt --build-from-source
 
 # Development dependencies for building
 FROM base AS build-deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
+RUN npm rebuild bcrypt --build-from-source
 
 # Build the application
 FROM build-deps AS builder
 WORKDIR /app
+# Explicitly copy node_modules from build-deps stage
+# This ensures bcrypt is available in the builder stage
+COPY --from=build-deps /app/node_modules ./node_modules
 COPY . .
 
 # Build frontend and backend

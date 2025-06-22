@@ -53,7 +53,7 @@ export class RateLimiter {
     return `${ip}:${userAgent.slice(0, 50)}`;
   }
 
-  private defaultOnLimitReached(req: Request, res: Response): void {
+  private defaultOnLimitReached = (req: Request, res: Response): void => {
     const retryAfter = Math.ceil(this.config.windowMs / 1000);
     res.set({
       'Retry-After': retryAfter.toString(),

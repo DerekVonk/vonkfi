@@ -21,19 +21,20 @@ export default function Import() {
     mutationFn: () => api.clearUserData(DEMO_USER_ID),
     onSuccess: async () => {
       // Force invalidate all relevant queries and trigger refetch
-      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      await queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      await queryClient.invalidateQueries({ queryKey: ['goals'] });
-      await queryClient.invalidateQueries({ queryKey: ['transfers'] });
+      await queryClient.invalidateQueries({ queryKey: [api.getDashboard(DEMO_USER_ID)] });
+      await queryClient.invalidateQueries({ queryKey: [api.getAccounts(DEMO_USER_ID)] });
+      await queryClient.invalidateQueries({ queryKey: [api.getTransactions(DEMO_USER_ID)] });
+      await queryClient.invalidateQueries({ queryKey: [api.getGoals(DEMO_USER_ID)] });
+      await queryClient.invalidateQueries({ queryKey: [api.getTransfers(DEMO_USER_ID)] });
       await queryClient.invalidateQueries({ queryKey: ['imports'] });
       
-      // Force refetch dashboard data
-      await queryClient.refetchQueries({ queryKey: ['dashboard'] });
+      // Force refetch dashboard and accounts data to show balance changes immediately
+      await queryClient.refetchQueries({ queryKey: [api.getDashboard(DEMO_USER_ID)] });
+      await queryClient.refetchQueries({ queryKey: [api.getAccounts(DEMO_USER_ID)] });
       
       toast({
         title: "All Import Data Cleared Successfully",
-        description: "✓ All transactions, statements, and calculations have been cleared. Account settings and goals are preserved. Dashboard has been recalculated.",
+        description: "✓ All transactions, statements, calculations, and account balances have been cleared. Account settings and goals are preserved. Dashboard has been recalculated.",
         duration: 8000,
       });
       setShowClearDataDialog(false);
@@ -185,13 +186,14 @@ export default function Import() {
               <br />• All imported transactions and bank statements
               <br />• All transfer recommendations and calculations
               <br />• Goal progress (amounts reset to 0)
+              <br />• <strong>Account balances (reset to 0)</strong>
               <br /><br />
               Your configurations will be preserved:
               <br />• Account settings and categories
               <br />• Goal definitions and targets
               <br />• Crypto wallet configurations
               <br /><br />
-              You can re-import bank statements to restore your financial data.
+              <strong>Note:</strong> Account balances will be reset to zero to maintain consistency. You can re-import bank statements to restore your financial data and balances.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

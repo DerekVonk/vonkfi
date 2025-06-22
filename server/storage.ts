@@ -383,6 +383,13 @@ export class DatabaseStorage implements IStorage {
         .where(eq(goals.id, goal.id));
     }
     
+    // Reset account balances to 0 to ensure consistency with cleared transactions
+    if (accountIds.length > 0) {
+      await db.update(accounts)
+        .set({ balance: "0" })
+        .where(inArray(accounts.id, accountIds));
+    }
+    
     // Note: Accounts, categories, goals, and crypto wallets are preserved
   }
 
@@ -791,7 +798,7 @@ export class DatabaseStorage implements IStorage {
         QueryPerformanceMonitor.timeQuery('transferRecommendations', () => this.getTransferRecommendationsByUserId(userId))
       ]);
 
-      // Query 2: Get transactions with category names using optimized join (limited to 10 for dashboard)
+      // Query 2: Get ALL transactions (not limited) with optional category names for monthly breakdown calculations
       const transactionsWithCategories = await QueryPerformanceMonitor.timeQuery('transactionsWithCategories', () =>
         db
           .select({
@@ -812,10 +819,9 @@ export class DatabaseStorage implements IStorage {
           })
           .from(transactions)
           .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-          .innerJoin(categories, eq(transactions.categoryId, categories.id))
+          .leftJoin(categories, eq(transactions.categoryId, categories.id))
           .where(eq(accounts.userId, userId))
           .orderBy(desc(transactions.date))
-          .limit(10)
       );
 
       return {
