@@ -1,0 +1,84 @@
+# Development override for VonkFi
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: vonkfi_dev
+      POSTGRES_USER: vonkfi_dev
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./database-setup.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+
+  redis:
+    command: redis-server --appendonly yes  # No password for dev
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+
+  vonkfi-app:
+    build:
+      target: builder  # Use builder stage for development
+    container_name: vonkfi-app-dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://vonkfi_dev:dev_password@postgres:5432/vonkfi_dev
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: dev_session_secret_not_secure
+      JWT_SECRET: dev_jwt_secret_not_secure
+      LOG_LEVEL: debug
+      CORS_ORIGIN: http://localhost:3000
+    volumes:
+      # Mount source code for development
+      - .:/app
+      - /app/node_modules  # Prevent overwriting node_modules
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    command: npm run dev  # Use development command
+    ports:
+      - "3001:3000"  # Different port for dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Development database admin tool
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: vonkfi-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@vonkfi.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - vonkfi-network
+    depends_on:
+      - postgres
+
+  # Redis admin tool
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: vonkfi-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - vonkfi-network
+    depends_on:
+      - redis
+
+volumes:
+  pgadmin_data:
+    driver: local
+  postgres_data_dev:
+    driver: local
