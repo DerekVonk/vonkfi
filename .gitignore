@@ -1,6 +1,138 @@
-node_modules
-dist
-.DS_Store
-server/public
-vite.config.ts.*
+# Dependencies
+node_modules/
+dist/
 *.tar.gz
+
+# Build outputs
+build/
+out/
+server/public/
+vite.config.ts.*
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+.env.test
+
+# Financial data files (Privacy Protection)
+*.camt
+*.xml
+*.csv
+*.ofx
+*.qif
+*.mt940
+uploads/*
+data/
+backups/
+exports/
+statements/
+
+# Logs and temp files
+logs/*
+*.log
+.cache/
+tmp/
+temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# JetBrains IDEs
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+.*.swp
+.*.swo
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+.dockerignore
+
+# Testing
+.nyc_output/
+test-results/
+playwright-report/
+
+# AI Tools and Assistants
+.claude/
+.cursor/
+.codeium/
+.tabnine/
+.copilot/
+.github-copilot/
+.supermaven/
+.aider/
+.continue/
+.codegpt/
+.cody/
+.sourcegraph/
+.junie/
+.jetbrains-ai/
+.ai-chat/
+.assistant/
+*.ai-session
+*.copilot-session
+ai-logs/
+ai-cache/
+.aicommits
+.gpt-commit-summarizer
