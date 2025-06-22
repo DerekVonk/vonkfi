@@ -4,6 +4,9 @@ import { createServer } from 'http';
 import express from 'express';
 import { registerRoutes } from '../server/routes';
 
+// Check if database tests should be skipped
+const shouldSkipDbTests = process.env.SKIP_DB_TESTS === 'true';
+
 describe('Business Logic Tests', () => {
   let app: express.Application;
   let server: ReturnType<typeof createServer>;
@@ -22,8 +25,13 @@ describe('Business Logic Tests', () => {
 
   describe('Goal Management with Account Linking', () => {
     it('should allow goal editing without affecting imported data', async () => {
+      if (shouldSkipDbTests) {
+        console.log('Skipping database test - no test database available');
+        return;
+      }
+
       const userId = 1;
-      
+
       // Clear existing data
       await request(app)
         .delete(`/api/data/${userId}`)
@@ -74,8 +82,13 @@ describe('Business Logic Tests', () => {
     });
 
     it('should sync goal current amount when linked to account with balance updates', async () => {
+      if (shouldSkipDbTests) {
+        console.log('Skipping database test - no test database available');
+        return;
+      }
+
       const userId = 1;
-      
+
       // Clear existing data
       await request(app)
         .delete(`/api/data/${userId}`)
@@ -140,8 +153,13 @@ describe('Business Logic Tests', () => {
     });
 
     it('should not sync goal amount when not linked to account', async () => {
+      if (shouldSkipDbTests) {
+        console.log('Skipping database test - no test database available');
+        return;
+      }
+
       const userId = 1;
-      
+
       // Create a goal without account linking
       const goalData = {
         name: 'Manual Savings',
@@ -176,8 +194,13 @@ describe('Business Logic Tests', () => {
 
   describe('FIRE Calculation Business Logic', () => {
     it('should calculate accurate FIRE metrics with multiple accounts and goals', async () => {
+      if (shouldSkipDbTests) {
+        console.log('Skipping database test - no test database available');
+        return;
+      }
+
       const userId = 1;
-      
+
       // Clear existing data
       await request(app)
         .delete(`/api/data/${userId}`)
@@ -247,7 +270,7 @@ describe('Business Logic Tests', () => {
       expect(fireMetrics).toBeDefined();
       expect(fireMetrics.bufferStatus).toBeDefined();
       expect(fireMetrics.volatility).toBeDefined();
-      
+
       // Verify total account balances
       const totalBalance = dashAccounts.reduce((sum: number, acc: any) => 
         sum + parseFloat(acc.balance), 0
@@ -256,8 +279,13 @@ describe('Business Logic Tests', () => {
     });
 
     it('should handle goal completion and calculate transfer recommendations', async () => {
+      if (shouldSkipDbTests) {
+        console.log('Skipping database test - no test database available');
+        return;
+      }
+
       const userId = 1;
-      
+
       // Create a nearly completed goal
       const goalData = {
         name: 'Short Term Goal',
@@ -292,7 +320,7 @@ describe('Business Logic Tests', () => {
 
       expect(transferResponse.body.recommendations).toBeDefined();
       expect(transferResponse.body.allocation).toBeDefined();
-      
+
       // Verify completed goal doesn't affect new recommendations
       const { allocation } = transferResponse.body;
       expect(allocation.goalAllocations).toBeDefined();
@@ -301,8 +329,13 @@ describe('Business Logic Tests', () => {
 
   describe('Data Integrity and Source of Truth', () => {
     it('should preserve imported transaction data when editing goals', async () => {
+      if (shouldSkipDbTests) {
+        console.log('Skipping database test - no test database available');
+        return;
+      }
+
       const userId = 1;
-      
+
       // Clear and import test data (simulated)
       await request(app)
         .delete(`/api/data/${userId}`)
@@ -372,8 +405,13 @@ describe('Business Logic Tests', () => {
     });
 
     it('should maintain referential integrity when unlinking account from goal', async () => {
+      if (shouldSkipDbTests) {
+        console.log('Skipping database test - no test database available');
+        return;
+      }
+
       const userId = 1;
-      
+
       // Create account and linked goal
       const accountData = {
         iban: 'NL56DEUT0265186420',

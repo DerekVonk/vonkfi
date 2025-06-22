@@ -35,7 +35,7 @@ describe('CAMT.053 Parser Unit Tests', () => {
     
     // Verify total debits match expected
     const totalDebits = result.transactions
-      .filter(t => t.type === 'debit')
+      .filter(t => parseFloat(t.amount) < 0) // Check for negative amounts (debits)
       .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
     
     expect(totalDebits).toBeCloseTo(expectedCamtData.expectedTotals.totalDebits, 2);

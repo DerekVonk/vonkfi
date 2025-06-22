@@ -12,6 +12,12 @@ describe('CAMT.053 Import Accuracy Tests', () => {
   let server: ReturnType<typeof createServer>;
 
   beforeEach(async () => {
+    // Skip database-dependent tests if no database connection
+    if (process.env.SKIP_DB_TESTS === 'true') {
+      console.log('Skipping database-dependent CAMT import test - no test database available');
+      return;
+    }
+
     app = express();
     app.use(express.json());
     server = await registerRoutes(app);
@@ -24,6 +30,12 @@ describe('CAMT.053 Import Accuracy Tests', () => {
   });
 
   it('should accurately import CAMT.053 XML file with correct account and transaction data', async () => {
+    // Skip if no database connection
+    if (process.env.SKIP_DB_TESTS === 'true') {
+      console.log('Skipping test - no database connection');
+      return;
+    }
+
     const userId = 1;
     
     // Clear existing data first
@@ -101,6 +113,12 @@ describe('CAMT.053 Import Accuracy Tests', () => {
   });
 
   it('should correctly calculate FIRE metrics after CAMT import', async () => {
+    // Skip if no database connection
+    if (process.env.SKIP_DB_TESTS === 'true') {
+      console.log('Skipping test - no database connection');
+      return;
+    }
+
     const userId = 1;
     
     // Get dashboard data after import
@@ -129,6 +147,12 @@ describe('CAMT.053 Import Accuracy Tests', () => {
   });
 
   it('should handle merchant extraction correctly', async () => {
+    // Skip if no database connection
+    if (process.env.SKIP_DB_TESTS === 'true') {
+      console.log('Skipping test - no database connection');
+      return;
+    }
+
     const userId = 1;
     
     const dashboardResponse = await request(app)
@@ -157,6 +181,12 @@ describe('CAMT.053 Import Accuracy Tests', () => {
   });
 
   it('should preserve account balance from CAMT closing balance', async () => {
+    // Skip if no database connection
+    if (process.env.SKIP_DB_TESTS === 'true') {
+      console.log('Skipping test - no database connection');
+      return;
+    }
+
     const userId = 1;
     
     const accountsResponse = await request(app)
@@ -171,6 +201,12 @@ describe('CAMT.053 Import Accuracy Tests', () => {
   });
 
   it('should recalculate dashboard after data clearing', async () => {
+    // Skip if no database connection
+    if (process.env.SKIP_DB_TESTS === 'true') {
+      console.log('Skipping test - no database connection');
+      return;
+    }
+
     const userId = 1;
     
     // Clear data and verify recalculation
