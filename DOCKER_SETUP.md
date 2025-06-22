@@ -13,7 +13,7 @@ This guide will help you set up and run the VonkFi application using Docker and 
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/your-username/vonkfi.git
-cd vonkfi
+cd VonkFi
 ```
 
 ### 2. Environment Setup
@@ -145,7 +145,7 @@ docker-compose logs -f vonkfi-app
 docker-compose exec vonkfi-app sh
 
 # Run tests inside container
-docker-compose exec vonkfi-app npm test
+docker-compose exec vonkfi-app npm run test:run
 
 # Check application health
 curl http://localhost:3000/api/health
