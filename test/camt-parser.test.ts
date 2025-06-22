@@ -28,6 +28,22 @@ describe('CAMT.053 Parser Unit Tests', () => {
     expect(parseFloat(account.balance)).toBe(expectedCamtData.account.closingBalance);
   });
 
+  it('should extract bank name from CAMT data or fallback to BIC mapping', async () => {
+    const result = await parser.parseFile(xmlContent);
+    
+    expect(result.accounts).toHaveLength(1);
+    const account = result.accounts[0];
+    
+    // Bank name should not be "Unknown Bank" and should be extracted properly
+    expect(account.bankName).not.toBe('Unknown Bank');
+    expect(account.bankName).toBeTruthy();
+    
+    // If BIC is ABNANL2A, should map to ABN AMRO Bank
+    if (account.bic === 'ABNANL2A') {
+      expect(account.bankName).toBe('ABN AMRO Bank');
+    }
+  });
+
   it('should parse all transactions with correct amounts and types', async () => {
     const result = await parser.parseFile(xmlContent);
     
@@ -35,7 +51,7 @@ describe('CAMT.053 Parser Unit Tests', () => {
     
     // Verify total debits match expected
     const totalDebits = result.transactions
-      .filter(t => t.type === 'debit')
+      .filter(t => parseFloat(t.amount) < 0) // Check for negative amounts (debits)
       .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
     
     expect(totalDebits).toBeCloseTo(expectedCamtData.expectedTotals.totalDebits, 2);

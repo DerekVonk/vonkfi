@@ -82,7 +82,7 @@ export class TransactionCategorizer {
     }
 
     // Check merchant patterns
-    for (const [pattern, categoryId] of this.merchantPatterns.entries()) {
+    for (const [pattern, categoryId] of Array.from(this.merchantPatterns.entries())) {
       if (merchant.includes(pattern) || description.includes(pattern)) {
         return {
           categoryId,
@@ -93,7 +93,7 @@ export class TransactionCategorizer {
     }
 
     // Check description patterns
-    for (const [pattern, categoryId] of this.descriptionPatterns.entries()) {
+    for (const [pattern, categoryId] of Array.from(this.descriptionPatterns.entries())) {
       if (pattern.test(description)) {
         return {
           categoryId,

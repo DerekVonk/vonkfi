@@ -1,0 +1,55 @@
+# Test environment for VonkFi
+# Usage: docker-compose -f docker-compose.test.yml up -d
+
+services:
+  # PostgreSQL Test Database
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: vonkfi-postgres-test
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vonkfi_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+      - ./database-setup.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports:
+      - "5434:5432"  # Different port to avoid conflicts with dev and prod
+    networks:
+      - vonkfi-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d vonkfi_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # Redis for test caching (optional)
+  redis-test:
+    image: redis:7-alpine
+    container_name: vonkfi-redis-test
+    restart: unless-stopped
+    command: redis-server --appendonly yes  # No password for test
+    volumes:
+      - redis_data_test:/data
+    ports:
+      - "6381:6379"  # Different port to avoid conflicts with dev and prod
+    networks:
+      - vonkfi-test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_data_test:
+    driver: local
+  redis_data_test:
+    driver: local
+
+networks:
+  vonkfi-test-network:
+    driver: bridge

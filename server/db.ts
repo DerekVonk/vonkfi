@@ -1,12 +1,8 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import pg from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
-// Configure Neon for server environment
-neonConfig.webSocketConstructor = ws;
-neonConfig.useSecureWebSocket = true;
-neonConfig.pipelineConnect = false;
+const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -14,8 +10,8 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create pool with proper timeout settings
-export const pool = new Pool({ 
+// Create PostgreSQL pool
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,

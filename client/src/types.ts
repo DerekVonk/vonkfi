@@ -66,17 +66,38 @@ export type {
 };
 
 // Dashboard-specific types
+export interface FireMetrics {
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  savingsRate: number;
+  fireProgress: number;
+  timeToFire: number;
+  netWorth: number;
+  currentMonth: string;
+  monthlyBreakdown: {
+    month: string;
+    income: number;
+    expenses: number;
+    savings: number;
+  }[];
+  bufferStatus: {
+    current: number;
+    target: number;
+    status: 'below' | 'optimal' | 'above';
+  };
+  volatility: {
+    average: number;
+    standardDeviation: number;
+    coefficientOfVariation: number;
+    score: 'low' | 'medium' | 'high';
+  };
+}
+
 export interface DashboardData {
   accounts: Account[];
   goals: Goal[];
   transferRecommendations: TransferRecommendation[];
-  fireMetrics: {
-    netWorth: number;
-    monthlyExpenses: number;
-    savingsRate: number;
-    fireProgress: number;
-    timeToFire: number;
-  };
+  fireMetrics: FireMetrics;
   monthlyData: {
     income: number;
     expenses: number;

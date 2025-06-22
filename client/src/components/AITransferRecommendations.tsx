@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { memo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ interface IntelligentRecommendation {
   };
 }
 
-export default function AITransferRecommendations() {
+const AITransferRecommendations = memo(function AITransferRecommendations() {
   const { data: intelligentRecommendations, isLoading } = useQuery<{
     recommendations: IntelligentRecommendation[];
     totalRecommendations: number;
@@ -52,20 +53,20 @@ export default function AITransferRecommendations() {
     refetchInterval: 300000, // Refresh every 5 minutes
   });
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat('en-EU', {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
-  };
+  }, []);
 
-  const formatPercentage = (value: number) => {
+  const formatPercentage = useCallback((value: number) => {
     return new Intl.NumberFormat('en-EU', {
       style: 'percent',
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     }).format(value);
-  };
+  }, []);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -222,4 +223,6 @@ export default function AITransferRecommendations() {
       </CardContent>
     </Card>
   );
-}
+});
+
+export default AITransferRecommendations;

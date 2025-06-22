@@ -134,8 +134,8 @@ export default function Goals() {
     createGoalMutation.mutate(goalData);
   };
 
-  const formatCurrency = (amount: number | string) => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  const formatCurrency = (amount: number | string | null) => {
+    const num = typeof amount === 'string' ? parseFloat(amount || '0') : (amount || 0);
     return new Intl.NumberFormat('en-EU', {
       style: 'currency',
       currency: 'EUR',
@@ -143,8 +143,9 @@ export default function Goals() {
   };
 
   const getGoalProgress = (goal: Goal) => {
-    const current = parseFloat(goal.currentAmount);
-    const target = parseFloat(goal.targetAmount);
+    const current = parseFloat(goal.currentAmount || '0');
+    const target = parseFloat(goal.targetAmount || '0');
+    if (target === 0) return 0;
     return Math.min((current / target) * 100, 100);
   };
 
@@ -173,7 +174,7 @@ export default function Goals() {
     editForm.reset({
       name: goal.name,
       targetAmount: goal.targetAmount,
-      currentAmount: goal.currentAmount,
+      currentAmount: goal.currentAmount || '0',
       targetDate: goal.targetDate || "",
       linkedAccountId: goal.linkedAccountId ? goal.linkedAccountId.toString() : "none",
     });
@@ -197,8 +198,8 @@ export default function Goals() {
 
   const activeGoals = goals?.filter(g => !g.isCompleted) || [];
   const completedGoals = goals?.filter(g => g.isCompleted) || [];
-  const totalTargetValue = goals?.reduce((sum, g) => sum + parseFloat(g.targetAmount), 0) || 0;
-  const totalCurrentValue = goals?.reduce((sum, g) => sum + parseFloat(g.currentAmount), 0) || 0;
+  const totalTargetValue = goals?.reduce((sum, g) => sum + parseFloat(g.targetAmount || '0'), 0) || 0;
+  const totalCurrentValue = goals?.reduce((sum, g) => sum + parseFloat(g.currentAmount || '0'), 0) || 0;
 
   if (goalsLoading) {
     return (
@@ -491,8 +492,8 @@ export default function Goals() {
                         
                         <div>
                           <div className="flex items-center justify-between text-sm mb-1">
-                            <span className="text-neutral-600">{formatCurrency(goal.currentAmount)}</span>
-                            <span className="text-neutral-600">{formatCurrency(goal.targetAmount)}</span>
+                            <span className="text-neutral-600">{formatCurrency(goal.currentAmount || '0')}</span>
+                            <span className="text-neutral-600">{formatCurrency(goal.targetAmount || '0')}</span>
                           </div>
                           <Progress value={progress} className="h-2" />
                         </div>
@@ -510,7 +511,7 @@ export default function Goals() {
                         {goal.targetDate && (
                           <div className="text-xs text-neutral-500">
                             {(() => {
-                              const remaining = parseFloat(goal.targetAmount) - parseFloat(goal.currentAmount);
+                              const remaining = parseFloat(goal.targetAmount || '0') - parseFloat(goal.currentAmount || '0');
                               const daysLeft = Math.ceil((new Date(goal.targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                               const monthlyNeeded = daysLeft > 0 ? (remaining / (daysLeft / 30)) : 0;
                               return `€${monthlyNeeded.toFixed(0)}/month needed`;
@@ -552,7 +553,7 @@ export default function Goals() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-neutral-600">Final Amount</span>
-                        <span className="font-semibold text-green-600">{formatCurrency(goal.currentAmount)}</span>
+                        <span className="font-semibold text-green-600">{formatCurrency(goal.currentAmount || '0')}</span>
                       </div>
                       
                       <Progress value={100} className="h-2" />

@@ -4,7 +4,7 @@ This guide will help you deploy VonkFi on your own server with PostgreSQL.
 
 ## Prerequisites
 
-- Node.js 20 or higher
+- Node.js 18 or higher (20+ recommended)
 - PostgreSQL 12 or higher
 - Git
 
@@ -14,7 +14,7 @@ This guide will help you deploy VonkFi on your own server with PostgreSQL.
 
 ```bash
 git clone <your-vonkfi-repo>
-cd vonkfi
+cd VonkFi
 ```
 
 ### 2. Install Dependencies
@@ -60,15 +60,16 @@ Create a `.env` file in the project root:
 # Database Configuration
 DATABASE_URL=postgresql://vonkfi_user:your_secure_password@localhost:5432/vonkfi
 
-# Or for managed services:
-# DATABASE_URL=postgresql://username:password@host:port/database
-
 # Node Environment
 NODE_ENV=production
 
 # Server Configuration
 PORT=5000
 HOST=0.0.0.0
+
+# Security (IMPORTANT: Change these!)
+SESSION_SECRET=your_super_secure_session_secret_minimum_32_characters_long
+JWT_SECRET=your_jwt_secret_for_authentication_tokens_change_in_production
 ```
 
 ### 5. Build the Application

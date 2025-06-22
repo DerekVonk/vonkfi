@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown, PiggyBank, ArrowLeftRight } from "lucide-react";
 import type { DashboardData } from "@/types";
@@ -7,25 +7,26 @@ interface MonthlyOverviewProps {
   dashboardData?: DashboardData;
 }
 
-export default function MonthlyOverview({ dashboardData }: MonthlyOverviewProps) {
+const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: MonthlyOverviewProps) {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
-  const formatCurrency = (amount: number) => {
+  // Memoize formatter functions
+  const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat('en-EU', {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
-  };
+  }, []);
 
-  const formatPercentage = (value: number) => {
+  const formatPercentage = useCallback((value: number) => {
     return new Intl.NumberFormat('en-EU', {
       style: 'percent',
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     }).format(value);
-  };
+  }, []);
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
+  const navigateMonth = useCallback((direction: 'prev' | 'next') => {
     const newDate = new Date(selectedMonth);
     if (direction === 'prev') {
       newDate.setMonth(newDate.getMonth() - 1);
@@ -33,9 +34,10 @@ export default function MonthlyOverview({ dashboardData }: MonthlyOverviewProps)
       newDate.setMonth(newDate.getMonth() + 1);
     }
     setSelectedMonth(newDate);
-  };
+  }, [selectedMonth]);
 
-  const getMonthlyData = () => {
+  // Memoize expensive monthly data calculations
+  const monthData = useMemo(() => {
     const monthKey = selectedMonth.toISOString().substring(0, 7); // YYYY-MM format
     const currentMonthKey = new Date().toISOString().substring(0, 7);
     
@@ -70,10 +72,15 @@ export default function MonthlyOverview({ dashboardData }: MonthlyOverviewProps)
       savings: 0,
       savingsRate: 0
     };
-  };
+  }, [selectedMonth, dashboardData?.fireMetrics]);
 
-  const monthData = getMonthlyData();
-  const isCurrentMonth = selectedMonth.toISOString().substring(0, 7) === new Date().toISOString().substring(0, 7);
+  const isCurrentMonth = useMemo(() => {
+    return selectedMonth.toISOString().substring(0, 7) === new Date().toISOString().substring(0, 7);
+  }, [selectedMonth]);
+
+  const formattedMonth = useMemo(() => {
+    return selectedMonth.toLocaleDateString('en-EU', { month: 'long', year: 'numeric' });
+  }, [selectedMonth]);
 
   return (
     <div className="space-y-4">
@@ -90,7 +97,7 @@ export default function MonthlyOverview({ dashboardData }: MonthlyOverviewProps)
         
         <div className="text-center">
           <h3 className="font-medium text-neutral-800">
-            {selectedMonth.toLocaleDateString('en-EU', { month: 'long', year: 'numeric' })}
+            {formattedMonth}
           </h3>
           {isCurrentMonth && (
             <p className="text-xs text-green-600">Current Month</p>
@@ -164,4 +171,6 @@ export default function MonthlyOverview({ dashboardData }: MonthlyOverviewProps)
       </div>
     </div>
   );
-}
+});
+
+export default MonthlyOverview;

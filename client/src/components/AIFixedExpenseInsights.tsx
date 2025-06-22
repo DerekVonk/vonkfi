@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { memo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -20,7 +21,7 @@ interface FixedExpensePrediction {
   targetAccounts: string[];
 }
 
-export default function AIFixedExpenseInsights() {
+const AIFixedExpenseInsights = memo(function AIFixedExpenseInsights() {
   const { data: prediction, isLoading } = useQuery<FixedExpensePrediction>({
     queryKey: [`/api/ai/fixed-expense-prediction/${DEMO_USER_ID}`],
     refetchInterval: 300000, // Refresh every 5 minutes
@@ -36,20 +37,20 @@ export default function AIFixedExpenseInsights() {
     refetchInterval: 300000,
   });
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat('en-EU', {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
-  };
+  }, []);
 
-  const formatPercentage = (value: number) => {
+  const formatPercentage = useCallback((value: number) => {
     return new Intl.NumberFormat('en-EU', {
       style: 'percent',
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     }).format(value);
-  };
+  }, []);
 
   if (isLoading) {
     return (
@@ -187,4 +188,6 @@ export default function AIFixedExpenseInsights() {
       </CardContent>
     </Card>
   );
-}
+});
+
+export default AIFixedExpenseInsights;
