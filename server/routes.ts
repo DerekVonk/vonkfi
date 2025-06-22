@@ -8,11 +8,56 @@ import { duplicateDetectionService } from "./services/duplicateDetection";
 import multer from "multer";
 import { z } from "zod";
 
+// Import middleware
+import { errorHandler, asyncHandler, AppError, notFoundHandler, withRetry, requestTimeout, memoryMonitor } from "./middleware/errorHandler";
+import { addResponseHelpers } from "./middleware/responseHelper";
+import { requestLogger, errorLogger, performanceLogger, logger } from "./middleware/logging";
+import { validateRequest, sanitizeInput, validateFileUpload, validateRateLimit } from "./middleware/validation";
+import { pathParams, queryParams, createSchemas, updateSchemas } from "./validation/schemas";
+import { 
+  sessionConfig, 
+  requireAuth, 
+  requireUserAccess, 
+  optionalAuth,
+  securityHeaders,
+  generateCSRFToken 
+} from "./middleware/authentication";
+import { rateLimit } from "./middleware/rateLimiting";
+import { registerAuthRoutes } from "./routes/auth";
+import session from "express-session";
+
 const upload = multer({ storage: multer.memoryStorage() });
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: e.Application): Promise<Server> {
   const camtParser = new CamtParser();
   const fireCalculator = new FireCalculator();
+
+  // Apply global middleware
+  app.use(securityHeaders);
+  app.use(session(sessionConfig));
+  app.use(requestLogger());
+  app.use(performanceLogger());
+  app.use(memoryMonitor());
+  app.use(requestTimeout(30000)); // 30 second timeout
+  app.use(sanitizeInput);
+  app.use(addResponseHelpers);
+  app.use(generateCSRFToken);
+
+  // Rate limiting for API routes
+  app.use('/api', validateRateLimit(100, 60000)); // 100 requests per minute
+
+  // Register authentication routes
+  registerAuthRoutes(app);
+
+  // Health check endpoint for Docker
+  app.get("/api/health", (req, res) => {
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      version: process.env.npm_package_version || "1.0.0",
+      environment: process.env.NODE_ENV || "development"
+    });
+  });
 
   // Get or create default user for development with error handling
   let defaultUser;
@@ -29,50 +74,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Continue without default user for now
   }
 
-  // Dashboard data endpoint
-  app.get("/api/dashboard/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      const [accounts, transactions, goals, categories] = await Promise.all([
-        storage.getAccountsByUserId(userId),
-        storage.getTransactionsByUserId(userId),
-        storage.getGoalsByUserId(userId),
-        storage.getCategories()
-      ]);
+  // Dashboard data endpoint - OPTIMIZED (Reduced from 5+ queries to 2-3 queries)
+  app.get("/api/dashboard/:userId", 
+    requireAuth,
+    requireUserAccess,
+    validateRequest({ params: pathParams.userId }),
+    asyncHandler(async (req, res) => {
+      const userId = req.params.userId;
 
-      const fireMetrics = fireCalculator.calculateMetrics(transactions, goals, accounts);
-      const transferRecommendations = await storage.getTransferRecommendationsByUserId(userId);
+      try {
+        // Use optimized dashboard query with error handling
+        const dashboardData = await withRetry(
+          () => storage.getDashboardDataOptimized(Number(userId))
+        )();
 
-      res.json({
-        accounts,
-        transactions: transactions.slice(0, 10), // Latest 10 transactions
-        goals,
-        fireMetrics,
-        transferRecommendations,
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch dashboard data" });
-    }
-  });
+        // Calculate FIRE metrics using optimized data with graceful fallback
+        let fireMetrics;
+        try {
+          fireMetrics = fireCalculator.calculateMetrics(
+            dashboardData.transactions, 
+            dashboardData.goals, 
+            dashboardData.accounts
+          );
+        } catch (error) {
+          console.warn('FIRE metrics calculation failed, using defaults:', error);
+          fireMetrics = {
+            monthlyIncome: 0,
+            monthlyExpenses: 0,
+            netWorth: 0,
+            fireNumber: 0,
+            progress: 0,
+            bufferStatus: { current: 0, target: 0, percentage: 0 }
+          };
+        }
+
+        const response = {
+          accounts: dashboardData.accounts || [],
+          transactions: dashboardData.transactions || [],
+          goals: dashboardData.goals || [],
+          fireMetrics,
+          transferRecommendations: dashboardData.transferRecommendations || [],
+        };
+
+        logger.info('Dashboard data fetched successfully', {
+          userId,
+          accountsCount: dashboardData.accounts?.length || 0,
+          transactionsCount: dashboardData.transactions?.length || 0,
+          goalsCount: dashboardData.goals?.length || 0,
+        });
+
+        res.success(response, "Dashboard data retrieved successfully");
+      } catch (error: any) {
+        // Handle specific database connection failures
+        if (error.message?.includes('Database connection failed') || 
+            error.message?.includes('connection') || 
+            error.message?.includes('timeout')) {
+          throw new AppError('Failed to fetch dashboard data', 500);
+        }
+
+        // Re-throw other errors
+        throw error;
+      }
+    })
+  );
 
   // Import CAMT.053 statement
-  app.post("/api/import/:userId", upload.single('camtFile'), async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
+  app.post("/api/import/:userId", 
+    requireAuth,
+    requireUserAccess,
+    rateLimit('upload'),
+    upload.single('camtFile'),
+    validateRequest({ params: pathParams.userId }),
+    validateFileUpload,
+    asyncHandler(async (req: any, res) => {
+      const userId = req.params.userId;
 
-      
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
+      try {
+        const xmlContent = req.file.buffer.toString('utf-8');
 
-      const xmlContent = req.file.buffer.toString('utf-8');
-      const parsedStatement = await camtParser.parseFile(xmlContent);
+        // Additional XML content validation
+        if (!xmlContent.includes('Document') || !xmlContent.includes('BkToCstmrStmt')) {
+          throw new AppError('Invalid CAMT.053 file format - missing required elements', 400);
+        }
 
-      // Temporarily disable duplicate detection to test CAMT parser balance allocation
-      const uniqueTransactions = parsedStatement.transactions;
-      const duplicateCount = 0;
+        const parsedStatement = await camtParser.parseFile(xmlContent);
+
+        if (!parsedStatement || !parsedStatement.accounts || parsedStatement.accounts.length === 0) {
+          throw new AppError('No valid account data found in CAMT file', 400);
+        }
+
+        // Temporarily disable duplicate detection to test CAMT parser balance allocation
+        const uniqueTransactions = parsedStatement.transactions;
+        const duplicateCount = 0;
 
       console.log(`Importing ${uniqueTransactions.length} transactions from CAMT file`);
 
@@ -86,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process accounts
       for (const accountData of parsedStatement.accounts) {
         const existingAccount = await storage.getAccountByIban(accountData.iban);
-        
+
         if (!existingAccount) {
           const newAccount = await storage.createAccount({
             ...accountData,
@@ -115,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...transactionData,
           accountId: account.id,
         });
-        
+
         // Suggest category
         const suggestion = categorizer.suggestCategory(newTransaction);
         if (suggestion) {
@@ -123,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             transactionId: newTransaction.id,
             ...suggestion,
           });
-          
+
           // Auto-apply high-confidence suggestions
           if (suggestion.confidence > 0.8) {
             await storage.updateTransactionCategory(newTransaction.id, suggestion.categoryId);
@@ -155,39 +248,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "completed"
       });
 
-      res.json({
+      const importResult = {
         message: "Statement imported successfully",
         ...results,
         statementId: parsedStatement.statementId,
+      };
+
+      logger.info('CAMT file imported successfully', {
+        userId,
+        fileName: req.file.originalname,
+        statementId: parsedStatement.statementId,
+        accountsCreated: results.newAccounts.length,
+        transactionsImported: results.newTransactions.length,
+        duplicatesSkipped: results.duplicatesSkipped,
       });
-    } catch (error) {
-      console.error("Import error:", error);
-      
-      // Track failed import
-      if (req.file) {
-        try {
-          const userId = parseInt(req.params.userId);
-          await storage.createImportHistory({
-            userId,
-            fileName: req.file.originalname,
-            fileSize: req.file.size,
-            statementId: "",
-            accountsFound: 0,
-            transactionsImported: 0,
-            duplicatesSkipped: 0,
-            status: "failed",
-            errorMessage: error instanceof Error ? error.message : "Unknown error"
-          });
-        } catch (historyError) {
-          console.error("Failed to track import history:", historyError);
+
+        res.success(importResult, "Statement imported successfully");
+      } catch (error: any) {
+        // Handle XML parsing errors
+        if (error.message?.includes('XML') || error.message?.includes('parsing')) {
+          throw new AppError('Failed to parse XML file - corrupted or invalid format', 400);
         }
+
+        // Handle CAMT-specific errors
+        if (error.message?.includes('CAMT') || error.message?.includes('missing required elements')) {
+          throw new AppError(error.message, 400);
+        }
+
+        // Re-throw other errors
+        throw error;
       }
-      
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to import statement" 
-      });
-    }
-  });
+    })
+  );
 
   // Get import history for user
   app.get("/api/imports/:userId", async (req, res) => {
@@ -245,22 +337,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get accounts for user
-  app.get("/api/accounts/:userId", async (req, res) => {
-    try {
+  app.get("/api/accounts/:userId", 
+    requireAuth,
+    requireUserAccess,
+    validateRequest({ params: pathParams.userId }),
+    asyncHandler(async (req, res) => {
       const userId = parseInt(req.params.userId);
       const accounts = await storage.getAccountsByUserId(userId);
       res.json(accounts);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch accounts" });
-    }
-  });
+    })
+  );
+
+  // Create account
+  app.post("/api/accounts", asyncHandler(async (req, res) => {
+    const accountData = req.body;
+    const account = await storage.createAccount(accountData);
+    res.json(account);
+  }));
 
   // Update account
   app.patch("/api/accounts/:accountId", async (req, res) => {
     try {
       const accountId = parseInt(req.params.accountId);
       const updates = req.body;
-      
+
       const updated = await storage.updateAccount(accountId, updates);
       res.json(updated);
     } catch (error) {
@@ -273,7 +373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const accountId = parseInt(req.params.accountId);
       const userId = parseInt(req.query.userId as string);
-      
+
       // Check if account has transactions
       const transactions = await storage.getTransactionsByAccountId(accountId);
       if (transactions.length > 0) {
@@ -281,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: "Cannot delete account with existing transactions. Please clear data first." 
         });
       }
-      
+
       // Check if account is linked to goals
       const goals = await storage.getGoalsByUserId(userId);
       const linkedGoals = goals.filter(g => g.linkedAccountId === accountId);
@@ -290,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: `Cannot delete account linked to ${linkedGoals.length} goal(s). Please unlink first.` 
         });
       }
-      
+
       await storage.deleteAccount(accountId);
       res.json({ message: "Account deleted successfully" });
     } catch (error) {
@@ -299,25 +399,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get transactions for user
-  app.get("/api/transactions/:userId", async (req, res) => {
-    try {
+  // Get transactions for user - OPTIMIZED (Uses join instead of separate queries)
+  app.get("/api/transactions/:userId", 
+    requireAuth,
+    requireUserAccess,
+    validateRequest({ params: pathParams.userId }),
+    asyncHandler(async (req, res) => {
       const userId = parseInt(req.params.userId);
       const limit = parseInt(req.query.limit as string) || 50;
-      
-      const transactions = await storage.getTransactionsByUserId(userId);
-      res.json(transactions.slice(0, limit));
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch transactions" });
-    }
-  });
+
+      // Use optimized transaction query with account and category names
+      const transactions = await storage.getTransactionsByUserIdOptimized(userId, limit);
+      res.json(transactions);
+    })
+  );
+
+  // Create transaction
+  app.post("/api/transactions", asyncHandler(async (req, res) => {
+    const transactionData = req.body;
+    const transaction = await storage.createTransaction(transactionData);
+    res.json(transaction);
+  }));
 
   // Update transaction category
   app.patch("/api/transactions/:transactionId/category", async (req, res) => {
     try {
       const transactionId = parseInt(req.params.transactionId);
       const { categoryId } = req.body;
-      
+
       const updated = await storage.updateTransactionCategory(transactionId, categoryId);
       res.json(updated);
     } catch (error) {
@@ -336,72 +445,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create category
-  app.post("/api/categories", async (req, res) => {
-    try {
+  app.post("/api/categories", 
+    validateRequest({ body: createSchemas.category }),
+    asyncHandler(async (req, res) => {
       const categoryData = req.body;
       const category = await storage.createCategory(categoryData);
-      res.json(category);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to create category" });
-    }
-  });
+
+      logger.info('Category created successfully', {
+        categoryId: category.id,
+        categoryName: category.name,
+        categoryType: category.type,
+      });
+
+      res.created(category, "Category created successfully");
+    })
+  );
 
   // Update category
-  app.patch("/api/categories/:categoryId", async (req, res) => {
-    try {
-      const categoryId = parseInt(req.params.categoryId);
+  app.patch("/api/categories/:categoryId", 
+    validateRequest({ 
+      params: pathParams.categoryId, 
+      body: updateSchemas.category 
+    }),
+    asyncHandler(async (req, res) => {
+      const categoryId = req.params.categoryId;
       const updates = req.body;
-      
-      const updated = await storage.updateCategory(categoryId, updates);
-      res.json(updated);
-    } catch (error) {
-      console.error("Category update error:", error);
-      res.status(500).json({ error: "Failed to update category" });
-    }
-  });
 
-  // Delete category
-  app.delete("/api/categories/:categoryId", async (req, res) => {
-    try {
-      const categoryId = parseInt(req.params.categoryId);
-      await storage.deleteCategory(categoryId);
-      res.json({ message: "Category deleted successfully" });
-    } catch (error) {
-      console.error("Category deletion error:", error);
-      res.status(500).json({ error: "Failed to delete category" });
-    }
-  });
+      const updated = await storage.updateCategory(Number(categoryId), updates);
 
-  // Delete category
-  app.delete("/api/categories/:categoryId", async (req, res) => {
-    try {
-      const categoryId = parseInt(req.params.categoryId);
-      
-      // Check if category is used in transactions
-      const userId = parseInt(req.query.userId as string);
-      const transactions = await storage.getTransactionsByUserId(userId);
-      const usedInTransactions = transactions.some(t => t.categoryId === categoryId);
-      
-      if (usedInTransactions) {
-        return res.status(400).json({ 
-          error: "Cannot delete category used in transactions. Please clear data or reassign transactions first." 
-        });
+      if (!updated) {
+        throw new AppError("Category not found", 404);
       }
-      
-      await storage.deleteCategory(categoryId);
-      res.json({ message: "Category deleted successfully" });
-    } catch (error) {
-      console.error("Category deletion error:", error);
-      res.status(500).json({ error: "Failed to delete category" });
-    }
-  });
+
+      logger.info('Category updated successfully', {
+        categoryId,
+        updates: Object.keys(updates),
+      });
+
+      res.updated(updated, "Category updated successfully");
+    })
+  );
+
+  // Delete category
+  app.delete("/api/categories/:categoryId", 
+    validateRequest({ 
+      params: pathParams.categoryId,
+      query: queryParams.userIdQuery
+    }),
+    asyncHandler(async (req, res) => {
+      const categoryId = req.params.categoryId;
+      const userId = req.query.userId;
+
+      // Check if category is used in transactions
+      if (userId) {
+        const transactions = await storage.getTransactionsByUserId(Number(userId));
+        const usedInTransactions = transactions.some(t => t.categoryId === Number(categoryId));
+
+        if (usedInTransactions) {
+          throw new AppError(
+            "Cannot delete category used in transactions. Please clear data or reassign transactions first.", 
+            400
+          );
+        }
+      }
+
+      const result = await storage.deleteCategory(Number(categoryId));
+
+      if (!result) {
+        throw new AppError("Category not found", 404);
+      }
+
+      logger.info('Category deleted successfully', {
+        categoryId,
+        userId,
+      });
+
+      res.deleted("Category deleted successfully");
+    })
+  );
 
   // Clear all user data
   app.delete("/api/data/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       await storage.clearUserData(userId);
-      
+
       // Recalculate dashboard after clearing data
       const [accounts, transactions, goals] = await Promise.all([
         storage.getAccountsByUserId(userId),
@@ -411,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const fireCalculator = new FireCalculator();
       const fireMetrics = fireCalculator.calculateMetrics(transactions, goals, accounts);
-      
+
       res.json({ 
         message: "Import data cleared and dashboard recalculated",
         recalculatedData: {
@@ -431,12 +559,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/recalculate/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      
+
       // Skip automatic balance recalculation to preserve authentic CAMT balance data
       // Only update goal current amounts based on existing account balances (don't recalculate account balances)
       const userGoals = await storage.getGoalsByUserId(userId);
       const userAccounts = await storage.getAccountsByUserId(userId);
-      
+
       for (const goal of userGoals) {
         if (goal.linkedAccountId) {
           const linkedAccount = userAccounts.find(acc => acc.id === goal.linkedAccountId);
@@ -445,7 +573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       // Fetch fresh data and recalculate
       const [accounts, transactions, goals] = await Promise.all([
         storage.getAccountsByUserId(userId),
@@ -478,35 +606,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get goals for user
-  app.get("/api/goals/:userId", async (req, res) => {
-    try {
+  app.get("/api/goals/:userId", 
+    requireAuth,
+    requireUserAccess,
+    validateRequest({ params: pathParams.userId }),
+    asyncHandler(async (req, res) => {
       const userId = parseInt(req.params.userId);
       const goals = await storage.getGoalsByUserId(userId);
       res.json(goals);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch goals" });
-    }
-  });
+    })
+  );
 
   // Create goal
-  app.post("/api/goals", async (req, res) => {
-    try {
+  app.post("/api/goals", 
+    validateRequest({ body: createSchemas.goal }),
+    asyncHandler(async (req, res) => {
       const goalData = req.body;
+
+      // Additional validation
+      if (!goalData.name || !goalData.target || !goalData.priority) {
+        throw new AppError('Missing required fields: name, target, priority', 400);
+      }
+
+      if (goalData.target < 0) {
+        throw new AppError('Target amount must be positive', 400);
+      }
+
+      if (!['high', 'medium', 'low'].includes(goalData.priority)) {
+        throw new AppError('Priority must be high, medium, or low', 400);
+      }
+
       console.log("Creating goal with data:", goalData);
       const goal = await storage.createGoal(goalData);
-      res.json(goal);
-    } catch (error) {
-      console.error("Goal creation error:", error);
-      res.status(500).json({ error: "Failed to create goal" });
-    }
-  });
+
+      logger.info('Goal created successfully', {
+        goalId: goal.id,
+        goalName: goal.name,
+        target: goal.target,
+        priority: goal.priority,
+      });
+
+      res.success(goal, "Goal created successfully");
+    })
+  );
 
   // Update goal
   app.patch("/api/goals/:goalId", async (req, res) => {
     try {
       const goalId = parseInt(req.params.goalId);
       const updates = req.body;
-      
+
       const updated = await storage.updateGoal(goalId, updates);
       res.json(updated);
     } catch (error) {
@@ -514,8 +663,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get transfer recommendations
-  app.get("/api/transfers/:userId", async (req, res) => {
+  // Get transfer recommendations (rename existing endpoint)
+  app.get("/api/transfer-recommendations/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const recommendations = await storage.getTransferRecommendationsByUserId(userId);
@@ -525,23 +674,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate transfer recommendations
+  // Execute a transfer between accounts
+  app.post("/api/transfers/:userId", 
+    requireAuth,
+    requireUserAccess,
+    rateLimit('intensive'),
+    validateRequest({ params: pathParams.userId }),
+    asyncHandler(async (req, res) => {
+      const userId = parseInt(req.params.userId);
+      const { fromAccountId, toAccountId, amount, description } = req.body;
+
+      // Validate required fields
+      if (!fromAccountId || !toAccountId || !amount || !description) {
+        throw new AppError("Missing required fields: fromAccountId, toAccountId, amount, description", 400);
+      }
+
+      // Execute the transfer
+      const result = await storage.executeTransfer({
+        fromAccountId: parseInt(fromAccountId),
+        toAccountId: parseInt(toAccountId),
+        amount: parseFloat(amount),
+        description,
+        userId
+      });
+
+      if (result.success) {
+        res.json({
+          message: result.message,
+          transferId: result.transferId,
+          sourceTransaction: result.sourceTransaction,
+          destinationTransaction: result.destinationTransaction
+        });
+      } else {
+        throw new AppError(result.message, 400);
+      }
+    })
+  );
+
+  // Get transfer history for a user (returns transactions with internal transfer references)
+  app.get("/api/transfer-history/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const transactions = await storage.getTransactionsByUserId(userId);
+
+      // Filter for internal transfers only
+      const transferTransactions = transactions.filter(t => 
+        t.reference && t.reference.startsWith('INTERNAL_TRANSFER_')
+      );
+
+      res.json(transferTransactions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch transfer history" });
+    }
+  });
+
+  // Generate transfer recommendations - OPTIMIZED (Reduced from 4+ queries to 1-2 queries)
   app.post("/api/transfers/generate/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      
+
       // Clear ALL existing recommendations to prevent duplicates
       const existingRecommendations = await storage.getTransferRecommendationsByUserId(userId);
       for (const rec of existingRecommendations) {
         await storage.updateTransferRecommendationStatus(rec.id, 'replaced');
       }
-      
-      const [accounts, transactions, goals, transferPreferences] = await Promise.all([
-        storage.getAccountsByUserId(userId),
-        storage.getTransactionsByUserId(userId),
-        storage.getGoalsByUserId(userId),
-        storage.getTransferPreferencesByUserId(userId)
-      ]);
+
+      // Use optimized transfer generation data query
+      const { accounts, transactions, goals, transferPreferences } = await storage.getTransferGenerationDataOptimized(userId);
 
       const fireMetrics = fireCalculator.calculateMetrics(transactions, goals, accounts);
       const allocation = fireCalculator.calculateAllocationRecommendation(
@@ -558,7 +757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate transfer recommendations based on allocation
       const recommendations = [];
       const mainAccount = accounts.find(a => a.role === 'income') || accounts[0];
-      
+
       if (!mainAccount) {
         return res.status(400).json({ error: "No main account found" });
       }
@@ -571,7 +770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           goals,
           transferPreferences
         );
-        
+
         if (destination) {
           const rec = await storage.createTransferRecommendation({
             userId,
@@ -603,7 +802,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transferPreferences,
           goalAllocation.goalId
         );
-        
+
         if (destination) {
           const rec = await storage.createTransferRecommendation({
             userId,
@@ -635,7 +834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const recommendationId = parseInt(req.params.recommendationId);
       const { status } = req.body;
-      
+
       const updated = await storage.updateTransferRecommendationStatus(recommendationId, status);
       res.json(updated);
     } catch (error) {
@@ -668,7 +867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const preferenceId = parseInt(req.params.preferenceId);
       const updates = req.body;
-      
+
       const updated = await storage.updateTransferPreference(preferenceId, updates);
       res.json(updated);
     } catch (error) {
@@ -690,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/transfer-preferences/initialize/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      
+
       // Check if user already has preferences
       const existingPreferences = await storage.getTransferPreferencesByUserId(userId);
       if (existingPreferences.length > 0) {
@@ -701,13 +900,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { TransferDestinationService } = await import('./services/transferDestinationService.js');
       const destinationService = new TransferDestinationService();
       const defaultPreferences = destinationService.createDefaultPreferences(userId);
-      
+
       const createdPreferences = [];
       for (const pref of defaultPreferences) {
         const created = await storage.createTransferPreference(pref);
         createdPreferences.push(created);
       }
-      
+
       res.json({ message: "Default transfer preferences created", preferences: createdPreferences });
     } catch (error) {
       res.status(500).json({ error: "Failed to initialize transfer preferences" });
@@ -736,16 +935,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Clear all user data
-  app.delete("/api/data/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      await storage.clearUserData(userId);
-      res.json({ message: "All user data cleared successfully" });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to clear user data" });
-    }
-  });
 
   // Zero Based Budgeting routes
   app.get("/api/budget/periods/:userId", async (req, res) => {
@@ -776,25 +965,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const periodData = req.body;
       const userId = periodData.userId;
-      
+
       // Calculate actual income from transactions in the period if not provided
       let totalIncome = periodData.totalIncome;
-      
+
       if (!totalIncome || totalIncome === "0") {
         const startDate = new Date(periodData.startDate);
         const endDate = new Date(periodData.endDate);
-        
+
         // Get all transactions for the user in this period
         const transactions = await storage.getTransactionsByUserId(userId);
         const periodTransactions = transactions.filter(t => {
           const transactionDate = new Date(t.date);
           return transactionDate >= startDate && transactionDate <= endDate;
         });
-        
+
         // Calculate income from income account or positive transactions
         const accounts = await storage.getAccountsByUserId(userId);
         const incomeAccount = accounts.find(a => a.role === 'income');
-        
+
         if (incomeAccount) {
           // Sum income transactions from the designated income account
           const incomeTransactions = periodTransactions.filter(t => 
@@ -807,7 +996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalIncome = incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0).toString();
         }
       }
-      
+
       const period = await storage.createBudgetPeriod({
         ...periodData,
         totalIncome,
@@ -815,7 +1004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate: new Date(periodData.endDate),
         isActive: true,
       });
-      
+
       res.json(period);
     } catch (error) {
       console.error("Budget period creation error:", error);
@@ -827,11 +1016,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const budgetPeriodId = parseInt(req.params.budgetPeriodId);
       const categories = await storage.getBudgetCategoriesByPeriod(budgetPeriodId);
-      
+
       // Get the budget period to determine date range
       const periods = await storage.getBudgetPeriodsByUserId(1); // TODO: get from session
       const period = periods.find(p => p.id === budgetPeriodId);
-      
+
       if (period) {
         // Calculate actual spending for each category from transactions
         const transactions = await storage.getTransactionsByUserId(1); // TODO: get from session
@@ -841,20 +1030,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const endDate = new Date(period.endDate);
           return transactionDate >= startDate && transactionDate <= endDate;
         });
-        
+
         // Update spent amounts based on actual transactions
         const categoriesWithSpending = categories.map(category => {
           const categoryTransactions = periodTransactions.filter(t => 
             t.categoryId === category.categoryId && parseFloat(t.amount) < 0
           );
           const actualSpent = Math.abs(categoryTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0));
-          
+
           return {
             ...category,
             spentAmount: actualSpent.toString(),
           };
         });
-        
+
         res.json(categoriesWithSpending);
       } else {
         res.json(categories);
@@ -934,22 +1123,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
       const { month, year } = req.body; // e.g., { month: 1, year: 2025 }
-      
+
       // Calculate date range for the month
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0); // Last day of the month
-      
+
       // Get transactions for this month
       const transactions = await storage.getTransactionsByUserId(userId);
       const monthlyTransactions = transactions.filter(t => {
         const transactionDate = new Date(t.date);
         return transactionDate >= startDate && transactionDate <= endDate;
       });
-      
+
       // Get accounts to find income account
       const accounts = await storage.getAccountsByUserId(userId);
       const incomeAccount = accounts.find(a => a.role === 'income');
-      
+
       // Calculate total income from income account or all positive transactions
       let totalIncome = 0;
       if (incomeAccount) {
@@ -961,16 +1150,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const incomeTransactions = monthlyTransactions.filter(t => parseFloat(t.amount) > 0);
         totalIncome = incomeTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       }
-      
+
       // Create budget period name
       const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'];
       const periodName = `${monthNames[month - 1]} ${year}`;
-      
+
       // Check if period already exists
       const existingPeriods = await storage.getBudgetPeriodsByUserId(userId);
       const existingPeriod = existingPeriods.find(p => p.name === periodName);
-      
+
       if (existingPeriod) {
         return res.json({ 
           message: "Budget period already exists", 
@@ -979,7 +1168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transactionCount: monthlyTransactions.length 
         });
       }
-      
+
       // Create the budget period
       const period = await storage.createBudgetPeriod({
         userId,
@@ -989,11 +1178,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalIncome: totalIncome.toString(),
         isActive: true,
       });
-      
+
       // Auto-create common budget categories based on existing transactions
       const categories = await storage.getCategories();
       const expenseTransactions = monthlyTransactions.filter(t => parseFloat(t.amount) < 0);
-      
+
       const categorySpending = new Map();
       expenseTransactions.forEach(t => {
         if (t.categoryId) {
@@ -1001,11 +1190,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           categorySpending.set(t.categoryId, current + Math.abs(parseFloat(t.amount)));
         }
       });
-      
+
       // Create budget categories for categories that had spending
       const budgetCategories = [];
       const categoryEntries = Array.from(categorySpending.entries());
-      
+
       for (const [categoryId, spending] of categoryEntries) {
         const category = categories.find(c => c.id === categoryId);
         if (category) {
@@ -1024,7 +1213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           budgetCategories.push(budgetCategory);
         }
       }
-      
+
       res.json({
         message: "Budget period created from monthly statements",
         period,
@@ -1033,58 +1222,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         categoriesCreated: budgetCategories.length,
         incomeSource: incomeAccount ? incomeAccount.customName || incomeAccount.accountHolderName : 'All accounts'
       });
-      
+
     } catch (error) {
       console.error("Monthly sync error:", error);
       res.status(500).json({ error: "Failed to sync monthly budget" });
     }
   });
 
-  // Recalculate dashboard metrics
-  app.post("/api/recalculate/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      // Trigger a fresh calculation by invalidating cache and recalculating
-      const accounts = await storage.getAccountsByUserId(userId);
-      const transactions = await storage.getTransactionsByUserId(userId);
-      const goals = await storage.getGoalsByUserId(userId);
-      const transfers = await storage.getTransferRecommendationsByUserId(userId);
-      
-      const fireCalculator = new FireCalculator();
-      const fireMetrics = fireCalculator.calculateMetrics(transactions, goals, accounts);
-      
-      res.json({ 
-        message: "Dashboard recalculated successfully",
-        metrics: fireMetrics,
-        dataPoints: {
-          accounts: accounts.length,
-          transactions: transactions.length,
-          goals: goals.length,
-          transfers: transfers.length
-        }
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to recalculate dashboard" });
-    }
-  });
 
-  // Generic AI Fixed Expense Prediction (replaces Vaste Lasten specific endpoint)
-  app.get("/api/ai/fixed-expense-prediction/:userId", async (req, res) => {
-    try {
-      // Return lightweight mock data
-      res.json({
-        monthlyRequirement: 1250,
-        seasonalAdjustment: 0,
-        confidenceScore: 0.85,
-        upcomingExpenses: [],
-        recommendedBufferAmount: 1500,
-        targetAccounts: []
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to predict fixed expenses" });
-    }
-  });
 
   // Detect expense anomalies
   app.get("/api/ai/expense-anomalies/:userId", async (req, res) => {
@@ -1119,7 +1264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/ai/cashflow-optimization/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      
+
       const [accounts, transactions, goals] = await Promise.all([
         storage.getAccountsByUserId(userId),
         storage.getTransactionsByUserId(userId),
@@ -1191,6 +1336,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to predict fixed expenses" });
     }
   });
+
+  // Add error handling middleware (must be last)
+  // Only add notFoundHandler in production - in development, Vite handles catch-all routes
+  if (process.env.NODE_ENV !== "development") {
+    app.use(notFoundHandler);
+  }
+  app.use(errorLogger());
+  app.use(errorHandler);
 
   const httpServer = createServer(app);
   return httpServer;
