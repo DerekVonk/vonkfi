@@ -716,9 +716,22 @@ export default function Settings() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Account Role (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., emergency, savings, investment" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select account role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="income">Income</SelectItem>
+                        <SelectItem value="spending">Spending</SelectItem>
+                        <SelectItem value="fixed_expenses">Fixed Expenses</SelectItem>
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                        <SelectItem value="goal_specific">Goal Specific</SelectItem>
+                        <SelectItem value="investment">Investment</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -826,9 +839,22 @@ export default function Settings() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Account Role (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., emergency, savings, investment" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select account role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="income">Income</SelectItem>
+                        <SelectItem value="spending">Spending</SelectItem>
+                        <SelectItem value="fixed_expenses">Fixed Expenses</SelectItem>
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                        <SelectItem value="goal_specific">Goal Specific</SelectItem>
+                        <SelectItem value="investment">Investment</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
