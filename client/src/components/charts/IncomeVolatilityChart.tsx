@@ -10,21 +10,21 @@ const IncomeVolatilityChart = memo(function IncomeVolatilityChart({ data }: Inco
   // Memoize chart data generation to prevent recalculation on every render
   const chartData = useMemo(() => {
     const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const baseIncome = data?.volatility.average || 4120;
-    const stdDev = data?.volatility.standardDeviation || 315;
-    
+    const baseIncome = data?.volatility?.average || 4120;
+    const stdDev = data?.volatility?.standardDeviation || 315;
+
     // Use a seed for consistent "random" data
     let seed = 123;
     const seededRandom = () => {
       seed = (seed * 9301 + 49297) % 233280;
       return seed / 233280;
     };
-    
+
     return months.map((month, index) => {
       // Generate realistic income variation with seeded random
       const variation = (seededRandom() - 0.5) * stdDev * 2;
       const income = baseIncome + variation;
-      
+
       return {
         month,
         income: Math.round(income),
@@ -33,7 +33,7 @@ const IncomeVolatilityChart = memo(function IncomeVolatilityChart({ data }: Inco
         lowerBound: Math.round(baseIncome - stdDev),
       };
     });
-  }, [data?.volatility.average, data?.volatility.standardDeviation]);
+  }, [data?.volatility?.average, data?.volatility?.standardDeviation]);
 
   const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('en-EU', {
@@ -73,7 +73,7 @@ const IncomeVolatilityChart = memo(function IncomeVolatilityChart({ data }: Inco
               fontSize: '12px'
             }}
           />
-          
+
           {/* Average line */}
           <Line 
             type="monotone" 
@@ -83,7 +83,7 @@ const IncomeVolatilityChart = memo(function IncomeVolatilityChart({ data }: Inco
             strokeDasharray="5 5"
             dot={false}
           />
-          
+
           {/* Upper/Lower bounds */}
           <Line 
             type="monotone" 
@@ -99,7 +99,7 @@ const IncomeVolatilityChart = memo(function IncomeVolatilityChart({ data }: Inco
             strokeWidth={1}
             dot={false}
           />
-          
+
           {/* Actual income line */}
           <Line 
             type="monotone" 

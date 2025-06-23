@@ -28,7 +28,8 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
       for (const file of files) {
         setProcessingFiles(prev => [...prev, file.name]);
         try {
-          const result = await api.importStatement(userId, file);
+          const response = await api.importStatement(userId, file);
+          const result = await response.json();
           results.push({ file: file.name, success: true, data: result });
           setCompletedFiles(prev => [...prev, file.name]);
         } catch (error) {
@@ -46,17 +47,22 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
       // Calculate duplicate statistics from results
       const totalDuplicates = results
         .filter(r => r.success)
-        .reduce((sum, r) => sum + ((r.data as any)?.duplicatesSkipped || 0), 0);
+        .reduce((sum, r) => sum + (r.data?.data?.duplicatesSkipped || 0), 0);
       const totalTransactions = results
         .filter(r => r.success)
-        .reduce((sum, r) => sum + ((r.data as any)?.newTransactions?.length || 0), 0);
+        .reduce((sum, r) => sum + (r.data?.data?.newTransactions?.length || 0), 0);
+      
       
       if (successCount > 0) {
-        const duplicateText = totalDuplicates > 0 ? ` (${totalDuplicates} duplicates detected and skipped)` : '';
+        let duplicateText = '';
+        if (totalDuplicates > 0) {
+          duplicateText = ` (${totalDuplicates} duplicates detected and skipped)`;
+        }
+        
         toast({
           title: "Import Completed",
           description: `Successfully imported ${totalTransactions} transactions from ${successCount} files${duplicateText}${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
-          duration: 8000,
+          duration: 10000,
         });
         
         // Trigger automatic recalculation and transfer generation

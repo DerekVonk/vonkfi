@@ -23,7 +23,7 @@ const Dashboard = memo(function Dashboard() {
     return () => clearInterval(timer);
   }, []);
   
-  const { data: dashboardData, isLoading } = useQuery<DashboardData>({
+  const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: [api.getDashboard(DEMO_USER_ID)],
   });
 

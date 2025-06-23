@@ -70,9 +70,11 @@ export class DuplicateDetectionService {
     uniqueTransactions: any[];
     duplicateCount: number;
     duplicateHashes: string[];
+    duplicateTransactions: any[];
   }> {
     const uniqueTransactions: InsertTransaction[] = [];
     const duplicateHashes: string[] = [];
+    const duplicateTransactions: any[] = [];
     let duplicateCount = 0;
 
     for (const transaction of transactions) {
@@ -81,6 +83,12 @@ export class DuplicateDetectionService {
       if (duplicateCheck.isDuplicate) {
         duplicateCount++;
         duplicateHashes.push(duplicateCheck.hash);
+        duplicateTransactions.push({
+          ...transaction,
+          hash: duplicateCheck.hash,
+          existingTransactionId: duplicateCheck.existingTransactionId
+        });
+        console.log(`DUPLICATE found: ${transaction.merchant || transaction.description} ${transaction.amount} -> matches TX${duplicateCheck.existingTransactionId}`);
       } else {
         uniqueTransactions.push(transaction);
       }
@@ -89,7 +97,8 @@ export class DuplicateDetectionService {
     return {
       uniqueTransactions,
       duplicateCount,
-      duplicateHashes
+      duplicateHashes,
+      duplicateTransactions
     };
   }
 }

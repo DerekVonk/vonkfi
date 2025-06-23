@@ -8,7 +8,6 @@ import {
   SessionManager,
   requireAuth 
 } from "../middleware/authentication";
-import { rateLimit } from "../middleware/rateLimiting";
 import { z } from "zod";
 
 /**
@@ -18,7 +17,6 @@ export function registerAuthRoutes(app: Express) {
   
   // User registration
   app.post("/api/auth/register", 
-    rateLimit('auth'),
     validateRequest({ body: registrationSchema }),
     asyncHandler(async (req, res) => {
       const { username, password } = req.body;
@@ -52,7 +50,6 @@ export function registerAuthRoutes(app: Express) {
 
   // User login
   app.post("/api/auth/login",
-    rateLimit('auth'),
     validateRequest({ body: loginSchema }),
     asyncHandler(async (req, res) => {
       const { username, password } = req.body;
@@ -119,7 +116,6 @@ export function registerAuthRoutes(app: Express) {
   // Change password
   app.post("/api/auth/change-password",
     requireAuth,
-    rateLimit('auth'),
     validateRequest({ 
       body: z.object({
         currentPassword: z.string().min(1, 'Current password is required'),

@@ -383,6 +383,13 @@ export class DatabaseStorage implements IStorage {
         .where(eq(goals.id, goal.id));
     }
     
+    // Reset account balances to 0 to ensure consistency with cleared transactions
+    if (accountIds.length > 0) {
+      await db.update(accounts)
+        .set({ balance: "0" })
+        .where(inArray(accounts.id, accountIds));
+    }
+    
     // Note: Accounts, categories, goals, and crypto wallets are preserved
   }
 
@@ -733,7 +740,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTransactionHashesByUserId(userId: number): Promise<TransactionHash[]> {
-    return await db.select().from(transactionHashes).where(eq(transactionHashes.userId, userId));
+    try {
+      return await db.select().from(transactionHashes).where(eq(transactionHashes.userId, userId));
+    } catch (error: any) {
+      // Handle missing table gracefully - return empty array so duplicate detection can continue
+      if (error.message?.includes('relation "transaction_hashes" does not exist')) {
+        console.warn('transaction_hashes table does not exist - duplicate detection will be disabled');
+        return [];
+      }
+      throw error;
+    }
   }
 
   async createTransactionHash(insertTransactionHash: InsertTransactionHash): Promise<TransactionHash> {
@@ -742,7 +758,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTransactionHashBatch(insertTransactionHashes: InsertTransactionHash[]): Promise<TransactionHash[]> {
-    return await db.insert(transactionHashes).values(insertTransactionHashes).returning();
+    if (insertTransactionHashes.length === 0) {
+      return [];
+    }
+    
+    try {
+      return await db.insert(transactionHashes).values(insertTransactionHashes).returning();
+    } catch (error: any) {
+      // Handle missing table gracefully
+      if (error.message?.includes('relation "transaction_hashes" does not exist')) {
+        console.warn('transaction_hashes table does not exist - hash creation skipped');
+        return [];
+      }
+      // Handle unique constraint violations gracefully
+      if (error.code === '23505' && error.constraint === 'unique_user_hash') {
+        console.warn('Duplicate hash detected, skipping batch creation');
+        return [];
+      }
+      throw error;
+    }
   }
 
   async deleteCategory(id: number): Promise<void> {
@@ -791,7 +825,7 @@ export class DatabaseStorage implements IStorage {
         QueryPerformanceMonitor.timeQuery('transferRecommendations', () => this.getTransferRecommendationsByUserId(userId))
       ]);
 
-      // Query 2: Get transactions with category names using optimized join (limited to 10 for dashboard)
+      // Query 2: Get ALL transactions (not limited) with optional category names for monthly breakdown calculations
       const transactionsWithCategories = await QueryPerformanceMonitor.timeQuery('transactionsWithCategories', () =>
         db
           .select({
@@ -812,10 +846,9 @@ export class DatabaseStorage implements IStorage {
           })
           .from(transactions)
           .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-          .innerJoin(categories, eq(transactions.categoryId, categories.id))
+          .leftJoin(categories, eq(transactions.categoryId, categories.id))
           .where(eq(accounts.userId, userId))
           .orderBy(desc(transactions.date))
-          .limit(10)
       );
 
       return {

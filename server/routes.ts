@@ -22,7 +22,6 @@ import {
   securityHeaders,
   generateCSRFToken 
 } from "./middleware/authentication";
-import { rateLimit } from "./middleware/rateLimiting";
 import { registerAuthRoutes } from "./routes/auth";
 import session from "express-session";
 
@@ -43,8 +42,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(addResponseHelpers);
   app.use(generateCSRFToken);
 
-  // Rate limiting for API routes
-  app.use('/api', validateRateLimit(100, 60000)); // 100 requests per minute
 
   // Register authentication routes
   registerAuthRoutes(app);
@@ -88,11 +85,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           () => storage.getDashboardDataOptimized(Number(userId))
         )();
 
-        // Calculate FIRE metrics using optimized data with graceful fallback
+        // Calculate FIRE metrics using ALL transactions for accurate monthly breakdown
         let fireMetrics;
         try {
+          // Use complete transaction set instead of limited optimized query
+          const allTransactions = await storage.getTransactionsByUserId(Number(userId));
           fireMetrics = fireCalculator.calculateMetrics(
-            dashboardData.transactions, 
+            allTransactions, 
             dashboardData.goals, 
             dashboardData.accounts
           );
@@ -101,10 +100,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fireMetrics = {
             monthlyIncome: 0,
             monthlyExpenses: 0,
+            savingsRate: 0,
+            fireProgress: 0,
+            timeToFire: 0,
             netWorth: 0,
-            fireNumber: 0,
-            progress: 0,
-            bufferStatus: { current: 0, target: 0, percentage: 0 }
+            currentMonth: new Date().toISOString().substring(0, 7),
+            monthlyBreakdown: [],
+            bufferStatus: {
+              current: 0,
+              target: 0,
+              status: 'below' as const
+            },
+            volatility: {
+              average: 0,
+              standardDeviation: 0,
+              coefficientOfVariation: 0,
+              score: 'low' as const
+            }
           };
         }
 
@@ -142,12 +154,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/import/:userId", 
     requireAuth,
     requireUserAccess,
-    rateLimit('upload'),
     upload.single('camtFile'),
     validateRequest({ params: pathParams.userId }),
     validateFileUpload,
     asyncHandler(async (req: any, res) => {
-      const userId = req.params.userId;
+      const userId = parseInt(req.params.userId, 10);
+      
+      if (isNaN(userId)) {
+        throw new AppError('Invalid user ID', 400);
+      }
 
       try {
         const xmlContent = req.file.buffer.toString('utf-8');
@@ -163,9 +178,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new AppError('No valid account data found in CAMT file', 400);
         }
 
-        // Temporarily disable duplicate detection to test CAMT parser balance allocation
-        const uniqueTransactions = parsedStatement.transactions;
-        const duplicateCount = 0;
+        // Check for duplicates
+        const existingHashes = await storage.getTransactionHashesByUserId(userId);
+        const { uniqueTransactions, duplicateCount, duplicateTransactions } = await duplicateDetectionService.filterDuplicates(
+          parsedStatement.transactions,
+          userId,
+          existingHashes
+        );
 
       console.log(`Importing ${uniqueTransactions.length} transactions from CAMT file`);
 
@@ -173,7 +192,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newAccounts: [] as any[],
         newTransactions: [] as any[],
         categorySuggestions: [] as any[],
-        duplicatesSkipped: duplicateCount
+        duplicatesSkipped: duplicateCount,
+        duplicateTransactions: duplicateTransactions.map(dt => ({
+          amount: dt.amount,
+          date: dt.date,
+          merchant: dt.merchant || dt.description,
+          reference: dt.reference,
+          hash: dt.hash.substring(0, 8) // Short hash for user reference
+        }))
       };
 
       // Process accounts
@@ -226,15 +252,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         results.newTransactions.push(newTransaction);
       }
 
-      // Skip hash creation temporarily to test CAMT parser corrections
-      // if (results.newTransactions.length > 0) {
-      //   const hashRecords = duplicateDetectionService.createHashRecords(results.newTransactions, userId);
-      //   await storage.createTransactionHashBatch(hashRecords);
-      // }
+      // Create hash records for duplicate detection using original transaction data
+      if (results.newTransactions.length > 0) {
+        const hashRecords = results.newTransactions.map((transaction, index) => ({
+          userId,
+          transactionId: transaction.id,
+          hash: duplicateDetectionService.createTransactionHash(uniqueTransactions[index])
+        }));
+        await storage.createTransactionHashBatch(hashRecords);
+      }
 
-      // Skip balance recalculation to preserve authentic CAMT balance data from <Bal> tags
-      // The CAMT parser extracts the correct closing balance directly from the bank statement
-      // await storage.updateGoalAccountBalances(userId);
+      // Update goal account balances for dashboard calculations
+      await storage.updateGoalAccountBalances(userId);
 
       // Track import history with duplicate tracking
       await storage.createImportHistory({
@@ -691,7 +720,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/transfers/:userId", 
     requireAuth,
     requireUserAccess,
-    rateLimit('intensive'),
     validateRequest({ params: pathParams.userId }),
     asyncHandler(async (req, res) => {
       const userId = parseInt(req.params.userId);

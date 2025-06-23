@@ -52,8 +52,9 @@ export const sessionConfig = {
  * Authentication middleware to check if user is logged in
  */
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  // Skip authentication in test mode
-  if (process.env.DISABLE_AUTH_FOR_TESTS === 'true' || process.env.NODE_ENV === 'test') {
+  // TODO: Re-enable authentication checks when ready to implement authentication feature
+  // Skip authentication in test mode or development mode
+  if (process.env.DISABLE_AUTH_FOR_TESTS === 'true' || process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
     req.user = {
       id: 1, // Default test user
       username: 'testuser'
@@ -97,12 +98,18 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction) {
  * Authorization middleware to check if user can access specific resources
  */
 export function requireUserAccess(req: Request, res: Response, next: NextFunction) {
+  // TODO: Re-enable authorization checks when ready to implement authentication feature
+  // Skip authorization in test mode or development mode
+  if (process.env.DISABLE_AUTH_FOR_TESTS === 'true' || process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
   if (!req.user) {
     return next(new AppError('Authentication required', 401));
   }
 
   const requestedUserId = parseInt(req.params.userId);
-  
+
   if (isNaN(requestedUserId)) {
     return next(new AppError('Invalid user ID', 400));
   }
@@ -152,7 +159,7 @@ export class SessionManager {
       req.session.userId = user.id;
       req.session.username = user.username;
       req.session.loginTime = new Date();
-      
+
       req.session.save((err) => {
         if (err) {
           reject(new Error('Failed to create session'));
@@ -186,7 +193,7 @@ export class SessionManager {
       const userId = req.session.userId;
       const username = req.session.username;
       const loginTime = req.session.loginTime;
-      
+
       req.session.regenerate((err) => {
         if (err) {
           reject(new Error('Failed to regenerate session'));

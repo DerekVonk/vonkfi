@@ -106,7 +106,7 @@ const DraggableLayout = memo(function DraggableLayout({ dashboardData }: Draggab
         dashboardData.goals.slice(0, 3).map((goal: Goal) => {
           const progress = parseFloat(goal.currentAmount || "0") / parseFloat(goal.targetAmount);
           const progressPercentage = Math.min(progress * 100, 100);
-          
+
           return (
             <div key={goal.id} className="p-4 border border-neutral-200 rounded-lg">
               <div className="flex items-center justify-between mb-2">
@@ -138,7 +138,7 @@ const DraggableLayout = memo(function DraggableLayout({ dashboardData }: Draggab
         <Flame className="text-orange-500" size={24} />
       </div>
       <div className="text-3xl font-bold text-neutral-800 mb-2">
-        {dashboardData?.fireMetrics.timeToFire || 0} years
+        {dashboardData?.data?.fireMetrics?.timeToFire || 0} years
       </div>
       <p className="text-sm text-neutral-600 mb-4">
         Until Financial Independence
@@ -146,14 +146,14 @@ const DraggableLayout = memo(function DraggableLayout({ dashboardData }: Draggab
       <div className="w-full bg-neutral-200 rounded-full h-3">
         <div 
           className="bg-gradient-to-r from-orange-400 to-red-500 h-3 rounded-full transition-all duration-500"
-          style={{ width: `${Math.min((dashboardData?.fireMetrics.fireProgress || 0) * 100, 100)}%` }}
+          style={{ width: `${Math.min((dashboardData?.data?.fireMetrics?.fireProgress || 0) * 100, 100)}%` }}
         />
       </div>
       <p className="text-xs text-neutral-500 mt-2">
-        {formatPercentage(dashboardData?.fireMetrics.fireProgress || 0)} complete
+        {formatPercentage(dashboardData?.data?.fireMetrics?.fireProgress || 0)} complete
       </p>
     </div>
-  ), [dashboardData?.fireMetrics, formatPercentage]);
+  ), [dashboardData?.data?.fireMetrics, formatPercentage]);
 
   const [components, setComponents] = useState<DashboardComponent[]>([
     {
@@ -166,7 +166,7 @@ const DraggableLayout = memo(function DraggableLayout({ dashboardData }: Draggab
       id: 'volatility-monitor',
       title: 'Income Volatility Monitor',
       order: 2,
-      component: <LazyChartWrapper chartType="income-volatility" data={dashboardData?.fireMetrics} />
+      component: <LazyChartWrapper chartType="income-volatility" data={dashboardData?.data?.fireMetrics} />
     },
     {
       id: 'account-overview',
@@ -212,12 +212,12 @@ const DraggableLayout = memo(function DraggableLayout({ dashboardData }: Draggab
     const newComponents = [...components];
     newComponents.splice(dragIndex, 1);
     newComponents.splice(hoverIndex, 0, draggedComponent);
-    
+
     const reorderedComponents = newComponents.map((comp, index) => ({
       ...comp,
       order: index + 1
     }));
-    
+
     setComponents(reorderedComponents);
   }, [components]);
 
@@ -246,7 +246,7 @@ const DraggableLayout = memo(function DraggableLayout({ dashboardData }: Draggab
           Reset Layout
         </Button>
       </div>
-      
+
       {sortedComponents.map((component, index) => (
           <Card key={component.id} className="fire-card">
             <CardHeader className="pb-3">
