@@ -1,5 +1,5 @@
-import { db } from './server/db.ts';
-import { transactionHashes } from './shared/schema.ts';
+import { db } from '../../server/db.ts';
+import { transactionHashes } from '../../shared/schema.ts';
 import { eq } from 'drizzle-orm';
 
 async function testHashSchema() {

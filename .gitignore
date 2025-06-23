@@ -28,6 +28,9 @@ data/
 backups/
 exports/
 statements/
+attached_assets/
+cookies.txt
+*.cookie
 
 # Logs and temp files
 logs/*
