@@ -1,0 +1,206 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 1
+      name: "Warm-up"
+    
+    # Load testing phase
+    - duration: 300
+      arrivalRate: 5
+      name: "Load test"
+    
+    # Spike testing phase
+    - duration: 120
+      arrivalRate: 20
+      name: "Spike test"
+    
+    # Stress testing phase
+    - duration: 180
+      arrivalRate: 30
+      name: "Stress test"
+    
+    # Cool down
+    - duration: 60
+      arrivalRate: 1
+      name: "Cool down"
+
+  # Global configuration
+  http:
+    timeout: 30
+    pool: 50
+  
+  # Test data
+  payload:
+    path: "./test/performance/test-data.csv"
+    fields:
+      - "username"
+      - "password"
+      - "amount"
+      - "description"
+  
+  # Performance thresholds
+  ensure:
+    - http.response_time.p95: 2000  # 95th percentile under 2 seconds
+    - http.response_time.p99: 5000  # 99th percentile under 5 seconds
+    - http.response_time.median: 500  # Median under 500ms
+    - http.request_rate: 100  # At least 100 requests per second
+    - http.codes.200: 95  # At least 95% success rate
+
+  plugins:
+    - artillery-plugin-metrics-by-endpoint
+    - artillery-plugin-cloudwatch
+
+scenarios:
+  # Health check scenario
+  - name: "Health Check"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200
+            - hasProperty: "status"
+
+  # Dashboard loading scenario
+  - name: "Dashboard Access"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.sessionId"
+              as: "sessionId"
+      
+      - get:
+          url: "/api/dashboard/1"
+          headers:
+            Cookie: "sessionId={{ sessionId }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: "accounts"
+            - hasProperty: "transactions"
+            - hasProperty: "goals"
+
+  # Transaction import scenario
+  - name: "File Import"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.sessionId"
+              as: "sessionId"
+      
+      - post:
+          url: "/api/import/1"
+          headers:
+            Cookie: "sessionId={{ sessionId }}"
+            Content-Type: "multipart/form-data"
+          formData:
+            camtFile: "@./test/fixtures/sample-camt.xml"
+
+  # API browsing scenario
+  - name: "API Browsing"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.sessionId"
+              as: "sessionId"
+      
+      - get:
+          url: "/api/accounts/1"
+          headers:
+            Cookie: "sessionId={{ sessionId }}"
+      
+      - get:
+          url: "/api/transactions/1"
+          headers:
+            Cookie: "sessionId={{ sessionId }}"
+      
+      - get:
+          url: "/api/goals/1"
+          headers:
+            Cookie: "sessionId={{ sessionId }}"
+      
+      - get:
+          url: "/api/categories"
+
+  # Transfer execution scenario
+  - name: "Transfer Execution"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.sessionId"
+              as: "sessionId"
+      
+      - post:
+          url: "/api/transfers/1"
+          headers:
+            Cookie: "sessionId={{ sessionId }}"
+          json:
+            fromAccountId: 1
+            toAccountId: 2
+            amount: "{{ amount }}"
+            description: "{{ description }}"
+
+  # Budget management scenario
+  - name: "Budget Management"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.sessionId"
+              as: "sessionId"
+      
+      - get:
+          url: "/api/budget/periods/1"
+          headers:
+            Cookie: "sessionId={{ sessionId }}"
+      
+      - post:
+          url: "/api/budget/categories"
+          headers:
+            Cookie: "sessionId={{ sessionId }}"
+          json:
+            budgetPeriodId: 1
+            categoryId: 1
+            allocatedAmount: "{{ amount }}"
+
+  # Error scenarios (to test error handling under load)
+  - name: "Error Scenarios"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/nonexistent"
+          expect:
+            - statusCode: 404
+      
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "invalid"
+            password: "invalid"
+          expect:
+            - statusCode: 401

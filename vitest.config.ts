@@ -18,6 +18,36 @@ export default defineConfig({
       },
     },
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: './coverage',
+      exclude: [
+        'node_modules/**',
+        'dist/**',
+        'coverage/**',
+        '**/*.d.ts',
+        'test/**',
+        'migrations/**',
+        'drizzle.config.ts',
+        'vite.config.ts',
+        'vitest.config.ts',
+        '.env*',
+        'docker-compose*.yml',
+        'Dockerfile',
+        'run-tests.sh'
+      ],
+      thresholds: {
+        global: {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80
+        }
+      },
+      all: true,
+      skipFull: false
+    }
   },
   resolve: {
     alias: {
