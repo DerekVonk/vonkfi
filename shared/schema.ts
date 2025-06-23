@@ -212,7 +212,7 @@ export const transactionHashes = pgTable("transaction_hashes", {
 export const transferPreferences = pgTable("transfer_preferences", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  preferenceType: text("preference_type").notNull(), // 'buffer', 'goal', 'investment', 'emergency'
+  preferenceType: text("preference_type").notNull(), // 'buffer', 'goal', 'investment'
   priority: integer("priority").notNull(), // 1=highest priority
   accountId: integer("account_id").references(() => accounts.id),
   accountRole: text("account_role"), // 'emergency', 'savings', 'checking', etc.

@@ -19,7 +19,7 @@ import type { TransferPreference } from "@shared/schema";
 
 const createPreferenceSchema = z.object({
   userId: z.number(),
-  preferenceType: z.enum(["buffer", "goal", "investment", "emergency"]),
+  preferenceType: z.enum(["buffer", "goal", "investment"]),
   priority: z.number().min(1).max(10),
   accountId: z.number().optional(),
   accountRole: z.string().optional(),
@@ -683,7 +683,6 @@ export default function Settings() {
                         <SelectItem value="buffer">Emergency Buffer</SelectItem>
                         <SelectItem value="goal">Goal Allocation</SelectItem>
                         <SelectItem value="investment">Investment</SelectItem>
-                        <SelectItem value="emergency">Emergency Fund</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -794,7 +793,6 @@ export default function Settings() {
                         <SelectItem value="buffer">Emergency Buffer</SelectItem>
                         <SelectItem value="goal">Goal Allocation</SelectItem>
                         <SelectItem value="investment">Investment</SelectItem>
-                        <SelectItem value="emergency">Emergency Fund</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
