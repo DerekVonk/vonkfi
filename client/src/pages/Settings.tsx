@@ -716,14 +716,13 @@ export default function Settings() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Account Role (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select account role" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
                         <SelectItem value="income">Income</SelectItem>
                         <SelectItem value="spending">Spending</SelectItem>
                         <SelectItem value="fixed_expenses">Fixed Expenses</SelectItem>
@@ -839,14 +838,13 @@ export default function Settings() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Account Role (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select account role" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
                         <SelectItem value="income">Income</SelectItem>
                         <SelectItem value="spending">Spending</SelectItem>
                         <SelectItem value="fixed_expenses">Fixed Expenses</SelectItem>
