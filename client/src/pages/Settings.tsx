@@ -19,7 +19,7 @@ import type { TransferPreference } from "@shared/schema";
 
 const createPreferenceSchema = z.object({
   userId: z.number(),
-  preferenceType: z.enum(["buffer", "goal", "investment", "emergency"]),
+  preferenceType: z.enum(["buffer", "goal", "investment"]),
   priority: z.number().min(1).max(10),
   accountId: z.number().optional(),
   accountRole: z.string().optional(),
@@ -143,7 +143,7 @@ export default function Settings() {
     setEditingPreference(preference);
     editForm.reset({
       userId: preference.userId,
-      preferenceType: preference.preferenceType as "buffer" | "goal" | "investment" | "emergency",
+      preferenceType: preference.preferenceType as "buffer" | "goal" | "investment",
       priority: preference.priority,
       accountId: preference.accountId || undefined,
       accountRole: preference.accountRole || "",
@@ -666,7 +666,16 @@ export default function Settings() {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((data) => createPreferenceMutation.mutate(data))} className="space-y-4">
+            <form onSubmit={form.handleSubmit((data) => {
+              // Clean up the data by removing undefined values
+              const cleanData = {
+                ...data,
+                accountId: data.accountId || null,
+                accountRole: data.accountRole || null,
+                goalPattern: data.goalPattern || null,
+              };
+              createPreferenceMutation.mutate(cleanData);
+            })} className="space-y-4">
               <FormField
                 control={form.control}
                 name="preferenceType"
@@ -683,7 +692,6 @@ export default function Settings() {
                         <SelectItem value="buffer">Emergency Buffer</SelectItem>
                         <SelectItem value="goal">Goal Allocation</SelectItem>
                         <SelectItem value="investment">Investment</SelectItem>
-                        <SelectItem value="emergency">Emergency Fund</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -717,9 +725,21 @@ export default function Settings() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Account Role (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., emergency, savings, investment" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select account role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="income">Income</SelectItem>
+                        <SelectItem value="spending">Spending</SelectItem>
+                        <SelectItem value="fixed_expenses">Fixed Expenses</SelectItem>
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                        <SelectItem value="goal_specific">Goal Specific</SelectItem>
+                        <SelectItem value="investment">Investment</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -772,9 +792,16 @@ export default function Settings() {
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit((data) => {
               if (editingPreference) {
+                // Clean up the data by removing undefined values
+                const cleanData = {
+                  ...data,
+                  accountId: data.accountId || null,
+                  accountRole: data.accountRole || null,
+                  goalPattern: data.goalPattern || null,
+                };
                 updatePreferenceMutation.mutate({
                   id: editingPreference.id,
-                  data
+                  data: cleanData
                 });
               }
             })} className="space-y-4">
@@ -794,7 +821,6 @@ export default function Settings() {
                         <SelectItem value="buffer">Emergency Buffer</SelectItem>
                         <SelectItem value="goal">Goal Allocation</SelectItem>
                         <SelectItem value="investment">Investment</SelectItem>
-                        <SelectItem value="emergency">Emergency Fund</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -828,9 +854,21 @@ export default function Settings() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Account Role (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., emergency, savings, investment" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select account role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="income">Income</SelectItem>
+                        <SelectItem value="spending">Spending</SelectItem>
+                        <SelectItem value="fixed_expenses">Fixed Expenses</SelectItem>
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                        <SelectItem value="goal_specific">Goal Specific</SelectItem>
+                        <SelectItem value="investment">Investment</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

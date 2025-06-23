@@ -402,8 +402,9 @@ export default function Accounts() {
                 <SelectContent>
                   <SelectItem value="income">Income Account</SelectItem>
                   <SelectItem value="spending">Spending Account</SelectItem>
+                  <SelectItem value="fixed_expenses">Fixed Expenses</SelectItem>
                   <SelectItem value="emergency">Emergency Fund</SelectItem>
-                  <SelectItem value="goal-specific">Goal-Specific</SelectItem>
+                  <SelectItem value="goal_specific">Goal-Specific</SelectItem>
                   <SelectItem value="investment">Investment</SelectItem>
                 </SelectContent>
               </Select>

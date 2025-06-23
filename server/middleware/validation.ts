@@ -117,7 +117,7 @@ export const commonSchemas = {
   }),
 
   // Account role validation
-  accountRole: z.enum(['income', 'spending', 'emergency', 'savings', 'investment'], {
+  accountRole: z.enum(['income', 'spending', 'fixed_expenses', 'emergency', 'goal_specific', 'investment'], {
     errorMap: () => ({ message: 'Invalid account role' })
   }),
 
