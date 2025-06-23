@@ -666,7 +666,16 @@ export default function Settings() {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((data) => createPreferenceMutation.mutate(data))} className="space-y-4">
+            <form onSubmit={form.handleSubmit((data) => {
+              // Clean up the data by removing undefined values
+              const cleanData = {
+                ...data,
+                accountId: data.accountId || null,
+                accountRole: data.accountRole || null,
+                goalPattern: data.goalPattern || null,
+              };
+              createPreferenceMutation.mutate(cleanData);
+            })} className="space-y-4">
               <FormField
                 control={form.control}
                 name="preferenceType"
@@ -783,9 +792,16 @@ export default function Settings() {
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit((data) => {
               if (editingPreference) {
+                // Clean up the data by removing undefined values
+                const cleanData = {
+                  ...data,
+                  accountId: data.accountId || null,
+                  accountRole: data.accountRole || null,
+                  goalPattern: data.goalPattern || null,
+                };
                 updatePreferenceMutation.mutate({
                   id: editingPreference.id,
-                  data
+                  data: cleanData
                 });
               }
             })} className="space-y-4">

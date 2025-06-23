@@ -887,20 +887,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/transfer-preferences/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
+      console.log("Fetching transfer preferences for userId:", userId);
       const preferences = await storage.getTransferPreferencesByUserId(userId);
       res.json(preferences);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch transfer preferences" });
+      console.error("Transfer preference fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch transfer preferences", details: error.message });
     }
   });
 
   app.post("/api/transfer-preferences", async (req, res) => {
     try {
       const preferenceData = req.body;
+      console.log("Creating transfer preference with data:", preferenceData);
       const preference = await storage.createTransferPreference(preferenceData);
       res.json(preference);
     } catch (error) {
-      res.status(500).json({ error: "Failed to create transfer preference" });
+      console.error("Transfer preference creation error:", error);
+      res.status(500).json({ error: "Failed to create transfer preference", details: error.message });
     }
   });
 
