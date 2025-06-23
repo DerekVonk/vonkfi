@@ -143,7 +143,7 @@ export default function Settings() {
     setEditingPreference(preference);
     editForm.reset({
       userId: preference.userId,
-      preferenceType: preference.preferenceType as "buffer" | "goal" | "investment" | "emergency",
+      preferenceType: preference.preferenceType as "buffer" | "goal" | "investment",
       priority: preference.priority,
       accountId: preference.accountId || undefined,
       accountRole: preference.accountRole || "",
