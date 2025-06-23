@@ -740,7 +740,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTransactionHashesByUserId(userId: number): Promise<TransactionHash[]> {
-    return await db.select().from(transactionHashes).where(eq(transactionHashes.userId, userId));
+    try {
+      return await db.select().from(transactionHashes).where(eq(transactionHashes.userId, userId));
+    } catch (error: any) {
+      // Handle missing table gracefully - return empty array so duplicate detection can continue
+      if (error.message?.includes('relation "transaction_hashes" does not exist')) {
+        console.warn('transaction_hashes table does not exist - duplicate detection will be disabled');
+        return [];
+      }
+      throw error;
+    }
   }
 
   async createTransactionHash(insertTransactionHash: InsertTransactionHash): Promise<TransactionHash> {
@@ -749,7 +758,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTransactionHashBatch(insertTransactionHashes: InsertTransactionHash[]): Promise<TransactionHash[]> {
-    return await db.insert(transactionHashes).values(insertTransactionHashes).returning();
+    if (insertTransactionHashes.length === 0) {
+      return [];
+    }
+    
+    try {
+      return await db.insert(transactionHashes).values(insertTransactionHashes).returning();
+    } catch (error: any) {
+      // Handle missing table gracefully
+      if (error.message?.includes('relation "transaction_hashes" does not exist')) {
+        console.warn('transaction_hashes table does not exist - hash creation skipped');
+        return [];
+      }
+      // Handle unique constraint violations gracefully
+      if (error.code === '23505' && error.constraint === 'unique_user_hash') {
+        console.warn('Duplicate hash detected, skipping batch creation');
+        return [];
+      }
+      throw error;
+    }
   }
 
   async deleteCategory(id: number): Promise<void> {

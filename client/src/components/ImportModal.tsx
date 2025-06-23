@@ -51,12 +51,25 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
         .filter(r => r.success)
         .reduce((sum, r) => sum + ((r.data as any)?.newTransactions?.length || 0), 0);
       
+      const duplicateDetails = results
+        .filter(r => r.success && (r.data as any)?.duplicateTransactions?.length > 0)
+        .flatMap(r => (r.data as any).duplicateTransactions);
+      
       if (successCount > 0) {
-        const duplicateText = totalDuplicates > 0 ? ` (${totalDuplicates} duplicates detected and skipped)` : '';
+        let duplicateText = '';
+        if (totalDuplicates > 0) {
+          const sampleDups = duplicateDetails.slice(0, 3);
+          const moreText = duplicateDetails.length > 3 ? ` and ${duplicateDetails.length - 3} more` : '';
+          const dupList = sampleDups.map(d => 
+            `${d.merchant || 'Unknown'} (${d.amount}, ref: ${d.hash})`
+          ).join(', ');
+          duplicateText = ` (${totalDuplicates} duplicates skipped: ${dupList}${moreText})`;
+        }
+        
         toast({
           title: "Import Completed",
           description: `Successfully imported ${totalTransactions} transactions from ${successCount} files${duplicateText}${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
-          duration: 8000,
+          duration: 10000,
         });
         
         // Trigger automatic recalculation and transfer generation

@@ -158,7 +158,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     validateRequest({ params: pathParams.userId }),
     validateFileUpload,
     asyncHandler(async (req: any, res) => {
-      const userId = req.params.userId;
+      const userId = parseInt(req.params.userId, 10);
+      
+      if (isNaN(userId)) {
+        throw new AppError('Invalid user ID', 400);
+      }
 
       try {
         const xmlContent = req.file.buffer.toString('utf-8');
@@ -176,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Check for duplicates
         const existingHashes = await storage.getTransactionHashesByUserId(userId);
-        const { uniqueTransactions, duplicateCount } = await duplicateDetectionService.filterDuplicates(
+        const { uniqueTransactions, duplicateCount, duplicateTransactions } = await duplicateDetectionService.filterDuplicates(
           parsedStatement.transactions,
           userId,
           existingHashes
@@ -188,7 +192,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newAccounts: [] as any[],
         newTransactions: [] as any[],
         categorySuggestions: [] as any[],
-        duplicatesSkipped: duplicateCount
+        duplicatesSkipped: duplicateCount,
+        duplicateTransactions: duplicateTransactions.map(dt => ({
+          amount: dt.amount,
+          date: dt.date,
+          merchant: dt.merchant || dt.description,
+          reference: dt.reference,
+          hash: dt.hash.substring(0, 8) // Short hash for user reference
+        }))
       };
 
       // Process accounts
