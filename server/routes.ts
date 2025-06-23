@@ -252,9 +252,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         results.newTransactions.push(newTransaction);
       }
 
-      // Create hash records for duplicate detection
+      // Create hash records for duplicate detection using original transaction data
       if (results.newTransactions.length > 0) {
-        const hashRecords = duplicateDetectionService.createHashRecords(results.newTransactions, userId);
+        const hashRecords = results.newTransactions.map((transaction, index) => ({
+          userId,
+          transactionId: transaction.id,
+          hash: duplicateDetectionService.createTransactionHash(uniqueTransactions[index])
+        }));
         await storage.createTransactionHashBatch(hashRecords);
       }
 

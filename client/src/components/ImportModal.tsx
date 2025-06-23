@@ -28,7 +28,8 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
       for (const file of files) {
         setProcessingFiles(prev => [...prev, file.name]);
         try {
-          const result = await api.importStatement(userId, file);
+          const response = await api.importStatement(userId, file);
+          const result = await response.json();
           results.push({ file: file.name, success: true, data: result });
           setCompletedFiles(prev => [...prev, file.name]);
         } catch (error) {
@@ -46,24 +47,16 @@ export default function ImportModal({ isOpen, onClose, userId }: ImportModalProp
       // Calculate duplicate statistics from results
       const totalDuplicates = results
         .filter(r => r.success)
-        .reduce((sum, r) => sum + ((r as any)?.duplicatesSkipped || 0), 0);
+        .reduce((sum, r) => sum + (r.data?.data?.duplicatesSkipped || 0), 0);
       const totalTransactions = results
         .filter(r => r.success)
-        .reduce((sum, r) => sum + ((r as any)?.newTransactions?.length || 0), 0);
+        .reduce((sum, r) => sum + (r.data?.data?.newTransactions?.length || 0), 0);
       
-      const duplicateDetails = results
-        .filter(r => r.success && (r as any)?.duplicateTransactions?.length > 0)
-        .flatMap(r => (r as any).duplicateTransactions);
       
       if (successCount > 0) {
         let duplicateText = '';
         if (totalDuplicates > 0) {
-          const sampleDups = duplicateDetails.slice(0, 3);
-          const moreText = duplicateDetails.length > 3 ? ` and ${duplicateDetails.length - 3} more` : '';
-          const dupList = sampleDups.map(d => 
-            `${d.merchant || 'Unknown'} (${d.amount}, ref: ${d.hash})`
-          ).join(', ');
-          duplicateText = ` (${totalDuplicates} duplicates skipped: ${dupList}${moreText})`;
+          duplicateText = ` (${totalDuplicates} duplicates detected and skipped)`;
         }
         
         toast({
