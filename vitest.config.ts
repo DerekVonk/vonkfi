@@ -22,6 +22,17 @@ export default defineConfig({
       },
     },
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    // Test reporting configuration
+    reporters: [
+      'default',
+      'verbose',
+      ['json', { outputFile: './test-results/test-results.json' }],
+      ['junit', { outputFile: './test-results/test-results.xml' }]
+    ],
+    outputFile: {
+      json: './test-results/test-results.json',
+      junit: './test-results/test-results.xml'
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

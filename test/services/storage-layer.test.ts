@@ -1,5 +1,6 @@
 import {beforeEach, describe, expect, it} from 'vitest';
 import {storage} from '../../server/storage';
+import { setupTestDatabaseHelpers } from '../utils/test-db-helpers';
 
 // Check if database tests should be skipped
 const shouldSkipDbTests = process.env.SKIP_DB_TESTS === 'true';
@@ -10,6 +11,9 @@ describe('Storage Layer Tests', () => {
     let testCategoryId: number;
     let testUsername: string;
     let testIban: string;
+
+    // Setup enhanced test infrastructure
+    setupTestDatabaseHelpers();
 
     beforeEach(async () => {
         // Clear any existing data before each test

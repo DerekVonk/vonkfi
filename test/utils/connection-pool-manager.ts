@@ -120,7 +120,7 @@ export class TestConnectionPoolManager extends EventEmitter {
   private connectionMutex = new Map<string, Promise<any>>();
   private securityViolations: string[] = [];
   private resourceLeakTracker = new Map<string, number>();
-  private transactionRegistry = new Map<string, { startTime: Date; query: string }>>();
+  private transactionRegistry = new Map<string, { startTime: Date; query: string }>();
   private deadlockCounter = 0;
   private failedConnectionAttempts = 0;
 
