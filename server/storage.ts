@@ -205,6 +205,17 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
+    if (!user) {
+      return undefined;
+    }
+    
+    // Return user without password for security
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword as User;
+  }
+
+  private async getUserByUsernameWithPassword(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
   }
 
@@ -213,7 +224,7 @@ export class DatabaseStorage implements IStorage {
     const hashedPassword = await hashPassword(insertUser.password);
     
     // Check if username already exists
-    const existingUser = await this.getUserByUsername(insertUser.username);
+    const existingUser = await this.getUserByUsernameWithPassword(insertUser.username);
     if (existingUser) {
       throw new Error('Username already exists');
     }
@@ -233,7 +244,7 @@ export class DatabaseStorage implements IStorage {
 
   async authenticateUser(username: string, password: string): Promise<User | null> {
     try {
-      const user = await this.getUserByUsername(username);
+      const user = await this.getUserByUsernameWithPassword(username);
       if (!user) {
         return null;
       }

@@ -18,32 +18,22 @@ async function globalSetup(config: FullConfig) {
 }
 
 async function setupTestDatabase() {
-  console.log('📀 Setting up test database...');
+  console.log('📀 Checking test database availability...');
   
   const databaseUrl = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/vonkfi_test';
   
   try {
-    // Start test database if using Docker
-    if (process.env.CI !== 'true') {
-      execSync('docker-compose -f docker-compose.test.yml up -d postgres-test', { 
-        stdio: 'inherit',
-        timeout: 60000
-      });
-      
-      // Wait for database to be ready
-      await new Promise(resolve => setTimeout(resolve, 10000));
-    }
-
-    // Run migrations
-    console.log('🔄 Running database migrations...');
-    execSync('npm run db:migrate', {
-      stdio: 'inherit',
-      env: { ...process.env, DATABASE_URL: databaseUrl }
-    });
-
-    console.log('✅ Database setup completed');
+    // Database should already be started by run-tests.sh or test infrastructure
+    // Just verify connectivity
+    const pool = new Pool({ connectionString: databaseUrl });
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    await pool.end();
+    
+    console.log('✅ Database connectivity verified');
   } catch (error) {
-    console.error('❌ Database setup failed:', error);
+    console.error('❌ Database not available for E2E tests:', error);
     throw error;
   }
 }

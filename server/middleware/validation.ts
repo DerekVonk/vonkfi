@@ -111,9 +111,15 @@ export const commonSchemas = {
     z.date()
   ]).transform(val => typeof val === 'string' ? new Date(val) : val),
 
-  // Priority validation
-  priority: z.enum(['high', 'medium', 'low'], {
-    errorMap: () => ({ message: 'Priority must be high, medium, or low' })
+  // Priority validation - support both string and numeric values
+  priority: z.union([
+    z.enum(['high', 'medium', 'low']).transform(val => {
+      const priorityMap = { high: 1, medium: 2, low: 3 };
+      return priorityMap[val];
+    }),
+    z.number().int().min(1).max(3)
+  ], {
+    errorMap: () => ({ message: 'Priority must be high, medium, low or 1, 2, 3' })
   }),
 
   // Account role validation
@@ -132,10 +138,16 @@ export const apiSchemas = {
   // Goal creation/update
   goal: z.object({
     name: z.string().min(1, 'Goal name is required').max(100, 'Goal name too long'),
-    target: commonSchemas.amount,
-    priority: commonSchemas.priority,
-    linkedAccountId: z.number().optional(),
-    targetDate: commonSchemas.date.optional()
+    target: commonSchemas.amount.optional(),
+    targetAmount: commonSchemas.amount.optional(),
+    priority: commonSchemas.priority.optional(),
+    linkedAccountId: z.union([z.number(), z.null()]).optional(),
+    targetDate: z.union([
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+      commonSchemas.date
+    ]).optional(),
+    currentAmount: commonSchemas.amount.optional(),
+    userId: z.number().positive('User ID is required').optional()
   }),
 
   // Account creation/update

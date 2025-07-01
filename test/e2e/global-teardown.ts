@@ -45,18 +45,10 @@ async function cleanupTestData() {
 }
 
 async function stopTestDatabase() {
-  console.log('🛑 Stopping test database...');
-  
-  try {
-    execSync('docker-compose -f docker-compose.test.yml down', { 
-      stdio: 'inherit',
-      timeout: 30000
-    });
-    
-    console.log('✅ Test database stopped');
-  } catch (error) {
-    console.warn('⚠️  Failed to stop test database:', error);
-  }
+  console.log('🛑 E2E teardown - containers managed by test infrastructure');
+  // Container management is handled by run-tests.sh
+  // No action needed here
+  console.log('✅ E2E database teardown completed');
 }
 
 export default globalTeardown;

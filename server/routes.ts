@@ -63,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!defaultUser) {
       defaultUser = await storage.createUser({
         username: "demo",
-        password: "demo123"
+        password: "DemoUser123!"
       });
     }
   } catch (error: unknown) {
@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           goalsCount: dashboardData.goals?.length || 0,
         });
 
-        res.success(response, "Dashboard data retrieved successfully");
+        res.json(response);
       } catch (error: any) {
         // Handle specific database connection failures
         if (error.message?.includes('Database connection failed') || 
@@ -262,8 +262,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createTransactionHashBatch(hashRecords);
       }
 
-      // Update goal account balances for dashboard calculations
-      await storage.updateGoalAccountBalances(userId);
+      // Note: Skip updateGoalAccountBalances for CAMT imports to preserve closing balance from CAMT file
+      // The CAMT parser already sets the correct closing balance from the CAMT.053 file
+      // Calling updateAccountBalances would recalculate from transactions, losing the official closing balance
 
       // Track import history with duplicate tracking
       await storage.createImportHistory({
@@ -664,17 +665,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     asyncHandler(async (req, res) => {
       const goalData = req.body;
 
+      // Normalize field names: convert target to targetAmount for database use
+      if (goalData.target && !goalData.targetAmount) {
+        goalData.targetAmount = goalData.target;
+      }
+
+      // Set default priority if not provided
+      if (!goalData.priority) {
+        goalData.priority = 'medium'; // Default to medium priority
+      }
+
+      // Convert string priority to numeric if needed (database expects integer)
+      if (typeof goalData.priority === 'string') {
+        const priorityMap = { 'high': 1, 'medium': 2, 'low': 3 };
+        goalData.priority = priorityMap[goalData.priority] || 2;
+      }
+
       // Additional validation
-      if (!goalData.name || !goalData.target || !goalData.priority) {
-        throw new AppError('Missing required fields: name, target, priority', 400);
+      if (!goalData.name || (!goalData.target && !goalData.targetAmount)) {
+        throw new AppError('Missing required fields: name, target/targetAmount', 400);
       }
 
-      if (goalData.target < 0) {
+      const targetValue = goalData.target || goalData.targetAmount;
+      if (targetValue < 0) {
         throw new AppError('Target amount must be positive', 400);
-      }
-
-      if (!['high', 'medium', 'low'].includes(goalData.priority)) {
-        throw new AppError('Priority must be high, medium, or low', 400);
       }
 
       console.log("Creating goal with data:", goalData);
@@ -687,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         priority: goal.priority,
       });
 
-      res.success(goal, "Goal created successfully");
+      res.json(goal);
     })
   );
 

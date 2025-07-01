@@ -119,9 +119,7 @@ const setupQueryClient = () => {
   return queryClient;
 };
 
-// Skip all React component tests for now as they're failing due to rendering issues
-// TODO: Fix these tests in the future
-describe.skip('Goals Component', () => {
+describe('Goals Component', () => {
   let queryClient: QueryClient;
   let user: ReturnType<typeof userEvent.setup>;
 

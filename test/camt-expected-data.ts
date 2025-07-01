@@ -1,87 +1,39 @@
 // Expected data from the CAMT.053 XML file: 50430009_251925218_020125000000_1750248257863.xml
 export const expectedCamtData = {
   account: {
-    iban: 'NL90ABNA0417164300',
+    iban: 'GB12ABCD12345678901234',
     bic: 'ABNANL2A',
     currency: 'EUR',
-    openingBalance: 749.58, // PRCD balance
-    closingBalance: 561.54, // CLBD balance
-    statementDate: '2025-01-02'
+    openingBalance: 1000.00, // OPBD balance
+    closingBalance: 850.50, // CLBD balance
+    statementDate: '2025-01-15'
   },
   transactions: [
     {
-      amount: -35.00,
-      date: '2025-01-02',
+      amount: -50.00,
+      date: '2025-01-10T00:00:00.000Z',
       type: 'debit',
-      description: 'BEA, Apple Pay                  CCV*Celly Shop,PAS353           NR:CT637285, 02.01.25/16:31     AMSTERDAM',
-      merchant: 'Celly Shop',
-      reference: '0102163142208897'
+      description: 'Payment to Test Merchant',
+      counterpartyName: 'Test Merchant',
+      counterpartyIban: 'NL58ABNA0529548685',
+      reference: 'NOTREF'
     },
     {
-      amount: -10.20,
-      date: '2025-01-02',
+      amount: -99.50,
+      date: '2025-01-12T00:00:00.000Z',
       type: 'debit',
-      description: 'BEA, Apple Pay                  CCV*DE SLEUTELSPECIALI,PAS342   NR:CT145270, 02.01.25/15:51     AMSTERDAM',
-      merchant: 'DE SLEUTELSPECIALI',
-      reference: '0102155145288055'
-    },
-    {
-      amount: -13.50,
-      date: '2025-01-02',
-      type: 'debit',
-      description: 'BEA, Apple Pay                  CCV*MECHANISCH SPEELGO,PAS342   NR:CT682676, 02.01.25/15:18     AMSTERDAM',
-      merchant: 'MECHANISCH SPEELGO',
-      reference: '0102151849285956'
-    },
-    {
-      amount: -40.00,
-      date: '2025-01-02',
-      type: 'debit',
-      description: 'BEA, Apple Pay                  Cafe Thijssen,PAS342            NR:03597983, 02.01.25/13:57     Amsterdam',
-      merchant: 'Cafe Thijssen',
-      reference: '0102135754096612'
-    },
-    {
-      amount: -12.00,
-      date: '2025-01-02',
-      type: 'debit',
-      description: 'BEA, Apple Pay                  Petit gateau,PAS342             NR:24213054, 02.01.25/13:18     Amsterdam',
-      merchant: 'Petit gateau',
-      reference: '0102131805388886'
-    },
-    {
-      amount: -49.85,
-      date: '2025-01-02',
-      type: 'debit',
-      description: 'BEA, Apple Pay                  SumUp  *MKD Vintage BV,PAS342   NR:MCUH3E23, 02.01.25/13:07     Hellevoetslui',
-      merchant: 'SumUp MKD Vintage BV',
-      reference: '0102130710371469'
-    },
-    {
-      amount: -2.50,
-      date: '2025-01-02',
-      type: 'debit',
-      counterpartyName: 'NS Reizigers B.V.',
-      counterpartyIban: 'NL91RABO0315273637',
-      description: 'E517525830 8030465478916939 NS e-Tickets. Order. E517525830',
-      reference: 'ECS00000F6BE0B20'
-    },
-    {
-      amount: -24.99,
-      date: '2025-01-02',
-      type: 'debit',
-      counterpartyName: 'bol.com',
-      counterpartyIban: 'NL39INGB0000000001',
-      description: '1499360180 7051135787888100 bol.com BUN1801236744120',
-      reference: 'ECS00000F6979FA0'
+      description: 'Payment to Another Merchant',
+      counterpartyName: 'Another Merchant',
+      counterpartyIban: 'NL58ABNA0529548686',
+      reference: 'NOTREF'
     }
   ],
   expectedTotals: {
-    totalTransactions: 8,
-    totalDebits: 188.04,
+    totalTransactions: 2,
+    totalDebits: 149.50,
     totalCredits: 0,
-    netChange: -188.04, // 749.58 - 561.54 = 188.04
-    applePayTransactions: 6,
+    netChange: -149.50, // 1000.00 - 850.50 = 149.50
+    applePayTransactions: 0,
     idealTransactions: 2
   }
 };

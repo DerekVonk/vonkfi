@@ -8,13 +8,17 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
-    // Add timeout for database operations
-    testTimeout: 30000,
-    // Pool options for handling database connections
+    // Optimized timeouts for improved test setup
+    testTimeout: 20000,
+    // Reduced setup timeout since we removed redundant operations
+    setupTimeout: 30000,
+    // Pool options optimized for shared database connection
     pool: 'threads',
     poolOptions: {
       threads: {
-        singleThread: true,
+        singleThread: true, // Maintain test isolation
+        maxThreads: 1,      // Single thread for database consistency
+        minThreads: 1
       },
     },
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],

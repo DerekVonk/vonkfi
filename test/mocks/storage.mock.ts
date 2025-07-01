@@ -1,4 +1,5 @@
 import { IStorage } from '../../server/storage';
+import { hashPassword, verifyPassword, needsRehash } from '../../server/utils/passwordSecurity';
 import {
   User, InsertUser, Account, InsertAccount,
   Transaction, InsertTransaction, Category, InsertCategory,
@@ -41,32 +42,77 @@ class MockStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.users.find(user => user.username === username);
+    const user = this.users.find(user => user.username === username);
+    if (!user) {
+      return undefined;
+    }
+    
+    // Return user without password for security
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword as User;
+  }
+
+  private async getUserByUsernameWithPassword(username: string): Promise<User | undefined> {
+    const user = this.users.find(user => user.username === username);
+    return user || undefined;
   }
 
   async createUser(user: InsertUser): Promise<User> {
+    // Check if username already exists
+    const existingUser = await this.getUserByUsernameWithPassword(user.username);
+    if (existingUser) {
+      throw new Error('Username already exists');
+    }
+
+    // Hash the password before storing
+    const hashedPassword = await hashPassword(user.password);
+    
     const newUser = {
       ...user,
+      password: hashedPassword,
       id: this.idCounter++,
       createdAt: new Date(),
       updatedAt: new Date()
     } as User;
+    
     this.users.push(newUser);
-    return newUser;
+    
+    // Return user without password for security (similar to database storage)
+    const { password, ...userWithoutPassword } = newUser;
+    return userWithoutPassword as User;
   }
 
   async authenticateUser(username: string, password: string): Promise<User | null> {
-    const user = await this.getUserByUsername(username);
-    if (!user || user.password !== password) {
+    try {
+      const user = await this.getUserByUsernameWithPassword(username);
+      if (!user) {
+        return null;
+      }
+
+      const isValidPassword = await verifyPassword(password, user.password);
+      if (!isValidPassword) {
+        return null;
+      }
+
+      // Check if password needs rehashing (due to updated security standards)
+      if (needsRehash(user.password)) {
+        await this.updateUserPassword(user.id, password);
+      }
+
+      // Return user without password
+      const { password: _, ...userWithoutPassword } = user;
+      return userWithoutPassword as User;
+    } catch (error: unknown) {
+      console.error('Authentication error:', error);
       return null;
     }
-    return user;
   }
 
   async updateUserPassword(id: number, newPassword: string): Promise<void> {
     const user = this.users.find(user => user.id === id);
     if (user) {
-      user.password = newPassword;
+      const hashedPassword = await hashPassword(newPassword);
+      user.password = hashedPassword;
     }
   }
 
@@ -209,6 +255,13 @@ class MockStorage implements IStorage {
       if (goal.userId === userId) {
         goal.currentAmount = "0";
         goal.isCompleted = false;
+      }
+    });
+    
+    // Reset account balances to 0 to ensure consistency with cleared transactions
+    this.accounts.forEach(account => {
+      if (account.userId === userId) {
+        account.balance = "0";
       }
     });
   }

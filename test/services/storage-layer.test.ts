@@ -8,6 +8,8 @@ describe('Storage Layer Tests', () => {
   let testUserId: number;
   let testAccountId: number;
   let testCategoryId: number;
+  let testUsername: string;
+  let testIban: string;
 
   beforeEach(async () => {
     // Clear any existing data before each test
@@ -33,9 +35,10 @@ describe('Storage Layer Tests', () => {
     }
 
     // Create test data
+    testUsername = 'testuser' + Date.now(); // Unique username
     const testUser = await storage.createUser({
-      username: 'testuser' + Date.now(), // Unique username
-      password: 'testpass123'
+      username: testUsername,
+      password: 'TestPass123!'
     });
     testUserId = testUser.id;
 
@@ -45,9 +48,10 @@ describe('Storage Layer Tests', () => {
     });
     testCategoryId = testCategory.id;
 
+    testIban = 'NL91ABNA0417164' + Date.now().toString().slice(-3); // Unique IBAN
     const testAccount = await storage.createAccount({
       userId: testUserId,
-      iban: 'NL91ABNA0417164300',
+      iban: testIban,
       bic: 'ABNANL2A',
       accountHolderName: 'Test User',
       bankName: 'Test Bank',
@@ -60,7 +64,7 @@ describe('Storage Layer Tests', () => {
     it('should create a user with hashed password', async () => {
       const userData = {
         username: 'newuser' + Date.now(),
-        password: 'password123'
+        password: 'Password123!'
       };
 
       const user = await storage.createUser(userData);
@@ -79,7 +83,7 @@ describe('Storage Layer Tests', () => {
     it('should prevent duplicate usernames', async () => {
       const userData = {
         username: 'duplicateuser' + Date.now(),
-        password: 'password123'
+        password: 'Password123!'
       };
 
       await storage.createUser(userData);
@@ -95,7 +99,7 @@ describe('Storage Layer Tests', () => {
     });
 
     it('should retrieve user by username', async () => {
-      const user = await storage.getUserByUsername('testuser' + testUserId);
+      const user = await storage.getUserByUsername(testUsername);
 
       expect(user).toBeDefined();
       expect(user!.id).toBe(testUserId);
@@ -107,7 +111,7 @@ describe('Storage Layer Tests', () => {
     });
 
     it('should authenticate user with correct credentials', async () => {
-      const user = await storage.authenticateUser('testuser' + testUserId, 'testpass123');
+      const user = await storage.authenticateUser(testUsername, 'TestPass123!');
 
       expect(user).toBeDefined();
       expect(user!.id).toBe(testUserId);
@@ -117,7 +121,7 @@ describe('Storage Layer Tests', () => {
     });
 
     it('should return null for incorrect credentials', async () => {
-      const user = await storage.authenticateUser('testuser' + testUserId, 'wrongpassword');
+      const user = await storage.authenticateUser(testUsername, 'wrongpassword');
       expect(user).toBeNull();
     });
 
@@ -127,11 +131,11 @@ describe('Storage Layer Tests', () => {
     });
 
     it('should update user password', async () => {
-      const newPassword = 'newpassword123';
+      const newPassword = 'NewPassword123!';
       
       await storage.updateUserPassword(testUserId, newPassword);
       
-      const authenticatedUser = await storage.authenticateUser('testuser' + testUserId, newPassword);
+      const authenticatedUser = await storage.authenticateUser(testUsername, newPassword);
       expect(authenticatedUser).toBeDefined();
       expect(authenticatedUser!.id).toBe(testUserId);
     });
@@ -164,11 +168,12 @@ describe('Storage Layer Tests', () => {
     });
 
     it('should retrieve account by IBAN', async () => {
-      const account = await storage.getAccountByIban('NL91ABNA0417164300');
+      const account = await storage.getAccountByIban(testIban);
 
       expect(account).toBeDefined();
-      expect(account!.id).toBe(testAccountId);
-      expect(account!.iban).toBe('NL91ABNA0417164300');
+      expect(account!.iban).toBe(testIban);
+      expect(account!.userId).toBe(testUserId);
+      expect(account!.accountHolderName).toBe('Test User');
     });
 
     it('should retrieve account by ID', async () => {

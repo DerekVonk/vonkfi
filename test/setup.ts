@@ -7,6 +7,51 @@ import * as schema from '@shared/schema';
 import { execSync } from 'child_process';
 import { mockStorage } from './mocks/storage.mock';
 
+// Add ResizeObserver polyfill for Recharts components
+class ResizeObserverPolyfill {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+// @ts-ignore
+global.ResizeObserver = global.ResizeObserver || ResizeObserverPolyfill;
+
+// Mock getBoundingClientRect for charts that need dimensions
+const mockGetBoundingClientRect = () => ({
+  width: 800,
+  height: 400,
+  top: 0,
+  left: 0,
+  bottom: 400,
+  right: 800,
+  x: 0,
+  y: 0,
+  toJSON: () => ({})
+});
+
+// Apply to all elements during tests
+Object.defineProperty(Element.prototype, 'getBoundingClientRect', {
+  value: mockGetBoundingClientRect,
+  writable: true,
+  configurable: true
+});
+
+// Add matchMedia polyfill for responsive design tests
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(), // deprecated
+    removeListener: vi.fn(), // deprecated
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
 const { Pool } = pg;
 
 // Cleanup after each test case
@@ -63,98 +108,125 @@ let testDb: ReturnType<typeof drizzle>;
 let dbConnectionFailed = false;
 let dockerContainerStarted = false;
 
-// Function to provision test database
-const provisionTestDatabase = async (): Promise<boolean> => {
+// Function to check if test database is available (containers managed by run-tests.sh)
+const checkTestDatabase = async (): Promise<boolean> => {
   try {
-    console.log('🚀 Provisioning test database...');
+    console.log('🔍 Checking test database availability...');
     
-    // Check if docker is available
-    try {
-      execSync('docker --version', { stdio: 'ignore' });
-    } catch {
-      console.warn('Docker not available, assuming database is already running');
-      return true;
-    }
-
-    // Start test database with docker-compose
-    console.log('Starting PostgreSQL test container...');
-    execSync('docker-compose -f docker-compose.test.yml up -d postgres-test', { 
-      stdio: 'inherit',
-      timeout: 60000 // 60 second timeout
+    // Try to connect to the database (should be started by run-tests.sh)
+    const quickTest = new Pool({
+      host: dbConfig.host,
+      port: dbConfig.port,
+      database: dbConfig.database,
+      user: dbConfig.user,
+      password: dbConfig.password,
+      connectionTimeoutMillis: 3000
     });
     
-    dockerContainerStarted = true;
+    const client = await quickTest.connect();
+    await client.query('SELECT 1');
+    client.release();
+    await quickTest.end();
     
-    // Wait for database to be ready
-    console.log('Waiting for database to be ready...');
-    let attempts = 0;
-    const maxAttempts = 30; // 30 seconds
-    
-    while (attempts < maxAttempts) {
-      try {
-        const testPool = new Pool({
-          host: dbConfig.host,
-          port: dbConfig.port,
-          database: dbConfig.database,
-          user: dbConfig.user,
-          password: dbConfig.password,
-          connectionTimeoutMillis: 2000
-        });
-        
-        const client = await testPool.connect();
-        await client.query('SELECT 1');
-        client.release();
-        await testPool.end();
-        
-        console.log('✅ Test database is ready!');
-        return true;
-      } catch {
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
-    
-    throw new Error('Database failed to become ready within timeout');
+    console.log('✅ Test database is available!');
+    return true;
   } catch (error) {
-    console.error('Failed to provision test database:', error);
+    console.warn('❌ Test database not available:', error.message);
     return false;
   }
 };
 
-// Function to cleanup test database
-const cleanupTestDatabase = async (): Promise<void> => {
-  if (dockerContainerStarted) {
+// Separate function to wait for database
+const waitForDatabase = async (): Promise<boolean> => {
+  console.log('Waiting for database to be ready...');
+  let attempts = 0;
+  const maxAttempts = 15; // Reduced to 15 seconds
+  
+  while (attempts < maxAttempts) {
     try {
-      console.log('🧹 Cleaning up test database...');
-      execSync('docker-compose -f docker-compose.test.yml down -v', { 
-        stdio: 'inherit',
-        timeout: 30000 // 30 second timeout
+      const testPool = new Pool({
+        host: dbConfig.host,
+        port: dbConfig.port,
+        database: dbConfig.database,
+        user: dbConfig.user,
+        password: dbConfig.password,
+        connectionTimeoutMillis: 2000 // Increased timeout per connection
       });
-      console.log('✅ Test database cleaned up');
+      
+      const client = await testPool.connect();
+      await client.query('SELECT 1');
+      client.release();
+      await testPool.end();
+      
+      console.log('✅ Test database is ready!');
+      return true;
+    } catch {
+      attempts++;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  
+  throw new Error('Database failed to become ready within timeout');
+};
+
+// Function to cleanup test data (containers managed by run-tests.sh)
+const cleanupTestData = async (): Promise<void> => {
+  if (testPool && !dbConnectionFailed) {
+    try {
+      console.log('🧹 Cleaning up test data...');
+      const client = await testPool.connect();
+      
+      // Check if tables exist before cleaning
+      const tablesExist = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'users'
+        );
+      `);
+      
+      if (tablesExist.rows[0].exists) {
+        // Clean up test data without dropping schema
+        await client.query('TRUNCATE TABLE transaction_hashes, transfer_recommendations, goals, transactions, accounts, import_history, users, categories RESTART IDENTITY CASCADE');
+        console.log('✅ Test data cleaned up');
+      } else {
+        console.log('📋 No test data to clean up');
+      }
+      
+      client.release();
     } catch (error) {
-      console.warn('Failed to cleanup test database:', error);
+      console.warn('Failed to cleanup test data:', error.message);
     }
   }
 };
 
-// Function to clean and reset database
-const resetTestDatabase = async (pool: pg.Pool): Promise<void> => {
+// Function to clean test data between test suites (much faster than schema reset)
+const cleanTestData = async (pool: pg.Pool): Promise<void> => {
   try {
-    console.log('Resetting test database...');
+    console.log('🧹 Cleaning test data...');
     const client = await pool.connect();
     
-    // Drop all tables to ensure clean state
-    await client.query(`
-      DROP SCHEMA public CASCADE;
-      CREATE SCHEMA public;
-      GRANT ALL ON SCHEMA public TO public;
+    // Check if tables exist before trying to clean them
+    const tablesExist = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      );
     `);
     
+    if (tablesExist.rows[0].exists) {
+      // Clear data from all tables in dependency order
+      await client.query('TRUNCATE TABLE transaction_hashes, transfer_recommendations, goals, transactions, accounts, import_history, users, categories RESTART IDENTITY CASCADE');
+      console.log('✅ Test data cleaned');
+    } else {
+      console.log('📋 No tables to clean - schema not yet created');
+    }
+    
     client.release();
-    console.log('✅ Test database reset completed');
   } catch (error) {
-    console.warn('Database reset failed:', error);
-    throw error;
+    console.warn('Test data cleanup failed:', error.message);
+    // Don't throw error for cleanup failures, just continue
   }
 };
 
@@ -189,32 +261,52 @@ beforeAll(async () => {
   process.env.TEST_MODE = 'true';
 
   try {
-    // Provision test database
-    const dbProvisioned = await provisionTestDatabase();
+    // Check if test database is available (started by run-tests.sh)
+    const dbAvailable = await checkTestDatabase();
     
-    if (!dbProvisioned) {
-      throw new Error('Failed to provision test database');
+    if (!dbAvailable) {
+      throw new Error('Test database not available - ensure run-tests.sh started containers');
     }
 
-    // Create test database pool
+    // Create shared test database pool
     testPool = new Pool({
       host: dbConfig.host,
       port: dbConfig.port,
       database: dbConfig.database,
       user: dbConfig.user,
       password: dbConfig.password,
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
       idleTimeoutMillis: 30000,
-      max: 10
+      max: 20, // Increased for better concurrency
+      min: 2   // Keep minimum connections open
     });
 
     testDb = drizzle({ client: testPool, schema });
 
-    // Reset database to ensure clean state
-    await resetTestDatabase(testPool);
+    // Check if migrations are needed first
+    let needsMigrations = false;
+    try {
+      const client = await testPool.connect();
+      const result = await client.query("SELECT to_regclass('public.users')");
+      client.release();
+      
+      if (!result.rows[0].to_regclass) {
+        needsMigrations = true;
+      }
+    } catch (migrationError) {
+      needsMigrations = true;
+    }
 
-    // Run migrations
-    await runMigrations(testDb);
+    // Run migrations if needed
+    if (needsMigrations) {
+      console.log('🔄 Running database migrations...');
+      await runMigrations(testDb);
+      console.log('✅ Migrations completed');
+    } else {
+      console.log('📋 Database schema already exists, skipping migrations');
+      // Clean existing test data only if schema exists
+      await cleanTestData(testPool);
+    }
 
     // Test final connection
     const client = await testPool.connect();
@@ -238,13 +330,13 @@ beforeAll(async () => {
   }
 });
 
-// Cleanup test database
+// Cleanup test data (not containers - managed by run-tests.sh)
 afterAll(async () => {
   try {
+    await cleanupTestData();
     if (testPool) {
       await testPool.end();
     }
-    await cleanupTestDatabase();
   } catch (error) {
     console.warn('Cleanup warning:', error);
   }

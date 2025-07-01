@@ -23,24 +23,41 @@ docker-compose -f docker-compose.test.yml up -d
 
 # Wait for the database to be ready
 echo "Waiting for database to be ready..."
-sleep 10
+sleep 5
 
-# Check if database is ready
+# Check if database is ready with improved health checks
 echo "Checking database connection..."
-max_attempts=10
+max_attempts=15
 attempt=1
 while [ $attempt -le $max_attempts ]; do
-  if docker-compose -f docker-compose.test.yml exec postgres-test pg_isready -U test -d vonkfi_test; then
+  # Check if container is running first
+  if ! docker-compose -f docker-compose.test.yml ps postgres-test | grep -q "Up"; then
+    echo "Attempt $attempt of $max_attempts: Container not running yet, waiting..."
+  # Then check if database is ready
+  elif docker-compose -f docker-compose.test.yml exec postgres-test pg_isready -U test -d vonkfi_test >/dev/null 2>&1; then
     echo "Database is ready!"
-    break
+    
+    # Additional connectivity test
+    if docker-compose -f docker-compose.test.yml exec postgres-test psql -U test -d vonkfi_test -c "SELECT 1;" >/dev/null 2>&1; then
+      echo "Database connectivity verified!"
+      break
+    else
+      echo "Database ready but connectivity failed, retrying..."
+    fi
+  else
+    echo "Attempt $attempt of $max_attempts: Database not ready yet, waiting..."
   fi
-  echo "Attempt $attempt of $max_attempts: Database not ready yet, waiting..."
-  sleep 3
+  sleep 2
   attempt=$((attempt+1))
 done
 
 if [ $attempt -gt $max_attempts ]; then
-  echo "Warning: Database might not be ready after $max_attempts attempts, but continuing anyway..."
+  echo "Error: Database failed to become ready after $max_attempts attempts!"
+  echo "Container status:"
+  docker-compose -f docker-compose.test.yml ps
+  echo "Container logs:"
+  docker-compose -f docker-compose.test.yml logs postgres-test --tail=20
+  exit 1
 fi
 
 # Load test environment variables
@@ -74,7 +91,8 @@ else
   fi
 fi
 
-# Print footer
+# Print footer with summary
 echo "==================================================="
-echo "Tests completed"
-echo "==================================================="
+echo "Tests completed successfully"
+echo "Container cleanup will happen automatically on exit"
+echo "===================================================="
