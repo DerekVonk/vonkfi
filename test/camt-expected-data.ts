@@ -1,7 +1,7 @@
 // Expected data from the CAMT.053 XML file: 50430009_251925218_020125000000_1750248257863.xml
 export const expectedCamtData = {
   account: {
-    iban: 'NL57ABNA0251925218',
+    iban: 'NL90ABNA0417164300',
     bic: 'ABNANL2A',
     currency: 'EUR',
     openingBalance: 749.58, // PRCD balance
@@ -62,7 +62,7 @@ export const expectedCamtData = {
       date: '2025-01-02',
       type: 'debit',
       counterpartyName: 'NS Reizigers B.V.',
-      counterpartyIban: 'NL56DEUT0265186420',
+      counterpartyIban: 'NL91RABO0315273637',
       description: 'E517525830 8030465478916939 NS e-Tickets. Order. E517525830',
       reference: 'ECS00000F6BE0B20'
     },
@@ -71,7 +71,7 @@ export const expectedCamtData = {
       date: '2025-01-02',
       type: 'debit',
       counterpartyName: 'bol.com',
-      counterpartyIban: 'NL27INGB0000026500',
+      counterpartyIban: 'NL39INGB0000000001',
       description: '1499360180 7051135787888100 bol.com BUN1801236744120',
       reference: 'ECS00000F6979FA0'
     }

@@ -55,7 +55,7 @@ describe('Batch Import and Duplicate Detection Tests', () => {
                 date: new Date('2025-01-15'),
                 amount: '100.50',
                 merchant: 'Test Merchant',
-                counterpartyIban: 'NL58ABNA0529548685',
+                counterpartyIban: 'NL91ABNA0417164300',
                 reference: 'REF123',
                 accountId: 1
             };
@@ -64,7 +64,7 @@ describe('Batch Import and Duplicate Detection Tests', () => {
                 date: new Date('2025-01-15'),
                 amount: '100.50',
                 merchant: 'Test Merchant',
-                counterpartyIban: 'NL58ABNA0529548685',
+                counterpartyIban: 'NL91ABNA0417164300',
                 reference: 'REF123',
                 accountId: 1
             };
@@ -81,7 +81,7 @@ describe('Batch Import and Duplicate Detection Tests', () => {
                 date: new Date('2025-01-15'),
                 amount: '100.50',
                 merchant: 'Test Merchant',
-                counterpartyIban: 'NL58ABNA0529548685',
+                counterpartyIban: 'NL91ABNA0417164300',
                 reference: 'REF123',
                 accountId: 1
             };
@@ -90,7 +90,7 @@ describe('Batch Import and Duplicate Detection Tests', () => {
                 date: new Date('2025-01-15'),
                 amount: '200.50', // Different amount
                 merchant: 'Test Merchant',
-                counterpartyIban: 'NL58ABNA0529548685',
+                counterpartyIban: 'NL91ABNA0417164300',
                 reference: 'REF123',
                 accountId: 1
             };
@@ -107,7 +107,7 @@ describe('Batch Import and Duplicate Detection Tests', () => {
                     date: new Date('2025-01-15'),
                     amount: '100.50',
                     merchant: 'Test Merchant',
-                    counterpartyIban: 'NL58ABNA0529548685',
+                    counterpartyIban: 'NL91ABNA0417164300',
                     reference: 'REF123',
                     accountId: 1
                 },
@@ -115,7 +115,7 @@ describe('Batch Import and Duplicate Detection Tests', () => {
                     date: new Date('2025-01-16'),
                     amount: '200.00',
                     merchant: 'Another Merchant',
-                    counterpartyIban: 'NL58ABNA0529548686',
+                    counterpartyIban: 'NL53RABO0300065264',
                     reference: 'REF124',
                     accountId: 1
                 }
