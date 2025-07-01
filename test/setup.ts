@@ -143,11 +143,13 @@ const checkTestDatabase = async (): Promise<boolean> => {
     }
 };
 
-// Separate function to wait for database
+// Enhanced function to wait for database with exponential backoff
 const waitForDatabase = async (): Promise<boolean> => {
     console.log('Waiting for database to be ready...');
     let attempts = 0;
-    const maxAttempts = 15; // Reduced to 15 seconds
+    const maxAttempts = 10; // Reduced attempts but with exponential backoff
+    const baseDelay = 500; // Start with 500ms
+    const maxDelay = 8000; // Cap at 8 seconds
 
     while (attempts < maxAttempts) {
         try {
@@ -157,7 +159,7 @@ const waitForDatabase = async (): Promise<boolean> => {
                 database: dbConfig.database,
                 user: dbConfig.user,
                 password: dbConfig.password,
-                connectionTimeoutMillis: 2000 // Increased timeout per connection
+                connectionTimeoutMillis: 3000
             });
 
             const client = await testPool.connect();
@@ -167,9 +169,21 @@ const waitForDatabase = async (): Promise<boolean> => {
 
             console.log('✅ Test database is ready!');
             return true;
-        } catch {
+        } catch (error) {
             attempts++;
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            if (attempts >= maxAttempts) {
+                console.error(`❌ Database failed to become ready after ${maxAttempts} attempts`);
+                throw new Error(`Database failed to become ready within timeout. Last error: ${error.message}`);
+            }
+
+            // Calculate exponential backoff delay with jitter
+            const delay = Math.min(baseDelay * Math.pow(2, attempts - 1), maxDelay);
+            const jitter = Math.random() * 0.1 * delay; // Add up to 10% jitter
+            const finalDelay = Math.floor(delay + jitter);
+            
+            console.log(`Attempt ${attempts}/${maxAttempts} failed, retrying in ${finalDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, finalDelay));
         }
     }
 

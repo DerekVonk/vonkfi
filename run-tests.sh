@@ -25,10 +25,13 @@ docker-compose -f docker-compose.test.yml up -d
 echo "Waiting for database to be ready..."
 sleep 5
 
-# Check if database is ready with improved health checks
+# Check if database is ready with exponential backoff
 echo "Checking database connection..."
-max_attempts=15
+max_attempts=10
 attempt=1
+base_delay=1
+max_delay=16
+
 while [ $attempt -le $max_attempts ]; do
   # Check if container is running first
   if ! docker-compose -f docker-compose.test.yml ps postgres-test | grep -q "Up"; then
@@ -47,7 +50,15 @@ while [ $attempt -le $max_attempts ]; do
   else
     echo "Attempt $attempt of $max_attempts: Database not ready yet, waiting..."
   fi
-  sleep 2
+  
+  # Calculate exponential backoff delay (capped at max_delay)
+  delay=$((base_delay * (1 << (attempt - 1))))
+  if [ $delay -gt $max_delay ]; then
+    delay=$max_delay
+  fi
+  
+  echo "Waiting ${delay} seconds before next attempt..."
+  sleep $delay
   attempt=$((attempt+1))
 done
 
@@ -70,8 +81,22 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   export "$line"
 done < .env.test
 
-# Run the tests
-echo "Running tests..."
+# Run smoke tests first to validate infrastructure
+echo "Running infrastructure smoke tests..."
+if ! npx vitest run test/smoke-tests.ts --reporter=verbose; then
+  echo "❌ Smoke tests failed! Infrastructure is not ready for testing."
+  echo "Container status:"
+  docker-compose -f docker-compose.test.yml ps
+  echo "Container logs:"
+  docker-compose -f docker-compose.test.yml logs postgres-test --tail=50
+  exit 1
+fi
+
+echo "✅ Smoke tests passed! Infrastructure is ready."
+echo ""
+
+# Run the main tests
+echo "Running main test suite..."
 if [ $# -eq 0 ]; then
   # No arguments provided, run all tests
   npm test
