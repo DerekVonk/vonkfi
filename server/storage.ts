@@ -1,22 +1,53 @@
-import { 
-  users, accounts, transactions, categories, goals, allocations, 
-  transferRecommendations, cryptoWallets, budgetPeriods, budgetCategories, budgetAccounts, importHistory, importBatches, transactionHashes, transferPreferences,
-  type User, type InsertUser, type Account, type InsertAccount,
-  type Transaction, type InsertTransaction, type Category, type InsertCategory,
-  type Goal, type InsertGoal, type Allocation, type InsertAllocation,
-  type TransferRecommendation, type InsertTransferRecommendation,
-  type CryptoWallet, type InsertCryptoWallet,
-  type BudgetPeriod, type InsertBudgetPeriod,
-  type BudgetCategory, type InsertBudgetCategory,
-  type BudgetAccount, type InsertBudgetAccount,
-  type ImportHistory, type InsertImportHistory,
-  type ImportBatch, type InsertImportBatch,
-  type TransactionHash, type InsertTransactionHash,
-  type TransferPreference, type InsertTransferPreference
+import {
+  type Account,
+  accounts,
+  type Allocation,
+  allocations,
+  type BudgetAccount,
+  budgetAccounts,
+  budgetCategories,
+  type BudgetCategory,
+  type BudgetPeriod,
+  budgetPeriods,
+  categories,
+  type Category,
+  type CryptoWallet,
+  cryptoWallets,
+  type Goal,
+  goals,
+  type ImportBatch,
+  importBatches,
+  importHistory,
+  type ImportHistory,
+  type InsertAccount,
+  type InsertAllocation,
+  type InsertBudgetAccount,
+  type InsertBudgetCategory,
+  type InsertBudgetPeriod,
+  type InsertCategory,
+  type InsertCryptoWallet,
+  type InsertGoal,
+  type InsertImportBatch,
+  type InsertImportHistory,
+  type InsertTransaction,
+  type InsertTransactionHash,
+  type InsertTransferPreference,
+  type InsertTransferRecommendation,
+  type InsertUser,
+  type Transaction,
+  type TransactionHash,
+  transactionHashes,
+  transactions,
+  type TransferPreference,
+  transferPreferences,
+  type TransferRecommendation,
+  transferRecommendations,
+  type User,
+  users
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, inArray, and, desc, sql } from "drizzle-orm";
-import { hashPassword, verifyPassword, needsRehash } from "./utils/passwordSecurity";
+import {db} from "./db";
+import {and, desc, eq, inArray, sql} from "drizzle-orm";
+import {hashPassword, needsRehash, verifyPassword} from "./utils/passwordSecurity";
 
 // Performance monitoring utility
 class QueryPerformanceMonitor {
@@ -58,9 +89,11 @@ export interface IStorage {
   deleteAccount(id: number): Promise<void>;
 
   // Transactions
+  getTransactionById(id: number): Promise<Transaction | undefined>;
   getTransactionsByAccountId(accountId: number): Promise<Transaction[]>;
   getTransactionsByUserId(userId: number): Promise<Transaction[]>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
+  updateTransaction(id: number, updates: Partial<Transaction>): Promise<Transaction>;
   updateTransactionCategory(id: number, categoryId: number): Promise<Transaction>;
 
   // Categories
@@ -275,34 +308,50 @@ export class DatabaseStorage implements IStorage {
 
   async getTransactionsByUserId(userId: number): Promise<Transaction[]> {
     // Optimized: Use join instead of separate queries
-    const result = await db
-      .select({
-        id: transactions.id,
-        accountId: transactions.accountId,
-        date: transactions.date,
-        amount: transactions.amount,
-        currency: transactions.currency,
-        description: transactions.description,
-        merchant: transactions.merchant,
-        categoryId: transactions.categoryId,
-        isIncome: transactions.isIncome,
-        counterpartyIban: transactions.counterpartyIban,
-        counterpartyName: transactions.counterpartyName,
-        reference: transactions.reference,
-        statementId: transactions.statementId,
-      })
-      .from(transactions)
-      .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-      .where(eq(accounts.userId, userId))
-      .orderBy(desc(transactions.date));
-    
-    return result;
+    return db
+        .select({
+          id: transactions.id,
+          accountId: transactions.accountId,
+          date: transactions.date,
+          amount: transactions.amount,
+          currency: transactions.currency,
+          description: transactions.description,
+          merchant: transactions.merchant,
+          categoryId: transactions.categoryId,
+          isIncome: transactions.isIncome,
+          counterpartyIban: transactions.counterpartyIban,
+          counterpartyName: transactions.counterpartyName,
+          reference: transactions.reference,
+          statementId: transactions.statementId,
+        })
+        .from(transactions)
+        .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+        .where(eq(accounts.userId, userId))
+        .orderBy(desc(transactions.date));
   }
 
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
     const [transaction] = await db
       .insert(transactions)
       .values(insertTransaction)
+      .returning();
+    return transaction;
+  }
+
+  async getTransactionById(id: number): Promise<Transaction | undefined> {
+    const result = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async updateTransaction(id: number, updates: Partial<Transaction>): Promise<Transaction> {
+    const [transaction] = await db
+      .update(transactions)
+      .set(updates)
+      .where(eq(transactions.id, id))
       .returning();
     return transaction;
   }

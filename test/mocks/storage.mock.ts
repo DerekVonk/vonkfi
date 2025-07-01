@@ -133,6 +133,19 @@ class MockStorage implements IStorage {
     return newTransaction;
   }
 
+  async getTransactionById(id: number): Promise<Transaction | undefined> {
+    return this.transactions.find(transaction => transaction.id === id);
+  }
+
+  async updateTransaction(id: number, updates: Partial<Transaction>): Promise<Transaction> {
+    const transaction = this.transactions.find(transaction => transaction.id === id);
+    if (!transaction) {
+      throw new Error(`Transaction with id ${id} not found`);
+    }
+    Object.assign(transaction, updates);
+    return transaction;
+  }
+
   async updateTransactionCategory(id: number, categoryId: number): Promise<Transaction> {
     const transaction = this.transactions.find(transaction => transaction.id === id);
     if (!transaction) {
