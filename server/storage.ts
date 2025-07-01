@@ -251,7 +251,7 @@ export class DatabaseStorage implements IStorage {
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
       return userWithoutPassword as User;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Authentication error:', error);
       return null;
     }
@@ -447,6 +447,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({
         accountId: transactions.accountId,
+        // noinspection SqlResolve
         calculatedBalance: sql<string>`SUM(${transactions.amount})::text`,
       })
       .from(transactions)
@@ -634,7 +635,7 @@ export class DatabaseStorage implements IStorage {
         destinationTransaction
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Transfer execution error:", error);
       return { 
         success: false, 
@@ -865,7 +866,13 @@ export class DatabaseStorage implements IStorage {
     categories: Category[];
     transferRecommendations: TransferRecommendation[];
   }> {
-    return QueryPerformanceMonitor.timeQuery('getDashboardDataOptimized', async () => {
+    return QueryPerformanceMonitor.timeQuery<{
+      accounts: Account[];
+      transactions: (Transaction & { categoryName?: string })[];
+      goals: Goal[];
+      categories: Category[];
+      transferRecommendations: TransferRecommendation[];
+    }>('getDashboardDataOptimized', async () => {
       // Query 1: Get all basic user data in parallel
       const [userAccounts, userGoals, allCategories, userTransferRecommendations] = await Promise.all([
         QueryPerformanceMonitor.timeQuery('accounts', () => this.getAccountsByUserId(userId)),

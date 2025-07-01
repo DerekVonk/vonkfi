@@ -200,6 +200,16 @@ export const apiSchemas = {
     notes: z.string().max(500).optional()
   }),
 
+  // Import batch
+  importBatch: z.object({
+    userId: z.number().positive('User ID is required'),
+    totalFiles: z.number().min(0).default(0).optional(),
+    totalTransactions: z.number().min(0).default(0).optional(),
+    accountsAffected: z.array(z.string()).optional(),
+    status: z.enum(['processing', 'completed', 'failed']).default('completed').optional(),
+    notes: z.string().max(500).optional()
+  }),
+
   // Crypto wallet
   cryptoWallet: z.object({
     userId: z.number().positive('User ID is required'),

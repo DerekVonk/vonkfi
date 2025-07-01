@@ -66,7 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: "demo123"
       });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Failed to initialize default user:", error);
     // Continue without a default user for now
   }
@@ -95,7 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             dashboardData.goals, 
             dashboardData.accounts
           );
-        } catch (error) {
+        } catch (error: unknown) {
           console.warn('FIRE metrics calculation failed, using defaults:', error);
           fireMetrics = {
             monthlyIncome: 0,
@@ -316,21 +316,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       const history = await storage.getImportHistoryByUserId(userId);
       res.json(history);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Import history fetch error:", error);
       res.status(500).json({ error: "Failed to fetch import history" });
     }
   });
 
   // Create import batch
-  app.post("/api/import/batches", async (req, res) => {
-    try {
+  app.post("/api/import/batches", 
+    validateRequest({ body: createSchemas.importBatch }),
+    asyncHandler(async (req, res) => {
       const batch = await storage.createImportBatch(req.body);
-      res.json(batch);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to create import batch" });
-    }
-  });
+      res.created(batch, "Import batch created successfully");
+    })
+  );
 
   // Get import batches for user
   app.get("/api/import/batches/:userId", async (req, res) => {
@@ -338,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       const batches = await storage.getImportBatchesByUserId(userId);
       res.json(batches);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to fetch import batches" });
     }
   });
@@ -349,7 +348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const batchId = parseInt(req.params.batchId);
       const files = await storage.getImportHistoryByBatchId(batchId);
       res.json(files);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to fetch batch files" });
     }
   });
@@ -360,7 +359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const batchId = parseInt(req.params.batchId);
       const batch = await storage.updateImportBatch(batchId, req.body);
       res.json(batch);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to update import batch" });
     }
   });
@@ -392,7 +391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updated = await storage.updateAccount(accountId, updates);
       res.json(updated);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to update account" });
     }
   });
@@ -422,7 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.deleteAccount(accountId);
       res.json({ message: "Account deleted successfully" });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Account deletion error:", error);
       res.status(500).json({ error: "Failed to delete account" });
     }
@@ -458,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updated = await storage.updateTransactionCategory(transactionId, categoryId);
       res.json(updated);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to update transaction category" });
     }
   });
@@ -468,7 +467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const categories = await storage.getCategories();
       res.json(categories);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to fetch categories" });
     }
   });
@@ -591,7 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fireMetrics: fireMetrics
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Clear data error:", error);
       res.status(500).json({ error: "Failed to clear user data" });
     }
@@ -641,7 +640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           allocation
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Recalculate error:", error);
       res.status(500).json({ error: "Failed to recalculate dashboard" });
     }
@@ -700,7 +699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updated = await storage.updateGoal(goalId, updates);
       res.json(updated);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to update goal" });
     }
   });
@@ -711,7 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       const recommendations = await storage.getTransferRecommendationsByUserId(userId);
       res.json(recommendations);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to fetch transfer recommendations" });
     }
   });
@@ -764,7 +763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       res.json(transferTransactions);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to fetch transfer history" });
     }
   });
@@ -865,7 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           numberOfTransfers: recommendations.length,
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to generate transfer recommendations" });
     }
   });
@@ -878,7 +877,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updated = await storage.updateTransferRecommendationStatus(recommendationId, status);
       res.json(updated);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to update transfer recommendation" });
     }
   });
@@ -890,9 +889,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Fetching transfer preferences for userId:", userId);
       const preferences = await storage.getTransferPreferencesByUserId(userId);
       res.json(preferences);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Transfer preference fetch error:", error);
-      res.status(500).json({ error: "Failed to fetch transfer preferences", details: error.message });
+      res.status(500).json({ 
+        error: "Failed to fetch transfer preferences", 
+        details: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
 
@@ -902,9 +904,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Creating transfer preference with data:", preferenceData);
       const preference = await storage.createTransferPreference(preferenceData);
       res.json(preference);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Transfer preference creation error:", error);
-      res.status(500).json({ error: "Failed to create transfer preference", details: error.message });
+      res.status(500).json({ 
+        error: "Failed to create transfer preference", 
+        details: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
 
@@ -915,7 +920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updated = await storage.updateTransferPreference(preferenceId, updates);
       res.json(updated);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to update transfer preference" });
     }
   });
@@ -925,7 +930,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const preferenceId = parseInt(req.params.preferenceId);
       await storage.deleteTransferPreference(preferenceId);
       res.json({ message: "Transfer preference deleted successfully" });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to delete transfer preference" });
     }
   });
@@ -953,7 +958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ message: "Default transfer preferences created", preferences: createdPreferences });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to initialize transfer preferences" });
     }
   });
@@ -964,7 +969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       const wallets = await storage.getCryptoWalletsByUserId(userId);
       res.json(wallets);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to fetch crypto wallets" });
     }
   });
@@ -975,7 +980,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const walletData = req.body;
       const wallet = await storage.createCryptoWallet(walletData);
       res.json(wallet);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to create crypto wallet" });
     }
   });
@@ -987,7 +992,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       const periods = await storage.getBudgetPeriodsByUserId(userId);
       res.json(periods);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to fetch budget periods" });
     }
   });
@@ -1001,7 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ error: "No active budget period found" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to fetch active budget period" });
     }
   });
@@ -1051,7 +1056,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json(period);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Budget period creation error:", error);
       res.status(500).json({ error: "Failed to create budget period" });
     }
@@ -1093,7 +1098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.json(categories);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to fetch budget categories" });
     }
   });
@@ -1103,7 +1108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categoryData = req.body;
       const category = await storage.createBudgetCategory(categoryData);
       res.json(category);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Budget category creation error:", error);
       res.status(500).json({ error: "Failed to create budget category" });
     }
@@ -1115,7 +1120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = req.body;
       const category = await storage.updateBudgetCategory(id, updates);
       res.json(category);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Budget category update error:", error);
       res.status(500).json({ error: "Failed to update budget category" });
     }
@@ -1126,7 +1131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       await storage.deleteBudgetCategory(id);
       res.json({ message: "Budget category deleted successfully" });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Budget category deletion error:", error);
       res.status(500).json({ error: "Failed to delete budget category" });
     }
@@ -1137,7 +1142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const budgetPeriodId = parseInt(req.params.budgetPeriodId);
       const accounts = await storage.getBudgetAccountsByPeriod(budgetPeriodId);
       res.json(accounts);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to fetch budget accounts" });
     }
   });
@@ -1147,7 +1152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accountData = req.body;
       const account = await storage.createBudgetAccount(accountData);
       res.json(account);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Budget account creation error:", error);
       res.status(500).json({ error: "Failed to create budget account" });
     }
@@ -1158,7 +1163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const budgetPeriodId = parseInt(req.params.budgetPeriodId);
       const progress = await storage.calculateBudgetProgress(budgetPeriodId);
       res.json(progress);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to calculate budget progress" });
     }
   });
@@ -1268,7 +1273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         incomeSource: incomeAccount ? incomeAccount.customName || incomeAccount.accountHolderName : 'All accounts'
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Monthly sync error:", error);
       res.status(500).json({ error: "Failed to sync monthly budget" });
     }
@@ -1285,7 +1290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         highSeverityAnomalies: 0,
         recentAnomalies: 0
       });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to detect expense anomalies" });
     }
   });
@@ -1300,7 +1305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalAmount: 0,
         fixedExpenseRecommendations: 0
       });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: "Failed to generate transfer recommendations" });
     }
   });
@@ -1325,7 +1330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           liquidityImprovement: 0
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Cash flow optimization error:", error);
       res.status(500).json({ error: "Failed to optimize cash flow" });
     }
@@ -1357,7 +1362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recommendation: transferRecommendation,
         type: type || 'optimization'
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("AI transfer execution error:", error);
       res.status(500).json({ error: "Failed to execute AI transfer recommendation" });
     }
@@ -1376,7 +1381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         analysisMethod: 'pattern_recognition',
         lastUpdated: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Fixed expense prediction error:", error);
       res.status(500).json({ error: "Failed to predict fixed expenses" });
     }
