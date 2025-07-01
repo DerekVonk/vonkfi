@@ -6,19 +6,17 @@ import { TransactionCategorizer } from "./services/categorization";
 import { FireCalculator } from "./services/fireCalculations";
 import { duplicateDetectionService } from "./services/duplicateDetection";
 import multer from "multer";
-import { z } from "zod";
 
 // Import middleware
 import { errorHandler, asyncHandler, AppError, notFoundHandler, withRetry, requestTimeout, memoryMonitor } from "./middleware/errorHandler";
 import { addResponseHelpers } from "./middleware/responseHelper";
 import { requestLogger, errorLogger, performanceLogger, logger } from "./middleware/logging";
-import { validateRequest, sanitizeInput, validateFileUpload, validateRateLimit } from "./middleware/validation";
+import { validateRequest, sanitizeInput, validateFileUpload } from "./middleware/validation";
 import { pathParams, queryParams, createSchemas, updateSchemas } from "./validation/schemas";
 import { 
   sessionConfig, 
   requireAuth, 
   requireUserAccess, 
-  optionalAuth,
   securityHeaders,
   generateCSRFToken 
 } from "./middleware/authentication";
