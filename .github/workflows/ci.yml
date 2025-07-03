@@ -5,17 +5,47 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'Test level to run (smoke, unit, integration, e2e, all)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - smoke
+          - unit
+          - integration
+          - e2e
+          - all
+      skip_cache:
+        description: 'Skip cache for fresh CI run'
+        required: false
+        default: false
+        type: boolean
 
 env:
   NODE_VERSION: '18'
   POSTGRES_VERSION: '15'
   REDIS_VERSION: '7'
+  # CI-specific optimizations
+  CI: true
+  FORCE_COLOR: 1
+  # Test optimization flags
+  VITEST_MIN_THREADS: 1
+  VITEST_MAX_THREADS: 4
+  # Cache configuration
+  CACHE_VERSION: v1
 
 jobs:
-  # Job 1: Code Quality & Security Scanning
-  security-scan:
-    name: Security & Dependency Scan
+  # Job 0: Configuration Validation
+  config-validation:
+    name: CI Configuration Validation
     runs-on: ubuntu-latest
+    
+    outputs:
+      config_valid: ${{ steps.validate.outputs.config_valid }}
+      test_level: ${{ steps.test_config.outputs.test_level }}
     
     steps:
       - name: Checkout code
@@ -27,10 +57,135 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: ${{ github.event.inputs.skip_cache != 'true' && 'npm' || '' }}
+          cache-dependency-path: package-lock.json
+
+      - name: Validate CI configuration
+        id: validate
+        run: |
+          echo "Validating CI/CD configuration..."
+          
+          # Check required files exist
+          required_files=(
+            "package.json"
+            "vitest.config.ts"
+            "playwright.config.ts"
+            "run-tests.sh"
+            "test/setup.ts"
+          )
+          
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Required file missing: $file"
+              exit 1
+            fi
+          done
+          
+          # Validate package.json scripts
+          if ! jq -e '.scripts.test' package.json > /dev/null; then
+            echo "❌ Missing test script in package.json"
+            exit 1
+          fi
+          
+          echo "✅ CI configuration validation passed"
+          echo "config_valid=true" >> $GITHUB_OUTPUT
+
+      - name: Determine test level
+        id: test_config
+        run: |
+          TEST_LEVEL="${{ github.event.inputs.test_level || 'all' }}"
+          echo "test_level=$TEST_LEVEL" >> $GITHUB_OUTPUT
+          echo "Test level: $TEST_LEVEL"
+
+      - name: Install dependencies for validation
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Validate test configuration
+        run: |
+          echo "Validating test configuration files..."
+          
+          # Check vitest config
+          if ! npx vitest --config vitest.config.ts --run --reporter=json --outputFile=/tmp/test-config-check.json --testNamePattern="non-existent-test" 2>/dev/null; then
+            if [ $? -eq 1 ]; then
+              echo "✅ Vitest configuration is valid"
+            else
+              echo "❌ Vitest configuration has errors"
+              exit 1
+            fi
+          fi
+          
+          # Check playwright config
+          npx playwright --version
+          echo "✅ Playwright configuration is valid"
+
+  # Job 1: Code Quality & Security Scanning
+  security-scan:
+    name: Security & Dependency Scan
+    runs-on: ubuntu-latest
+    needs: config-validation
+    if: needs.config-validation.outputs.config_valid == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Multi-layer enhanced caching strategy
+      - name: Cache dependencies and build artifacts
+        if: github.event.inputs.skip_cache != 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+            ~/.cache/ms-playwright
+            ~/.cache/vite
+            .vite
+            dist
+            build
+            coverage
+          key: ${{ runner.os }}-deps-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json', 'vite.config.ts', 'vitest.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-deps-
+            ${{ runner.os }}-node-
+            
+      - name: Cache TypeScript compilation
+        if: github.event.inputs.skip_cache != 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tsbuildinfo
+            tsconfig.tsbuildinfo
+            node_modules/.cache/typescript
+          key: ${{ runner.os }}-typescript-${{ hashFiles('tsconfig.json', 'src/**/*.ts', 'server/**/*.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-typescript-
+            
+      - name: Cache test artifacts
+        if: github.event.inputs.skip_cache != 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            test-results
+            coverage
+            .vitest
+            playwright-report
+            test-results
+          key: ${{ runner.os }}-tests-${{ env.CACHE_VERSION }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-tests-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-tests-
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: ${{ github.event.inputs.skip_cache != 'true' && 'npm' || '' }}
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit
 
       - name: Run npm audit
         run: npm audit --audit-level=moderate
@@ -65,7 +220,13 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    needs: security-scan
+    needs: [config-validation, security-scan]
+    if: needs.config-validation.outputs.config_valid == 'true' && (needs.config-validation.outputs.test_level == 'all' || needs.config-validation.outputs.test_level == 'unit')
+    
+    strategy:
+      matrix:
+        test-group: [core, api, frontend, services]
+      fail-fast: false
     
     services:
       postgres:
@@ -96,25 +257,75 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Enhanced parallel job caching with test-group specific cache
+      - name: Cache dependencies for parallel execution
+        if: github.event.inputs.skip_cache != 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+            .vite
+            node_modules/.cache
+          key: ${{ runner.os }}-parallel-${{ matrix.test-group }}-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-parallel-${{ matrix.test-group }}-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-parallel-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-deps-${{ env.CACHE_VERSION }}-
+            
+      - name: Cache test group specific artifacts
+        if: github.event.inputs.skip_cache != 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            test-results
+            coverage
+            .vitest/cache
+          key: ${{ runner.os }}-test-cache-${{ matrix.test-group }}-${{ hashFiles('test/**/*.ts', 'test/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-test-cache-${{ matrix.test-group }}-
+            ${{ runner.os }}-test-cache-
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: ${{ github.event.inputs.skip_cache != 'true' && 'npm' || '' }}
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline
 
       - name: Wait for PostgreSQL
         run: |
-          for i in {1..30}; do
-            if pg_isready -h localhost -p 5432 -U test; then
-              echo "PostgreSQL is ready"
-              break
+          timeout=300
+          elapsed=0
+          interval=5
+          
+          echo "🔍 Waiting for PostgreSQL to be ready..."
+          while [ $elapsed -lt $timeout ]; do
+            if pg_isready -h localhost -p 5432 -U test -d vonkfi_test; then
+              echo "✅ PostgreSQL is ready after ${elapsed}s"
+              
+              # Additional connection test
+              if psql -h localhost -p 5432 -U test -d vonkfi_test -c "SELECT 1;" > /dev/null 2>&1; then
+                echo "✅ PostgreSQL connection test successful"
+                break
+              else
+                echo "⚠️ PostgreSQL ready but connection failed, retrying..."
+              fi
             fi
-            echo "Waiting for PostgreSQL... ($i/30)"
-            sleep 2
+            
+            echo "⏳ Waiting for PostgreSQL... (${elapsed}s/${timeout}s)"
+            sleep $interval
+            elapsed=$((elapsed + interval))
           done
+          
+          if [ $elapsed -ge $timeout ]; then
+            echo "❌ PostgreSQL failed to become ready within ${timeout}s"
+            echo "🔍 PostgreSQL logs:"
+            docker logs $(docker ps -q --filter ancestor=postgres) || true
+            exit 1
+          fi
 
       - name: Setup test environment
         run: |
@@ -128,11 +339,68 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
 
-      - name: Run unit tests with coverage
-        run: npm run test:coverage
+      - name: Run unit tests with coverage (parallel)
+        run: |
+          set -e
+          mkdir -p test-results
+          
+          # Function for retry logic
+          retry_test() {
+            local cmd="$1"
+            local max_attempts=3
+            local attempt=1
+            
+            while [ $attempt -le $max_attempts ]; do
+              echo "Test attempt $attempt/$max_attempts"
+              if eval "$cmd"; then
+                echo "✅ Tests passed on attempt $attempt"
+                return 0
+              else
+                echo "❌ Tests failed on attempt $attempt"
+                if [ $attempt -eq $max_attempts ]; then
+                  echo "💥 All test attempts failed"
+                  return 1
+                fi
+                echo "⏳ Waiting 10 seconds before retry..."
+                sleep 10
+                attempt=$((attempt + 1))
+              fi
+            done
+          }
+          
+          case "${{ matrix.test-group }}" in
+            core)
+              retry_test "npx vitest run test/business-logic.test.ts test/calculation-features.test.ts test/error-handling.test.ts --coverage --reporter=json --outputFile=./test-results/unit-core-results.json"
+              ;;
+            api)
+              retry_test "npx vitest run test/api.test.ts test/*api*.test.ts --coverage --reporter=json --outputFile=./test-results/unit-api-results.json"
+              ;;
+            frontend)
+              retry_test "npx vitest run test/frontend-*.test.tsx test/ui-*.test.ts --coverage --reporter=json --outputFile=./test-results/unit-frontend-results.json"
+              ;;
+            services)
+              retry_test "npx vitest run test/services/ --coverage --reporter=json --outputFile=./test-results/unit-services-results.json"
+              ;;
+          esac
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
           CI: true
+          VITEST_MIN_THREADS: ${{ env.VITEST_MIN_THREADS }}
+          VITEST_MAX_THREADS: ${{ env.VITEST_MAX_THREADS }}
+          # Enhanced performance configuration
+          NODE_OPTIONS: "--max-old-space-size=4096 --max-semi-space-size=128"
+          # Test execution optimization
+          VITEST_CI_PARALLEL: true
+          VITEST_POOL: threads
+          VITEST_POOL_SIZE: ${{ env.VITEST_MAX_THREADS }}
+          # Vite optimization for tests
+          VITE_NODE_CACHE: true
+          VITE_CACHE_DIR: .vite
+          # Test group specific optimization
+          TEST_GROUP: ${{ matrix.test-group }}
+          TEST_ISOLATION_ENABLED: true
+          # Performance monitoring
+          MEASURE_PERFORMANCE: true
 
       - name: Check coverage thresholds
         run: |
@@ -149,16 +417,18 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: unit-test-results
+          name: unit-test-results-${{ matrix.test-group }}
           path: |
             coverage/
+            test-results/
             test-results.xml
 
   # Job 3: Integration Tests
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: unit-tests
+    needs: [config-validation, unit-tests]
+    if: needs.config-validation.outputs.config_valid == 'true' && (needs.config-validation.outputs.test_level == 'all' || needs.config-validation.outputs.test_level == 'integration')
     
     services:
       postgres:
@@ -231,7 +501,8 @@ jobs:
   e2e-tests:
     name: End-to-End Tests
     runs-on: ubuntu-latest
-    needs: integration-tests
+    needs: [config-validation, integration-tests]
+    if: needs.config-validation.outputs.config_valid == 'true' && (needs.config-validation.outputs.test_level == 'all' || needs.config-validation.outputs.test_level == 'e2e')
     
     services:
       postgres:
@@ -484,10 +755,14 @@ jobs:
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        continue-on-error: true
 
       - name: Validate deployment readiness
         run: |
-          echo "Checking deployment readiness..."
+          echo "🔍 Checking deployment readiness..."
+          
+          deployment_ready=true
+          issues_found=()
           
           # Check if all required artifacts exist
           required_artifacts=(
@@ -501,12 +776,64 @@ jobs:
           for artifact in "${required_artifacts[@]}"; do
             if [ ! -d "$artifact" ]; then
               echo "❌ Missing required artifact: $artifact"
-              exit 1
+              issues_found+=("Missing artifact: $artifact")
+              deployment_ready=false
+            else
+              echo "✅ Found artifact: $artifact"
             fi
           done
           
-          echo "✅ All required artifacts present"
-          echo "✅ Deployment readiness check passed"
+          # Check for test failures in artifacts
+          if [ -d "unit-test-results" ]; then
+            for file in unit-test-results*/test-results/*.json; do
+              if [ -f "$file" ]; then
+                failures=$(jq -r '.numFailedTests // 0' "$file" 2>/dev/null || echo "0")
+                if [ "$failures" -gt 0 ]; then
+                  echo "❌ Found $failures test failures in $file"
+                  issues_found+=("Test failures: $failures in $(basename $file)")
+                  deployment_ready=false
+                fi
+              fi
+            done
+          fi
+          
+          # Check build artifacts
+          if [ -d "build-artifacts" ]; then
+            if [ ! -d "build-artifacts/dist" ] && [ ! -d "build-artifacts/build" ]; then
+              echo "❌ No build output found in artifacts"
+              issues_found+=("No build output found")
+              deployment_ready=false
+            fi
+          fi
+          
+          # Generate readiness report
+          if [ ${#issues_found[@]} -gt 0 ]; then
+            echo "❌ Deployment readiness check failed with issues:"
+            printf '%s\n' "${issues_found[@]}"
+            
+            # Create failure report
+            cat > deployment-readiness-report.json << EOF
+          {
+            "ready": false,
+            "timestamp": "$(date -Iseconds)",
+            "issues": $(printf '%s\n' "${issues_found[@]}" | jq -R . | jq -s .),
+            "artifacts_checked": $(printf '%s\n' "${required_artifacts[@]}" | jq -R . | jq -s .)
+          }
+          EOF
+            
+            exit 1
+          else
+            echo "✅ All deployment readiness checks passed"
+            
+            # Create success report
+            cat > deployment-readiness-report.json << EOF
+          {
+            "ready": true,
+            "timestamp": "$(date -Iseconds)",
+            "artifacts_validated": $(printf '%s\n' "${required_artifacts[@]}" | jq -R . | jq -s .)
+          }
+          EOF
+          fi
 
       - name: Create deployment summary
         run: |

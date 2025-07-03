@@ -1,0 +1,373 @@
+# Code Quality Gates Configuration
+# Defines quality standards and gates for the CI/CD pipeline
+
+quality_gates:
+  version: "2.0"
+  enabled: true
+  
+  # Global quality settings
+  global:
+    fail_on_error: true
+    fail_on_warning: false
+    aggregate_results: true
+    
+  # Code quality gates
+  code_quality:
+    # TypeScript type checking
+    typescript:
+      enabled: true
+      strict_mode: true
+      no_implicit_any: true
+      no_unused_locals: true
+      no_unused_parameters: true
+      exact_optional_property_types: true
+      thresholds:
+        errors: 0
+        warnings: 10
+      
+    # ESLint quality checks
+    eslint:
+      enabled: true
+      config: "./ci/eslint-security.config.js"
+      extensions: [".ts", ".tsx", ".js", ".jsx"]
+      thresholds:
+        errors: 0
+        warnings: 20
+        security_warnings: 0
+      rules:
+        # Code complexity
+        complexity: 10
+        max_depth: 4
+        max_lines: 300
+        max_params: 4
+        
+        # Code style
+        prefer_const: true
+        no_var: true
+        arrow_functions: true
+        
+        # Best practices
+        no_console: "warn"
+        no_debugger: "error"
+        no_unused_vars: "error"
+    
+    # Prettier formatting
+    prettier:
+      enabled: true
+      check_only: true  # Don't auto-fix in CI
+      ignore_patterns:
+        - "dist/**"
+        - "build/**"
+        - "coverage/**"
+        - "node_modules/**"
+    
+    # Import/dependency analysis
+    imports:
+      enabled: true
+      checks:
+        circular_dependencies: true
+        unused_imports: true
+        missing_imports: true
+        import_order: true
+      thresholds:
+        circular_dependencies: 0
+        unused_imports: 5
+
+  # Test quality gates
+  test_quality:
+    # Coverage requirements
+    coverage:
+      enabled: true
+      format: "lcov"
+      thresholds:
+        statements: 80
+        branches: 75
+        functions: 80
+        lines: 80
+      # Per-file coverage requirements
+      per_file:
+        statements: 70
+        branches: 60
+        functions: 70
+        lines: 70
+      # Exclude patterns
+      exclude:
+        - "**/*.test.ts"
+        - "**/*.spec.ts"
+        - "**/test/**"
+        - "**/mocks/**"
+        - "**/*.d.ts"
+    
+    # Test execution quality
+    execution:
+      enabled: true
+      thresholds:
+        success_rate: 100  # All tests must pass
+        max_duration: 600  # 10 minutes max
+        flaky_test_rate: 2  # Max 2% flaky tests
+        
+      # Test file requirements
+      requirements:
+        test_naming_convention: "*.test.ts|*.spec.ts"
+        describe_blocks: true
+        assertion_count_min: 1
+    
+    # Test file quality
+    test_files:
+      enabled: true
+      checks:
+        proper_setup_teardown: true
+        no_focused_tests: true  # No .only() tests
+        no_skipped_tests: false  # Allow .skip() but warn
+        test_description_quality: true
+      
+      thresholds:
+        min_assertions_per_test: 1
+        max_test_duration: 30000  # 30 seconds per test
+
+  # Security quality gates
+  security:
+    # Vulnerability scanning
+    vulnerabilities:
+      enabled: true
+      fail_on:
+        critical: 0
+        high: 0
+        moderate: 5
+      sources:
+        - "npm_audit"
+        - "audit_ci"
+        - "snyk"  # If available
+    
+    # Secret detection
+    secrets:
+      enabled: true
+      fail_on_secrets: true
+      patterns:
+        - "api_keys"
+        - "passwords"
+        - "tokens"
+        - "private_keys"
+        - "database_urls"
+      exclude_files:
+        - "*.example"
+        - "*.md"
+        - "test/**"
+    
+    # License compliance
+    licenses:
+      enabled: true
+      allowed:
+        - "MIT"
+        - "ISC"
+        - "Apache-2.0"
+        - "BSD-2-Clause"
+        - "BSD-3-Clause"
+        - "CC0-1.0"
+      blocked:
+        - "GPL-*"
+        - "AGPL-*"
+        - "LGPL-*"
+      fail_on_blocked: true
+
+  # Performance quality gates
+  performance:
+    # Build performance
+    build:
+      enabled: true
+      thresholds:
+        max_duration: 600  # 10 minutes
+        max_size: 100      # 100MB
+        max_dependencies: 200
+        
+    # Bundle analysis
+    bundle:
+      enabled: true
+      thresholds:
+        max_bundle_size: 5    # 5MB
+        max_chunk_size: 1     # 1MB
+        max_asset_size: 500   # 500KB
+      checks:
+        tree_shaking: true
+        code_splitting: true
+        compression: true
+    
+    # Runtime performance
+    runtime:
+      enabled: false  # Enable for performance testing
+      thresholds:
+        max_memory_usage: 512   # 512MB
+        max_cpu_usage: 80       # 80%
+        max_response_time: 2000 # 2 seconds
+
+  # Documentation quality gates
+  documentation:
+    # README requirements
+    readme:
+      enabled: true
+      required_sections:
+        - "Installation"
+        - "Usage"
+        - "API Documentation"
+        - "Contributing"
+        - "License"
+      min_length: 1000  # characters
+    
+    # Code documentation
+    code_docs:
+      enabled: true
+      requirements:
+        public_functions: true
+        complex_logic: true
+        api_endpoints: true
+      thresholds:
+        documentation_coverage: 70  # 70% of public APIs documented
+    
+    # API documentation
+    api_docs:
+      enabled: true
+      format: "openapi"
+      requirements:
+        all_endpoints_documented: true
+        examples_provided: true
+        error_responses_documented: true
+
+  # Deployment readiness gates
+  deployment:
+    # Environment configuration
+    environment:
+      enabled: true
+      checks:
+        env_examples_present: true
+        secrets_externalized: true
+        config_validation: true
+        health_checks: true
+    
+    # Database migrations
+    database:
+      enabled: true
+      checks:
+        migration_tests: true
+        rollback_scripts: true
+        schema_validation: true
+        data_integrity: true
+    
+    # Docker configuration
+    docker:
+      enabled: true
+      checks:
+        dockerfile_lint: true
+        security_scan: true
+        image_size: true
+        multi_stage_build: true
+      thresholds:
+        max_image_size: 500  # 500MB
+        max_layers: 20
+
+# Quality gate enforcement
+enforcement:
+  # Which gates are blocking (fail the pipeline)
+  blocking_gates:
+    - "typescript.errors"
+    - "eslint.errors"
+    - "test_quality.coverage"
+    - "test_quality.execution.success_rate"
+    - "security.vulnerabilities.critical"
+    - "security.vulnerabilities.high"
+    - "security.secrets"
+  
+  # Which gates are warning only
+  warning_gates:
+    - "eslint.warnings"
+    - "documentation.code_docs"
+    - "performance.bundle"
+  
+  # Gate dependencies (must pass before others run)
+  dependencies:
+    test_quality: ["typescript", "eslint"]
+    security: ["typescript", "eslint"]
+    performance: ["test_quality"]
+    deployment: ["security", "test_quality"]
+
+# Reporting configuration
+reporting:
+  enabled: true
+  
+  # Report formats
+  formats:
+    - "json"
+    - "html"
+    - "junit"
+    - "console"
+  
+  # Report details
+  include:
+    summary: true
+    detailed_results: true
+    recommendations: true
+    trends: true
+    
+  # Output locations
+  output:
+    console: true
+    file: "./quality-reports/quality-gates-report"
+    artifacts: true
+
+# Integration with CI/CD platforms
+integrations:
+  github:
+    enabled: true
+    features:
+      pull_request_comments: true
+      status_checks: true
+      required_status_checks:
+        - "quality-gates/typescript"
+        - "quality-gates/eslint"
+        - "quality-gates/tests"
+        - "quality-gates/security"
+  
+  gitlab:
+    enabled: true
+    features:
+      merge_request_comments: true
+      pipeline_status: true
+      quality_reports: true
+  
+  sonarqube:
+    enabled: false
+    url: "${SONARQUBE_URL}"
+    token: "${SONARQUBE_TOKEN}"
+    project_key: "vonkfi"
+
+# Environment-specific overrides
+environments:
+  development:
+    enforcement:
+      blocking_gates:
+        - "typescript.errors"
+        - "eslint.errors"
+      warning_gates:
+        - "test_quality.coverage"
+        - "security.vulnerabilities.moderate"
+  
+  staging:
+    enforcement:
+      blocking_gates:
+        - "typescript.errors"
+        - "eslint.errors"
+        - "test_quality.coverage"
+        - "test_quality.execution.success_rate"
+        - "security.vulnerabilities.high"
+  
+  production:
+    enforcement:
+      blocking_gates:
+        - "typescript.errors"
+        - "eslint.errors"
+        - "test_quality.coverage"
+        - "test_quality.execution.success_rate"
+        - "security.vulnerabilities.critical"
+        - "security.vulnerabilities.high"
+        - "security.secrets"
+        - "deployment.environment"
+        - "deployment.database"

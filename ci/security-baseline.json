@@ -1,0 +1,98 @@
+{
+  "version": "1.0.0",
+  "created": "2025-07-02T00:00:00Z",
+  "description": "Security baseline for VonkFi CI/CD pipeline",
+  "approved_vulnerabilities": {
+    "notes": "Only add vulnerabilities here after thorough security review and approval",
+    "exceptions": []
+  },
+  "scan_configuration": {
+    "dependency_check": {
+      "enabled": true,
+      "fail_on_critical": true,
+      "fail_on_high": true,
+      "fail_on_moderate": false,
+      "max_age_days": 30
+    },
+    "secret_scanning": {
+      "enabled": true,
+      "patterns": [
+        "api[_-]?key",
+        "secret",
+        "token",
+        "password",
+        "private[_-]?key",
+        "database[_-]?url"
+      ],
+      "exclude_paths": [
+        "test/",
+        "*.example",
+        "*.md",
+        "node_modules/"
+      ]
+    },
+    "license_check": {
+      "enabled": true,
+      "allowed_licenses": [
+        "MIT",
+        "ISC",
+        "Apache-2.0",
+        "BSD-2-Clause",
+        "BSD-3-Clause",
+        "CC0-1.0"
+      ],
+      "blocked_licenses": [
+        "GPL-2.0",
+        "GPL-3.0",
+        "AGPL-3.0",
+        "LGPL-2.1",
+        "LGPL-3.0"
+      ]
+    },
+    "code_quality": {
+      "enabled": true,
+      "typescript_strict": true,
+      "eslint_security": true,
+      "sonarqube": false
+    }
+  },
+  "thresholds": {
+    "coverage": {
+      "minimum_percentage": 80,
+      "fail_on_decrease": true
+    },
+    "performance": {
+      "max_response_time_ms": 2000,
+      "max_memory_usage_mb": 512
+    },
+    "security_score": {
+      "minimum_score": 85
+    }
+  },
+  "notifications": {
+    "critical_vulnerabilities": {
+      "immediate": true,
+      "channels": ["slack", "email"]
+    },
+    "high_vulnerabilities": {
+      "immediate": false,
+      "channels": ["slack"]
+    },
+    "security_reports": {
+      "daily": true,
+      "weekly_summary": true
+    }
+  },
+  "compliance": {
+    "frameworks": [
+      "OWASP Top 10",
+      "CWE Top 25"
+    ],
+    "standards": [
+      "ISO 27001",
+      "SOC 2"
+    ]
+  },
+  "last_updated": "2025-07-02T00:00:00Z",
+  "next_review": "2025-08-02T00:00:00Z"
+}

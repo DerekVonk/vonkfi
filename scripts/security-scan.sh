@@ -35,29 +35,57 @@ mkdir -p ./security-reports
 log_info "🔒 Starting VonkFi Security Scan"
 echo "=================================================="
 
-# 1. Dependency vulnerability scan
-log_info "📦 Running dependency vulnerability scan..."
+# 1. Enhanced dependency vulnerability scan
+log_info "📦 Running comprehensive dependency vulnerability scan..."
 if command -v npm >/dev/null 2>&1; then
+    # Full npm audit
     npm audit --audit-level=moderate --json > ./security-reports/npm-audit.json || true
     npm audit --audit-level=moderate > ./security-reports/npm-audit.txt || true
     
-    # Check for high and critical vulnerabilities
+    # Enhanced vulnerability analysis
     HIGH_VULNS=$(npm audit --audit-level=high --json 2>/dev/null | jq -r '.metadata.vulnerabilities.high // 0' || echo "0")
     CRITICAL_VULNS=$(npm audit --audit-level=critical --json 2>/dev/null | jq -r '.metadata.vulnerabilities.critical // 0' || echo "0")
+    MODERATE_VULNS=$(npm audit --audit-level=moderate --json 2>/dev/null | jq -r '.metadata.vulnerabilities.moderate // 0' || echo "0")
     
-    if [ "$HIGH_VULNS" -gt 0 ] || [ "$CRITICAL_VULNS" -gt 0 ]; then
-        log_warning "Found $HIGH_VULNS high and $CRITICAL_VULNS critical vulnerabilities"
-    else
-        log_success "No high or critical vulnerabilities found"
+    # Advanced audit-ci scan
+    if command -v npx >/dev/null 2>&1 && [ -f "./ci/audit-ci.json" ]; then
+        log_info "🔍 Running audit-ci with enhanced configuration..."
+        npx audit-ci --config ./ci/audit-ci.json --output-format json > ./security-reports/audit-ci-detailed.json || true
+        npx audit-ci --config ./ci/audit-ci.json > ./security-reports/audit-ci-summary.txt || true
     fi
+    
+    # License compliance check
+    log_info "📋 Checking license compliance..."
+    npx license-checker --json > ./security-reports/licenses.json || true
+    npx license-checker --summary > ./security-reports/licenses-summary.txt || true
+    
+    # Outdated packages check
+    log_info "📅 Checking for outdated packages..."
+    npm outdated --json > ./security-reports/outdated-packages.json || true
+    
+    # Vulnerability summary
+    TOTAL_VULNS=$((CRITICAL_VULNS + HIGH_VULNS + MODERATE_VULNS))
+    if [ "$CRITICAL_VULNS" -gt 0 ]; then
+        log_error "🚨 CRITICAL: Found $CRITICAL_VULNS critical vulnerabilities - immediate action required!"
+    elif [ "$HIGH_VULNS" -gt 0 ]; then
+        log_warning "⚠️ Found $HIGH_VULNS high vulnerabilities"
+    elif [ "$MODERATE_VULNS" -gt 0 ]; then
+        log_warning "Found $MODERATE_VULNS moderate vulnerabilities"
+    else
+        log_success "No significant vulnerabilities found"
+    fi
+    
+    echo "Total vulnerabilities: Critical($CRITICAL_VULNS), High($HIGH_VULNS), Moderate($MODERATE_VULNS)"
 else
     log_error "npm not found - skipping dependency scan"
 fi
 
-# 2. Secret detection scan
-log_info "🔍 Scanning for secrets and sensitive data..."
+# 2. Enhanced secret detection scan
+log_info "🔍 Running comprehensive secret detection scan..."
+
+# Advanced secret scanning with multiple tools
 if command -v git >/dev/null 2>&1; then
-    # Check for common secret patterns
+    # Enhanced secret patterns
     SECRET_PATTERNS=(
         "password\s*[:=]\s*[\"'][^\"']*[\"']"
         "api[_-]?key\s*[:=]\s*[\"'][^\"']*[\"']"
@@ -65,19 +93,50 @@ if command -v git >/dev/null 2>&1; then
         "token\s*[:=]\s*[\"'][^\"']*[\"']"
         "database[_-]?url\s*[:=]\s*[\"'][^\"']*[\"']"
         "-----BEGIN.*PRIVATE KEY-----"
+        "-----BEGIN.*CERTIFICATE-----"
         "sk_live_[a-zA-Z0-9]+"
         "pk_live_[a-zA-Z0-9]+"
+        "AKIA[0-9A-Z]{16}"
+        "AIza[0-9A-Za-z\\-_]{35}"
+        "[0-9a-f]{32}"
+        "xox[baprs]-[0-9a-zA-Z]{10,48}"
+        "ghp_[A-Za-z0-9]{36}"
+        "gho_[A-Za-z0-9]{36}"
+        "github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}"
     )
     
+    echo "🔍 Scanning for hardcoded secrets..." > ./security-reports/secret-scan.txt
     SECRETS_FOUND=0
+    
     for pattern in "${SECRET_PATTERNS[@]}"; do
-        if git grep -E -i "$pattern" -- '*.ts' '*.js' '*.json' '*.yml' '*.yaml' 2>/dev/null | grep -v test | grep -v example; then
+        echo "\nChecking pattern: $pattern" >> ./security-reports/secret-scan.txt
+        if git grep -E -i "$pattern" -- '*.ts' '*.js' '*.json' '*.yml' '*.yaml' '*.env*' 2>/dev/null | grep -v test | grep -v example | grep -v node_modules >> ./security-reports/secret-scan.txt; then
             SECRETS_FOUND=$((SECRETS_FOUND + 1))
         fi
     done
     
+    # Check for detect-secrets if available
+    if command -v detect-secrets >/dev/null 2>&1; then
+        log_info "🕵️ Running detect-secrets scan..."
+        detect-secrets scan --all-files --force-use-all-plugins > ./security-reports/detect-secrets-results.json || true
+        
+        # Audit results
+        detect-secrets audit ./security-reports/detect-secrets-results.json > ./security-reports/detect-secrets-audit.txt 2>&1 || true
+    fi
+    
+    # Check git history for leaked secrets
+    log_info "📚 Scanning git history for potential secrets..."
+    git log --all --full-history --grep="password\|secret\|key\|token" --oneline > ./security-reports/git-history-secrets.txt || true
+    
+    # Check environment files
+    log_info "🌍 Checking environment file security..."
+    if find . -name ".env*" -not -path "./node_modules/*" | head -10; then
+        echo "Environment files found - checking if they're properly gitignored..." >> ./security-reports/secret-scan.txt
+        find . -name ".env*" -not -path "./node_modules/*" -not -name "*.example" >> ./security-reports/env-files-found.txt
+    fi
+    
     if [ $SECRETS_FOUND -gt 0 ]; then
-        log_warning "Found $SECRETS_FOUND potential secrets in code"
+        log_error "🚨 Found $SECRETS_FOUND potential secrets in code - review required!"
     else
         log_success "No obvious secrets found in code"
     fi
@@ -251,26 +310,110 @@ if [ $API_ISSUES -eq 0 ]; then
     log_success "API security configuration looks good"
 fi
 
-# 10. Generate summary report
-log_info "📊 Generating security summary report..."
+# 10. Enhanced security compliance check
+log_info "🛡️ Running security compliance validation..."
+
+# OWASP Top 10 checks
+log_info "📋 Checking OWASP Top 10 compliance..."
+OWASP_ISSUES=0
+
+# A01: Broken Access Control
+if ! grep -r "authentication\|authorization" server/ >/dev/null 2>&1; then
+    echo "⚠️ A01: Potential broken access control - no auth middleware found" >> ./security-reports/owasp-check.txt
+    OWASP_ISSUES=$((OWASP_ISSUES + 1))
+fi
+
+# A02: Cryptographic Failures
+if grep -r "md5\|sha1\|des" . --include="*.ts" --include="*.js" >/dev/null 2>&1; then
+    echo "⚠️ A02: Weak cryptographic algorithms detected" >> ./security-reports/owasp-check.txt
+    OWASP_ISSUES=$((OWASP_ISSUES + 1))
+fi
+
+# A03: Injection
+if ! grep -r "sql.*escape\|parameterized\|prepared" server/ >/dev/null 2>&1; then
+    echo "⚠️ A03: Potential SQL injection risk - review database queries" >> ./security-reports/owasp-check.txt
+    OWASP_ISSUES=$((OWASP_ISSUES + 1))
+fi
+
+# Generate comprehensive security summary
+log_info "📊 Generating comprehensive security summary report..."
 
 cat > ./security-reports/security-summary.md << EOF
-# VonkFi Security Scan Summary
+# VonkFi Comprehensive Security Scan Summary
 
 **Scan Date:** $(date)
-**Scanned by:** Security Scan Script v1.0
+**Scanned by:** Enhanced Security Scan Script v2.0
+**Security Baseline:** ci/security-baseline.json
 
-## Summary
+## Executive Summary
 
-- **Dependency Vulnerabilities:** $HIGH_VULNS high, $CRITICAL_VULNS critical
-- **Secrets Detection:** $SECRETS_FOUND potential issues found
-- **TypeScript Errors:** $TS_ERRORS errors found
-- **File Permission Issues:** $PERMISSION_ISSUES issues found
-- **Environment File Issues:** $ENV_ISSUES issues found
+### 🚨 Critical Issues
+- **Critical Vulnerabilities:** $CRITICAL_VULNS
+- **Secrets in Code:** $SECRETS_FOUND
+- **OWASP Compliance Issues:** $OWASP_ISSUES
 
-## Recommendations
+### ⚠️ High Priority Issues
+- **High Vulnerabilities:** $HIGH_VULNS
+- **TypeScript Errors:** $TS_ERRORS
+- **File Permission Issues:** $PERMISSION_ISSUES
 
-### High Priority
+### 📊 Overall Metrics
+- **Total Vulnerabilities:** $((CRITICAL_VULNS + HIGH_VULNS + MODERATE_VULNS))
+- **Environment File Issues:** $ENV_ISSUES
+- **Docker Security Issues:** $DOCKER_ISSUES
+- **Database Security Issues:** $DB_ISSUES
+- **API Security Issues:** $API_ISSUES
+
+## Detailed Findings
+
+### Dependency Security
+- **Critical:** $CRITICAL_VULNS vulnerabilities
+- **High:** $HIGH_VULNS vulnerabilities  
+- **Moderate:** $MODERATE_VULNS vulnerabilities
+- **Scan Tool:** npm audit + audit-ci
+- **Last Updated:** $(date)
+
+### Secret Detection
+- **Potential Secrets:** $SECRETS_FOUND
+- **Tools Used:** Custom patterns + detect-secrets
+- **Git History Checked:** Yes
+- **Environment Files:** Reviewed
+
+### Code Quality & Security
+- **TypeScript Strict Mode:** $([ -f "tsconfig.json" ] && grep -q '"strict".*true' tsconfig.json && echo "Enabled" || echo "Disabled")
+- **ESLint Security Rules:** Enabled
+- **Security Linting Errors:** $([ -f "./security-reports/eslint-security.json" ] && jq '.length // 0' ./security-reports/eslint-security.json || echo "0")
+
+### Infrastructure Security
+- **Docker Security:** $DOCKER_ISSUES issues found
+- **Database Security:** $DB_ISSUES issues found
+- **API Security:** $API_ISSUES issues found
+- **File Permissions:** $PERMISSION_ISSUES issues found
+
+### OWASP Top 10 Compliance
+- **Compliance Issues:** $OWASP_ISSUES
+- **Framework:** OWASP Top 10 2021
+- **Last Assessment:** $(date)
+
+## Risk Assessment
+
+EOF
+
+# Risk level calculation
+RISK_SCORE=$((CRITICAL_VULNS * 10 + HIGH_VULNS * 5 + SECRETS_FOUND * 8 + OWASP_ISSUES * 6))
+
+if [ $RISK_SCORE -gt 50 ]; then
+    RISK_LEVEL="🔴 HIGH RISK"
+elif [ $RISK_SCORE -gt 20 ]; then
+    RISK_LEVEL="🟡 MEDIUM RISK"
+else
+    RISK_LEVEL="🟢 LOW RISK"
+fi
+
+cat >> ./security-reports/security-summary.md << EOF
+**Overall Risk Level:** $RISK_LEVEL (Score: $RISK_SCORE)
+
+## Immediate Actions Required
 EOF
 
 # Add high priority recommendations based on findings
@@ -312,24 +455,122 @@ cat >> ./security-reports/security-summary.md << EOF
 
 EOF
 
-# Final summary
+# Generate security dashboard
+log_info "📈 Generating security dashboard..."
+cat > ./security-reports/security-dashboard.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VonkFi Security Dashboard</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .header { text-align: center; color: #333; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+        .metric { display: inline-block; margin: 10px; padding: 20px; background: #f8f9fa; border-radius: 6px; min-width: 150px; text-align: center; }
+        .critical { background: #ffe6e6; border-left: 4px solid #dc3545; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .success { background: #d4edda; border-left: 4px solid #28a745; }
+        .metric h3 { margin: 0; font-size: 24px; }
+        .metric p { margin: 5px 0 0 0; color: #666; }
+        .section { margin: 30px 0; }
+        .report-link { display: inline-block; margin: 5px; padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ VonkFi Security Dashboard</h1>
+            <p>Last Updated: <span id="timestamp"></span></p>
+        </div>
+        
+        <div class="section">
+            <h2>Security Metrics</h2>
+            <div class="metric critical">
+                <h3 id="critical-vulns">0</h3>
+                <p>Critical Vulnerabilities</p>
+            </div>
+            <div class="metric warning">
+                <h3 id="high-vulns">0</h3>
+                <p>High Vulnerabilities</p>
+            </div>
+            <div class="metric warning">
+                <h3 id="secrets-found">0</h3>
+                <p>Potential Secrets</p>
+            </div>
+            <div class="metric" id="risk-level">
+                <h3 id="risk-score">0</h3>
+                <p>Risk Score</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📊 Detailed Reports</h2>
+            <a href="security-summary.md" class="report-link">Security Summary</a>
+            <a href="npm-audit.json" class="report-link">Dependency Audit</a>
+            <a href="eslint-security.json" class="report-link">Code Security</a>
+            <a href="secret-scan.txt" class="report-link">Secret Detection</a>
+            <a href="owasp-check.txt" class="report-link">OWASP Compliance</a>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        // Metrics will be updated by the scan script
+    </script>
+</body>
+</html>
+EOF
+
+# Update dashboard with actual values
+sed -i.bak "s/id=\"critical-vulns\">0/id=\"critical-vulns\">$CRITICAL_VULNS/g" ./security-reports/security-dashboard.html
+sed -i.bak "s/id=\"high-vulns\">0/id=\"high-vulns\">$HIGH_VULNS/g" ./security-reports/security-dashboard.html
+sed -i.bak "s/id=\"secrets-found\">0/id=\"secrets-found\">$SECRETS_FOUND/g" ./security-reports/security-dashboard.html
+sed -i.bak "s/id=\"risk-score\">0/id=\"risk-score\">$RISK_SCORE/g" ./security-reports/security-dashboard.html
+
+# Final comprehensive summary
 echo ""
-echo "=================================================="
-log_info "🏁 Security scan completed"
-echo "=================================================="
+echo "==========================================================="
+log_info "🏁 Enhanced Security Scan Completed"
+echo "==========================================================="
 
-TOTAL_ISSUES=$((CRITICAL_VULNS + HIGH_VULNS + SECRETS_FOUND + TS_ERRORS + PERMISSION_ISSUES + ENV_ISSUES + DOCKER_ISSUES + DB_ISSUES + API_ISSUES))
+TOTAL_ISSUES=$((CRITICAL_VULNS + HIGH_VULNS + SECRETS_FOUND + TS_ERRORS + PERMISSION_ISSUES + ENV_ISSUES + DOCKER_ISSUES + DB_ISSUES + API_ISSUES + OWASP_ISSUES))
 
-if [ $TOTAL_ISSUES -eq 0 ]; then
-    log_success "🎉 No major security issues found!"
-    echo "The application appears to follow security best practices."
-    exit 0
-elif [ $TOTAL_ISSUES -lt 5 ]; then
-    log_warning "⚠️  Found $TOTAL_ISSUES security issues"
-    echo "Please review the detailed reports and address the issues."
+echo "📊 Security Scan Results:"
+echo "   Critical Vulnerabilities: $CRITICAL_VULNS"
+echo "   High Vulnerabilities: $HIGH_VULNS"
+echo "   Moderate Vulnerabilities: $MODERATE_VULNS"
+echo "   Secrets Found: $SECRETS_FOUND"
+echo "   OWASP Issues: $OWASP_ISSUES"
+echo "   Risk Score: $RISK_SCORE ($RISK_LEVEL)"
+echo "   Total Issues: $TOTAL_ISSUES"
+echo ""
+echo "📂 Reports Generated:"
+echo "   - security-summary.md (Comprehensive report)"
+echo "   - security-dashboard.html (Interactive dashboard)"
+echo "   - Multiple detailed scan results in security-reports/"
+echo ""
+
+if [ $CRITICAL_VULNS -gt 0 ] || [ $SECRETS_FOUND -gt 0 ]; then
+    log_error "🚨 CRITICAL SECURITY ISSUES FOUND - IMMEDIATE ACTION REQUIRED!"
+    echo "❌ Critical vulnerabilities: $CRITICAL_VULNS"
+    echo "❌ Potential secrets in code: $SECRETS_FOUND"
+    echo "🔗 Review dashboard: security-reports/security-dashboard.html"
+    exit 3
+elif [ $HIGH_VULNS -gt 0 ] || [ $OWASP_ISSUES -gt 0 ]; then
+    log_warning "⚠️ HIGH PRIORITY SECURITY ISSUES FOUND"
+    echo "⚠️ High vulnerabilities: $HIGH_VULNS"
+    echo "⚠️ OWASP compliance issues: $OWASP_ISSUES"
+    echo "📋 Please review and address these issues promptly"
+    exit 2
+elif [ $TOTAL_ISSUES -gt 0 ]; then
+    log_warning "📋 Security issues found - review recommended"
+    echo "📊 Total issues: $TOTAL_ISSUES (Risk Level: $RISK_LEVEL)"
+    echo "🔍 Review detailed reports for improvement opportunities"
     exit 1
 else
-    log_error "❌ Found $TOTAL_ISSUES security issues"
-    echo "Immediate attention required. Review all security reports."
-    exit 2
+    log_success "🎉 Excellent! No significant security issues found!"
+    echo "✅ The application follows security best practices"
+    echo "🛡️ All scans passed - deployment ready"
+    exit 0
 fi

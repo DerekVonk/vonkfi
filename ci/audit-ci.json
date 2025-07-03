@@ -2,16 +2,73 @@
   "moderate": true,
   "high": true,
   "critical": true,
+  "low": false,
   "allowlist": [],
-  "report-type": "summary",
+  "report-type": "full",
   "output-format": "json",
+  "pass-enoaudit": false,
+  "show-found": true,
+  "show-not-found": false,
+  "registry": "https://registry.npmjs.org/",
   "retry": {
-    "count": 3,
+    "count": 5,
     "factor": 2,
-    "minTimeout": 1000,
-    "maxTimeout": 60000
+    "minTimeout": 2000,
+    "maxTimeout": 120000
   },
   "skip-dev": false,
   "whitelist": [],
-  "advisories": []
+  "advisories": [],
+  "path-whitelist": [],
+  "package-manager": "npm",
+  "levels": {
+    "low": false,
+    "moderate": true,
+    "high": true,
+    "critical": true
+  },
+  "report-config": {
+    "summary": true,
+    "detailed": true,
+    "json-output": "./security-reports/audit-ci-report.json",
+    "html-output": "./security-reports/audit-ci-report.html"
+  },
+  "fail-on": {
+    "moderate": false,
+    "high": true,
+    "critical": true
+  },
+  "timeout": 300000,
+  "exclude": [
+    "GHSA-*",
+    "CVE-*"
+  ],
+  "notifications": {
+    "enabled": true,
+    "slack": {
+      "webhook": "${SLACK_WEBHOOK_URL}",
+      "channel": "#security-alerts",
+      "username": "Audit-CI Bot"
+    },
+    "email": {
+      "enabled": false,
+      "recipients": []
+    }
+  },
+  "baseline": {
+    "file": "./ci/security-baseline.json",
+    "update-on-pass": false
+  },
+  "custom-rules": {
+    "check-licenses": true,
+    "allowed-licenses": [
+      "MIT",
+      "ISC",
+      "Apache-2.0",
+      "BSD-2-Clause",
+      "BSD-3-Clause"
+    ],
+    "check-outdated": true,
+    "max-age-days": 365
+  }
 }

@@ -1,0 +1,82 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-push hook for comprehensive test infrastructure validation
+echo "🚀 Running pre-push validations..."
+
+# Check if we're on a protected branch
+protected_branches="main|master|develop"
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+if [[ "$current_branch" =~ $protected_branches ]]; then
+    echo "🔒 Pushing to protected branch '$current_branch' - running comprehensive checks..."
+    
+    # Run all tests
+    echo "🧪 Running comprehensive test suite..."
+    if [ -f "./run-tests.sh" ]; then
+        # Run smoke tests first
+        echo "🔥 Running smoke tests..."
+        npm run test:smoke || {
+            echo "❌ Smoke tests failed"
+            exit 1
+        }
+        
+        # Run unit tests
+        echo "🧪 Running unit tests..."
+        npm run test:unit || {
+            echo "❌ Unit tests failed"
+            exit 1
+        }
+        
+        # Check coverage
+        echo "📊 Checking test coverage..."
+        npm run test:coverage || {
+            echo "❌ Coverage check failed"
+            exit 1
+        }
+    else
+        echo "❌ Test runner script not found"
+        exit 1
+    fi
+    
+    # Build check
+    echo "🏗️ Checking build..."
+    npm run build || {
+        echo "❌ Build failed"
+        exit 1
+    }
+    
+    # Security scan
+    echo "🔒 Running security scan..."
+    npm run security:scan || {
+        echo "⚠️ Security scan warnings (continuing)"
+    }
+    
+else
+    echo "📝 Pushing to feature branch '$current_branch' - running basic checks..."
+    
+    # Basic validation for feature branches
+    echo "🔧 Validating CI configuration..."
+    if [ -f "./scripts/validate-ci-config.sh" ]; then
+        ./scripts/validate-ci-config.sh || {
+            echo "❌ CI configuration validation failed"
+            exit 1
+        }
+    fi
+    
+    # TypeScript check
+    echo "🔍 Checking TypeScript..."
+    npx tsc --noEmit || {
+        echo "❌ TypeScript compilation failed"
+        exit 1
+    }
+    
+    # Quick test run
+    echo "🧪 Running quick tests..."
+    npm run test:smoke || {
+        echo "❌ Smoke tests failed"
+        exit 1
+    }
+fi
+
+echo "✅ Pre-push validations passed!"
