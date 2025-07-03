@@ -6,7 +6,7 @@ set -e
 # Function to clean up on exit
 cleanup() {
   echo "Cleaning up..."
-  docker-compose -f docker-compose.test.yml down
+  docker-compose -f docker-compose.test.yml down --remove-orphans
 }
 
 # Register the cleanup function to be called on exit
@@ -19,7 +19,7 @@ echo "==================================================="
 
 # Start the test database
 echo "Starting test database..."
-docker-compose -f docker-compose.test.yml up -d
+docker-compose -f docker-compose.test.yml up -d --remove-orphans
 
 # Wait for the database to be ready
 echo "Waiting for database to be ready..."
@@ -83,7 +83,7 @@ done < .env.test
 
 # Run smoke tests first to validate infrastructure
 echo "Running infrastructure smoke tests..."
-if ! npx vitest run test/smoke-tests.ts --reporter=verbose; then
+if ! npx vitest run test/smoke-tests.test.ts --reporter=verbose; then
   echo "❌ Smoke tests failed! Infrastructure is not ready for testing."
   echo "Container status:"
   docker-compose -f docker-compose.test.yml ps

@@ -543,6 +543,16 @@ export class TestConnectionPoolManager extends EventEmitter {
     }
   }
 
+  async leaseConnection(): Promise<{ id: string; client: pg.PoolClient }> {
+    const leaseId = await this.acquireLease('test-smoke', 'leaseConnection');
+    const client = this.getClient(leaseId);
+    return { id: leaseId, client };
+  }
+
+  async releaseConnection(lease: { id: string; client: pg.PoolClient }): Promise<void> {
+    this.releaseLease(lease.id);
+  }
+
   getClient(leaseId: string): pg.PoolClient {
     if (!leaseId || typeof leaseId !== 'string') {
       this.recordSecurityViolation('Invalid lease ID format');

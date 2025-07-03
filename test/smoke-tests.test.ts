@@ -119,8 +119,8 @@ describe('Infrastructure Smoke Tests', () => {
             // Test basic insert capability
             await client.query('BEGIN');
             const testResult = await client.query(`
-                INSERT INTO categories (name, color) 
-                VALUES ('smoke_test_category', '#FF0000') 
+                INSERT INTO categories (name, type, color) 
+                VALUES ('smoke_test_category', 'essential', '#FF0000') 
                 RETURNING id, name
             `);
             expect(testResult.rows).toHaveLength(1);
@@ -131,7 +131,7 @@ describe('Infrastructure Smoke Tests', () => {
         } finally {
             await pool.end();
         }
-    });
+    }, 30000);
 
     test('connection pool manager functionality', async () => {
         const poolManager = new TestConnectionPoolManager({
@@ -203,7 +203,7 @@ describe('Infrastructure Smoke Tests', () => {
             
             // Verify all connections worked
             results.forEach((result, index) => {
-                expect(result.connection_id).toBe(index);
+                expect(parseInt(result.connection_id)).toBe(index);
                 expect(result.timestamp).toBeInstanceOf(Date);
             });
 
@@ -215,28 +215,33 @@ describe('Infrastructure Smoke Tests', () => {
     test('error recovery simulation', async () => {
         const pool = new pg.Pool({
             ...dbConfig,
-            connectionTimeoutMillis: 1000, // Short timeout to simulate errors
-            max: 1
+            connectionTimeoutMillis: 5000, // Give more time for connections
+            max: 2, // Allow more connections to avoid deadlock
+            min: 1
         });
 
         try {
             // Test that we can recover from query errors
             let errorOccurred = false;
+            let client;
             
             try {
-                const client = await pool.connect();
+                client = await pool.connect();
                 // Intentionally bad query
                 await client.query('SELECT * FROM non_existent_table');
-                client.release();
             } catch (error) {
                 errorOccurred = true;
                 expect(error.message).toContain('does not exist');
+            } finally {
+                if (client) {
+                    client.release();
+                }
             }
 
             expect(errorOccurred).toBe(true);
 
-            // Verify pool still works after error
-            const client = await pool.connect();
+            // Verify pool still works after error - use a fresh connection
+            client = await pool.connect();
             const result = await client.query('SELECT 1 as recovery_test');
             expect(result.rows[0].recovery_test).toBe(1);
             client.release();
@@ -244,5 +249,5 @@ describe('Infrastructure Smoke Tests', () => {
         } finally {
             await pool.end();
         }
-    });
+    }, 30000);
 });

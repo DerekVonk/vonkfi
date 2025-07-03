@@ -628,17 +628,6 @@ export class ConnectionRecoverySystem extends EventEmitter {
     });
   }
 
-  private async performAggressiveRecovery(): Promise<void> {
-    console.log('🔧 Performing aggressive pool recovery...');
-    
-    // This would implement more aggressive recovery strategies
-    // For now, we'll simulate recovery actions
-    
-    await this.poolManager.releaseAllLeases();
-    
-    // Wait for pool to stabilize
-    await new Promise(resolve => setTimeout(resolve, 5000));
-  }
 
   private async forceReleaseLongRunningLeases(): Promise<void> {
     const activeLeases = this.poolManager.getActiveLeases();
