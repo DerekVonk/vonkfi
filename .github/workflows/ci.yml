@@ -333,7 +333,10 @@ jobs:
           echo "NODE_ENV=test" >> .env.test
 
       - name: Run database migrations
-        run: npm run db:migrate
+        run: |
+          export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
+          echo "DATABASE_URL set to: $DATABASE_URL"
+          npm run db:migrate
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
 
@@ -472,7 +475,10 @@ jobs:
           echo "DATABASE_URL=postgresql://test:test@localhost:5432/vonkfi_test" >> .env.integration
 
       - name: Run database migrations
-        run: npm run db:migrate
+        run: |
+          export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
+          echo "DATABASE_URL set to: $DATABASE_URL"
+          npm run db:migrate
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
 
@@ -542,7 +548,10 @@ jobs:
           echo "DATABASE_URL=postgresql://test:test@localhost:5432/vonkfi_test" >> .env.e2e
 
       - name: Run database migrations
-        run: npm run db:migrate
+        run: |
+          export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
+          echo "DATABASE_URL set to: $DATABASE_URL"
+          npm run db:migrate
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
 
@@ -614,7 +623,10 @@ jobs:
           echo "DATABASE_URL=postgresql://test:test@localhost:5432/vonkfi_test" >> .env.performance
 
       - name: Run database migrations
-        run: npm run db:migrate
+        run: |
+          export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
+          echo "DATABASE_URL set to: $DATABASE_URL"
+          npm run db:migrate
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
 
