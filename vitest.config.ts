@@ -44,8 +44,7 @@ export default defineConfig({
       ? [
           'basic', // Less verbose output for CI
           ['json', { outputFile: './test-results/test-results.json' }],
-          ['junit', { outputFile: './test-results/test-results.xml' }],
-          ['html', { outputFile: './test-results/html/index.html' }]
+          ['junit', { outputFile: './test-results/test-results.xml' }]
         ]
       : [
           'default',

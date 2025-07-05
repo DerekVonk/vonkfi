@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GripVertical, ArrowUp, ArrowDown, PiggyBank, Shield, Flame, TrendingUp, CheckCircle, Clock, ArrowLeftRight, Target } from "lucide-react";
-import type { DashboardData, Account, TransferRecommendation, Goal } from "@/types";
+import { GripVertical, ArrowUp, ArrowDown, Shield, Flame, ArrowLeftRight, Target, Receipt } from "lucide-react";
+import type { DashboardData, Account, TransferRecommendation, Goal, Transaction } from "@/types";
 import LazyChartWrapper from "./charts/LazyChartWrapper";
 import MonthlyOverview from "./MonthlyOverview";
 import AIFixedExpenseInsights from "./AIFixedExpenseInsights";
@@ -132,6 +132,53 @@ const DraggableLayout = memo(function DraggableLayout({ dashboardData }: Draggab
     </div>
   ), [dashboardData?.goals, formatCurrency]);
 
+  const transactionsComponent = useMemo(() => (
+    <div className="space-y-3">
+      {(!dashboardData?.transactions || dashboardData.transactions.length === 0) ? (
+        <div className="text-center py-8">
+          <div className="text-gray-400 mb-2">
+            <Receipt size={32} className="mx-auto" />
+          </div>
+          <p className="text-sm text-gray-500">No transactions yet</p>
+          <p className="text-xs text-gray-400">Import bank statements to see transactions</p>
+        </div>
+      ) : (
+        dashboardData.transactions.slice(0, 10).map((transaction: Transaction & { categoryName?: string }) => {
+          const amount = parseFloat(transaction.amount);
+          const isIncome = amount > 0;
+          const formattedAmount = new Intl.NumberFormat('en-EU', {
+            style: 'currency',
+            currency: 'EUR',
+            signDisplay: 'always'
+          }).format(amount);
+          const formattedDate = new Date(transaction.date).toLocaleDateString('en-EU', {
+            month: 'short',
+            day: 'numeric'
+          });
+
+          return (
+            <div key={transaction.id} className="flex items-center justify-between py-2 border-b border-neutral-100 last:border-b-0">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {transaction.merchant || transaction.description}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-neutral-400">
+                  <span>{formattedDate}</span>
+                  {transaction.categoryName && (
+                    <span className="bg-neutral-100 px-2 py-1 rounded">{transaction.categoryName}</span>
+                  )}
+                </div>
+              </div>
+              <div className={`text-sm font-medium ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+                {formattedAmount}
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  ), [dashboardData?.transactions]);
+
   const fireTimelineComponent = useMemo(() => (
     <div className="text-center">
       <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -163,45 +210,51 @@ const DraggableLayout = memo(function DraggableLayout({ dashboardData }: Draggab
       component: <MonthlyOverview dashboardData={dashboardData} />
     },
     {
+      id: 'recent-transactions',
+      title: 'Recent Transactions',
+      order: 2,
+      component: transactionsComponent
+    },
+    {
       id: 'volatility-monitor',
       title: 'Income Volatility Monitor',
-      order: 2,
+      order: 3,
       component: <LazyChartWrapper chartType="income-volatility" data={dashboardData?.data?.fireMetrics} />
     },
     {
       id: 'account-overview',
       title: 'Account Overview',
-      order: 3,
+      order: 4,
       component: accountsComponent
     },
     {
       id: 'transfer-instructions',
       title: 'Recent Transfer Instructions',
-      order: 4,
+      order: 5,
       component: transfersComponent
     },
     {
       id: 'savings-goals',
       title: 'Savings Goals Progress',
-      order: 5,
+      order: 6,
       component: goalsComponent
     },
     {
       id: 'ai-fixed-expense',
       title: 'AI Fixed Expense Insights',
-      order: 6,
+      order: 7,
       component: <AIFixedExpenseInsights />
     },
     {
       id: 'ai-transfer-recommendations',
       title: 'AI Transfer Recommendations',
-      order: 7,
+      order: 8,
       component: <AITransferRecommendations />
     },
     {
       id: 'fire-timeline',
       title: 'FIRE Timeline',
-      order: 8,
+      order: 9,
       component: fireTimelineComponent
     }
   ]);

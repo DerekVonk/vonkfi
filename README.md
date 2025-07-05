@@ -15,6 +15,104 @@ VonkFi is a comprehensive personal finance management application designed to he
 - **Duplicate Detection**: Automatically identify duplicate transactions
 - **Secure Authentication**: Protect your financial data with robust security measures
 
+## 📊 Understanding Your Financial Data: Monthly Overview Guide
+
+The Monthly Overview is the central dashboard feature that transforms your imported bank transactions into meaningful financial insights. Understanding how these calculations work will help you make the most of VonkFi's financial planning capabilities.
+
+### How Transactions Are Processed
+
+#### Income vs. Expense Classification
+VonkFi automatically categorizes transactions based on the CAMT.053 banking standard:
+- **Income (Green)**: Transactions with positive amounts (money coming into your account)
+  - Salary deposits, freelance payments, investment returns, refunds
+- **Expenses (Red)**: Transactions with negative amounts (money leaving your account)
+  - Purchases, bills, transfers to other accounts, fees
+
+This classification happens automatically during import and is based on the credit/debit indicators in your bank statement.
+
+#### Monthly Calculation Method
+The Monthly Overview uses a **6-month rolling average** approach:
+
+1. **Data Window**: Only the last 6 months of transactions are used for calculations
+2. **Monthly Aggregation**: Transactions are grouped by month (YYYY-MM format)
+3. **Income Calculation**: Sum of all positive transactions per month
+4. **Expense Calculation**: Sum of all negative transactions per month (shown as positive amounts)
+5. **Savings Calculation**: Income minus Expenses for each month
+
+#### Current Month Display
+The "Current Month" metrics shown in the Monthly Overview represent:
+- **Monthly Income**: 6-month average of your income
+- **Monthly Expenses**: 6-month average of your expenses  
+- **Savings**: Difference between average income and expenses
+- **Savings Rate**: Percentage of income saved (calculated as savings ÷ income)
+
+### FIRE (Financial Independence) Calculations
+
+VonkFi includes sophisticated FIRE planning tools:
+
+#### Key Metrics
+- **FIRE Progress**: Current savings ÷ (25 × annual expenses)
+- **Time to FIRE**: Years needed to reach financial independence
+- **Target Amount**: 25 times your annual expenses (based on 4% withdrawal rule)
+- **Emergency Buffer**: Recommended €3,000-€4,000 emergency fund
+
+#### Volatility Analysis
+- **Income Volatility**: Measures consistency of your income using coefficient of variation
+- **Risk Assessment**: Categorizes income as low/medium/high volatility
+- **Buffer Recommendations**: Higher volatility = larger recommended emergency fund
+
+### Using Historical Data
+
+#### Monthly Navigation
+- Use the arrow buttons to navigate between months
+- **Current Month**: Shows 6-month averages (marked with "Current Month")
+- **Historical Months**: Shows actual data for that specific month
+- **Future Months**: Navigation disabled (no data available)
+
+#### Understanding the Metrics
+- **Income (Green Arrow Up)**: Total money received in that month
+- **Essential (Gray Arrow Down)**: Total money spent in that month
+- **Savings (Purple Piggy Bank)**: Net savings (income - expenses)
+- **Transfers (Orange Arrows)**: Number of AI-recommended transfers
+
+### Best Practices for Accurate Calculations
+
+#### Import Consistency
+1. **Regular Imports**: Import bank statements monthly for accurate tracking
+2. **Complete Data**: Import all accounts for comprehensive financial picture
+3. **Recent Data**: Ensure you have at least 6 months of transaction history
+
+#### Transaction Quality
+1. **Category Assignment**: While not required for monthly calculations, categories help with detailed analysis
+2. **Duplicate Management**: VonkFi automatically detects duplicates, but review import history
+3. **Account Verification**: Verify account balances match your bank statements
+
+#### Understanding Averages
+- The system prioritizes **consistency** over absolute accuracy for single months
+- 6-month averages smooth out irregular income/expense patterns
+- Seasonal variations (bonuses, annual bills) are automatically averaged out
+
+### Troubleshooting Common Issues
+
+#### "No Data" or Zero Values
+- **Cause**: Insufficient transaction history (less than 6 months)
+- **Solution**: Import more historical bank statements
+
+#### Unexpected Income/Expense Classification
+- **Cause**: Internal transfers between your accounts appear as income/expense
+- **Solution**: This is normal behavior; focus on net position across all accounts
+
+#### Volatility Warnings
+- **High Volatility**: Consider larger emergency fund, more conservative planning
+- **Low Volatility**: Stable income allows for more aggressive savings goals
+
+### Privacy and Security
+- All calculations happen locally on your device or secure server
+- No transaction data is shared with third parties
+- Historical data is preserved for accurate trend analysis
+
+This calculation methodology ensures that your Monthly Overview provides stable, actionable insights for financial planning while adapting to your actual spending and earning patterns.
+
 ## 📋 Prerequisites
 
 - Node.js (v18+ recommended)

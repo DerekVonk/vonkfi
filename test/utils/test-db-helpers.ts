@@ -474,12 +474,29 @@ export class TestDatabaseHelpers {
         throw new Error('Main pool manager not available');
       }
 
-      const baseConfig = {
-        host: process.env.TEST_DATABASE_HOST || 'localhost',
-        port: parseInt(process.env.TEST_DATABASE_PORT || '5434'),
-        database: process.env.TEST_DATABASE_NAME || 'vonkfi_test',
-        user: process.env.TEST_DATABASE_USER || 'test',
-        password: process.env.TEST_DATABASE_PASSWORD || 'test',
+      // Use DATABASE_URL if available, otherwise fall back to individual env vars
+      let baseConfig;
+      if (process.env.DATABASE_URL) {
+        const url = new URL(process.env.DATABASE_URL);
+        baseConfig = {
+          host: url.hostname,
+          port: parseInt(url.port) || 5432,
+          database: url.pathname.slice(1), // Remove leading /
+          user: url.username,
+          password: url.password,
+        };
+      } else {
+        baseConfig = {
+          host: process.env.TEST_DATABASE_HOST || 'localhost',
+          port: parseInt(process.env.TEST_DATABASE_PORT || '5432'),
+          database: process.env.TEST_DATABASE_NAME || 'vonkfi_test',
+          user: process.env.TEST_DATABASE_USER || 'test',
+          password: process.env.TEST_DATABASE_PASSWORD || 'test',
+        };
+      }
+      
+      baseConfig = {
+        ...baseConfig,
         max: 5, // Smaller pools per file
         min: 1,
         maxLeaseTime: 20000,

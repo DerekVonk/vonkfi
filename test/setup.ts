@@ -65,46 +65,22 @@ afterEach(() => {
     cleanup();
 });
 
-// Environment-specific database configuration
+// Database configuration - always use DATABASE_URL from environment if available
+const TEST_DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/vonkfi_test';
+
+// Parse DATABASE_URL for individual config components (for legacy compatibility)
 const getTestDatabaseConfig = () => {
-    const isCI = process.env.CI === 'true';
-    const nodeEnv = process.env.NODE_ENV;
-
-    // Default test database configuration
-    const defaultConfig = {
-        host: 'localhost',
-        port: 5434,
-        database: 'vonkfi_test',
-        user: 'test',
-        password: 'test'
-    };
-
-    // Production test environment (CI/CD)
-    if (isCI || nodeEnv === 'production-test') {
-        return {
-            ...defaultConfig,
-            // Production test environment might use different credentials
-            host: process.env.TEST_DB_HOST || defaultConfig.host,
-            port: parseInt(process.env.TEST_DB_PORT || String(defaultConfig.port)),
-            database: process.env.TEST_DB_NAME || defaultConfig.database,
-            user: process.env.TEST_DB_USER || defaultConfig.user,
-            password: process.env.TEST_DB_PASSWORD || defaultConfig.password
-        };
-    }
-
-    // Local development test environment
+    const url = new URL(TEST_DATABASE_URL);
     return {
-        ...defaultConfig,
-        host: process.env.TEST_DATABASE_HOST || defaultConfig.host,
-        port: parseInt(process.env.TEST_DATABASE_PORT || String(defaultConfig.port)),
-        database: process.env.TEST_DATABASE_NAME || defaultConfig.database,
-        user: process.env.TEST_DATABASE_USER || defaultConfig.user,
-        password: process.env.TEST_DATABASE_PASSWORD || defaultConfig.password
+        host: url.hostname,
+        port: parseInt(url.port) || 5432,
+        database: url.pathname.slice(1), // Remove leading /
+        user: url.username,
+        password: url.password
     };
 };
 
 const dbConfig = getTestDatabaseConfig();
-const TEST_DATABASE_URL = `postgresql://${dbConfig.user}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`;
 
 // Set environment variable for tests
 process.env.DATABASE_URL = TEST_DATABASE_URL;

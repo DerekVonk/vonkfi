@@ -86,10 +86,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Calculate FIRE metrics using ALL transactions for accurate monthly breakdown
         let fireMetrics;
         try {
-          // Use complete transaction set instead of limited optimized query
-          const allTransactions = await storage.getTransactionsByUserId(Number(userId));
+          // Use optimized transaction query (already includes LEFT JOIN fix)
           fireMetrics = fireCalculator.calculateMetrics(
-            allTransactions, 
+            dashboardData.transactions, 
             dashboardData.goals, 
             dashboardData.accounts
           );
@@ -780,106 +779,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate transfer recommendations - OPTIMIZED (Reduced from 4+ queries to 1-2 queries)
-  app.post("/api/transfers/generate/:userId", async (req, res) => {
-    try {
+  // Generate transfer recommendations - ENHANCED with comprehensive validation and error handling
+  app.post("/api/transfers/generate/:userId", 
+    requireAuth,
+    requireUserAccess,
+    validateRequest({ params: pathParams.userId }),
+    asyncHandler(async (req, res) => {
       const userId = parseInt(req.params.userId);
+      
+      // Import the unified recommendation engine
+      const { UnifiedTransferRecommendationEngine } = await import('./services/unifiedTransferRecommendationEngine');
+      const engine = new UnifiedTransferRecommendationEngine();
 
-      // Clear ALL existing recommendations to prevent duplicates
-      const existingRecommendations = await storage.getTransferRecommendationsByUserId(userId);
-      for (const rec of existingRecommendations) {
-        await storage.updateTransferRecommendationStatus(rec.id, 'replaced');
-      }
+      try {
+        // Clear existing recommendations to prevent duplicates
+        const existingRecommendations = await storage.getTransferRecommendationsByUserId(userId);
+        for (const rec of existingRecommendations) {
+          await storage.updateTransferRecommendationStatus(rec.id, 'replaced');
+        }
 
-      // Use optimized transfer generation data query
-      const { accounts, transactions, goals, transferPreferences } = await storage.getTransferGenerationDataOptimized(userId);
+        // Get all required data with optimized query
+        const { accounts, transactions, goals, transferPreferences } = await storage.getTransferGenerationDataOptimized(userId);
 
-      const fireMetrics = fireCalculator.calculateMetrics(transactions, goals, accounts);
-      const allocation = fireCalculator.calculateAllocationRecommendation(
-        fireMetrics.monthlyIncome,
-        fireMetrics.monthlyExpenses,
-        fireMetrics.bufferStatus.current,
-        goals
-      );
-
-      // Initialize destination service
-      const { TransferDestinationService } = await import('./services/transferDestinationService.js');
-      const destinationService = new TransferDestinationService();
-
-      // Generate transfer recommendations based on allocation
-      const recommendations = [];
-      const mainAccount = accounts.find(a => a.role === 'income') || accounts[0];
-
-      if (!mainAccount) {
-        return res.status(400).json({ error: "No main account found" });
-      }
-
-      // Buffer transfer using configurable destination service
-      if (allocation.bufferAllocation > 0) {
-        const destination = destinationService.resolveDestination(
-          'buffer',
+        // Create validation context
+        const context = {
+          userId,
           accounts,
           goals,
+          transactions,
           transferPreferences
-        );
+        };
 
-        if (destination) {
-          const rec = await storage.createTransferRecommendation({
-            userId,
-            fromAccountId: mainAccount.id,
-            toAccountId: destination.accountId,
-            amount: allocation.bufferAllocation.toString(),
-            purpose: destination.purpose,
-          });
-          recommendations.push(rec);
-        } else {
-          // Create a recommendation to establish emergency fund
-          const rec = await storage.createTransferRecommendation({
-            userId,
-            fromAccountId: mainAccount.id,
-            toAccountId: mainAccount.id, // Self-transfer note
-            amount: allocation.bufferAllocation.toString(),
-            purpose: `Create emergency fund: Set aside €${allocation.bufferAllocation.toFixed(2)} for emergency buffer`,
-          });
-          recommendations.push(rec);
+        // Parse request options
+        const request = {
+          userId,
+          forceRecalculation: req.body.forceRecalculation || false,
+          includeIntelligentRecommendations: req.body.includeIntelligentRecommendations || false,
+          maxRecommendations: req.body.maxRecommendations || 10,
+          minTransferAmount: req.body.minTransferAmount || '10.00'
+        };
+
+        // Generate recommendations using unified engine
+        const result = await engine.generateRecommendations(request, context);
+
+        if (!result.success) {
+          throw new AppError('Failed to generate recommendations', 500);
         }
+
+        // Store recommendations in database
+        const storedRecommendations = [];
+        for (const rec of result.recommendations) {
+          try {
+            const stored = await storage.createTransferRecommendation({
+              userId: rec.userId,
+              fromAccountId: rec.fromAccountId,
+              toAccountId: rec.toAccountId,
+              amount: rec.amount,
+              purpose: rec.purpose,
+              goalId: rec.goalId,
+              status: 'pending'
+            });
+            storedRecommendations.push(stored);
+          } catch (error) {
+            logger.warn('Failed to store recommendation', { 
+              recommendation: rec, 
+              error: error instanceof Error ? error.message : 'Unknown error' 
+            });
+          }
+        }
+
+        // Log successful generation
+        logger.info('Transfer recommendations generated successfully', {
+          userId,
+          recommendationsCount: storedRecommendations.length,
+          totalAmount: result.summary.totalRecommended,
+          strategy: result.metadata.recommendationStrategy,
+          processingTime: result.metadata.processingTimeMs,
+          dataQuality: result.metadata.dataQuality
+        });
+
+        // Return comprehensive response
+        const response = {
+          recommendations: storedRecommendations,
+          allocation: result.allocation,
+          summary: {
+            ...result.summary,
+            totalRecommended: storedRecommendations.reduce((sum, r) => sum + parseFloat(r.amount), 0),
+            numberOfTransfers: storedRecommendations.length,
+          },
+          metadata: result.metadata
+        };
+
+        if (result.warnings && result.warnings.length > 0) {
+          response.warnings = result.warnings;
+        }
+
+        res.success(response, 'Transfer recommendations generated successfully');
+
+      } catch (error: unknown) {
+        logger.error('Transfer recommendation generation failed', {
+          userId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
+
+        if (error instanceof AppError) {
+          throw error;
+        }
+
+        throw new AppError('Failed to generate transfer recommendations', 500);
       }
-
-      // Goal transfers using configurable destination service
-      for (const goalAllocation of allocation.goalAllocations) {
-        const destination = destinationService.resolveDestination(
-          'goal',
-          accounts,
-          goals,
-          transferPreferences,
-          goalAllocation.goalId
-        );
-
-        if (destination) {
-          const rec = await storage.createTransferRecommendation({
-            userId,
-            fromAccountId: mainAccount.id,
-            toAccountId: destination.accountId,
-            amount: goalAllocation.amount.toString(),
-            purpose: destination.purpose,
-            goalId: goalAllocation.goalId,
-          });
-          recommendations.push(rec);
-        }
-      }
-
-      res.success({
-        recommendations,
-        allocation,
-        summary: {
-          totalRecommended: recommendations.reduce((sum, r) => sum + parseFloat(r.amount), 0),
-          numberOfTransfers: recommendations.length,
-        }
-      }, 'Transfer recommendations generated successfully');
-    } catch (error: unknown) {
-      res.status(500).json({ error: "Failed to generate transfer recommendations" });
-    }
-  });
+    })
+  );
 
   // Update transfer recommendation status
   app.patch("/api/transfers/:recommendationId", async (req, res) => {
