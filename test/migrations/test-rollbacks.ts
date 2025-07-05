@@ -7,8 +7,10 @@
  * and maintain data integrity.
  */
 
-import { Pool } from 'pg';
+import pg from 'pg';
 import { MigrationTestRunner } from './migration-test-runner';
+
+const { Pool } = pg;
 
 async function runRollbackTests() {
   const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/vonkfi_test';
@@ -133,11 +135,9 @@ process.on('uncaughtException', (error) => {
 });
 
 // Run the tests
-if (require.main === module) {
-  runRollbackTests().catch((error) => {
-    console.error('💥 Failed to run rollback tests:', error);
-    process.exit(1);
-  });
-}
+runRollbackTests().catch((error) => {
+  console.error('💥 Failed to run rollback tests:', error);
+  process.exit(1);
+});
 
 export { runRollbackTests };
