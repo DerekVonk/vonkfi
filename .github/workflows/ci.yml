@@ -336,7 +336,9 @@ jobs:
         run: |
           export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
           echo "DATABASE_URL set to: $DATABASE_URL"
-          npm run db:migrate
+          echo "Testing database connection with test user..."
+          psql -h localhost -p 5432 -U test -d vonkfi_test -c "SELECT current_user, current_database();"
+          DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test" npm run db:migrate
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
 
@@ -478,7 +480,9 @@ jobs:
         run: |
           export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
           echo "DATABASE_URL set to: $DATABASE_URL"
-          npm run db:migrate
+          echo "Testing database connection with test user..."
+          psql -h localhost -p 5432 -U test -d vonkfi_test -c "SELECT current_user, current_database();"
+          DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test" npm run db:migrate
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
 
@@ -551,7 +555,9 @@ jobs:
         run: |
           export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
           echo "DATABASE_URL set to: $DATABASE_URL"
-          npm run db:migrate
+          echo "Testing database connection with test user..."
+          psql -h localhost -p 5432 -U test -d vonkfi_test -c "SELECT current_user, current_database();"
+          DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test" npm run db:migrate
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
 
@@ -626,7 +632,9 @@ jobs:
         run: |
           export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
           echo "DATABASE_URL set to: $DATABASE_URL"
-          npm run db:migrate
+          echo "Testing database connection with test user..."
+          psql -h localhost -p 5432 -U test -d vonkfi_test -c "SELECT current_user, current_database();"
+          DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test" npm run db:migrate
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
 
