@@ -231,10 +231,9 @@ jobs:
         image: postgres:15-alpine
         env:
           POSTGRES_DB: vonkfi_test
-          POSTGRES_USER: test
           POSTGRES_PASSWORD: test
         options: >-
-          --health-cmd "pg_isready -U test -d vonkfi_test"
+          --health-cmd "pg_isready -U postgres -d vonkfi_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -301,11 +300,11 @@ jobs:
           
           echo "🔍 Waiting for PostgreSQL to be ready..."
           while [ $elapsed -lt $timeout ]; do
-            if pg_isready -h localhost -p 5432 -U test -d vonkfi_test; then
+            if pg_isready -h localhost -p 5432 -U postgres -d vonkfi_test; then
               echo "✅ PostgreSQL is ready after ${elapsed}s"
               
               # Additional connection test
-              if psql -h localhost -p 5432 -U test -d vonkfi_test -c "SELECT 1;" > /dev/null 2>&1; then
+              if psql -h localhost -p 5432 -U postgres -d vonkfi_test -c "SELECT 1;" > /dev/null 2>&1; then
                 echo "✅ PostgreSQL connection test successful"
                 break
               else
@@ -328,19 +327,19 @@ jobs:
       - name: Setup test environment
         run: |
           cp .env.test.example .env.test
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/vonkfi_test" >> .env.test
+          echo "DATABASE_URL=postgresql://postgres:test@localhost:5432/vonkfi_test" >> .env.test
           echo "REDIS_URL=redis://localhost:6379" >> .env.test
           echo "NODE_ENV=test" >> .env.test
 
       - name: Run database migrations
         run: |
-          export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
+          export DATABASE_URL="postgresql://postgres:test@localhost:5432/vonkfi_test"
           echo "DATABASE_URL set to: $DATABASE_URL"
-          echo "Testing database connection with test user..."
-          psql -h localhost -p 5432 -U test -d vonkfi_test -c "SELECT current_user, current_database();"
-          DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test" npm run db:migrate
+          echo "Testing database connection with postgres user..."
+          psql -h localhost -p 5432 -U postgres -d vonkfi_test -c "SELECT current_user, current_database();"
+          DATABASE_URL="postgresql://postgres:test@localhost:5432/vonkfi_test" npm run db:migrate
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Run unit tests with coverage (parallel)
         run: |
@@ -386,7 +385,7 @@ jobs:
               ;;
           esac
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
           CI: true
           VITEST_MIN_THREADS: ${{ env.VITEST_MIN_THREADS }}
           VITEST_MAX_THREADS: ${{ env.VITEST_MAX_THREADS }}
@@ -438,10 +437,9 @@ jobs:
         image: postgres:15-alpine
         env:
           POSTGRES_DB: vonkfi_test
-          POSTGRES_USER: test
           POSTGRES_PASSWORD: test
         options: >-
-          --health-cmd "pg_isready -U test -d vonkfi_test"
+          --health-cmd "pg_isready -U postgres -d vonkfi_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -474,27 +472,27 @@ jobs:
       - name: Setup integration test environment
         run: |
           cp .env.integration.example .env.integration
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/vonkfi_test" >> .env.integration
+          echo "DATABASE_URL=postgresql://postgres:test@localhost:5432/vonkfi_test" >> .env.integration
 
       - name: Run database migrations
         run: |
-          export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
+          export DATABASE_URL="postgresql://postgres:test@localhost:5432/vonkfi_test"
           echo "DATABASE_URL set to: $DATABASE_URL"
-          echo "Testing database connection with test user..."
-          psql -h localhost -p 5432 -U test -d vonkfi_test -c "SELECT current_user, current_database();"
-          DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test" npm run db:migrate
+          echo "Testing database connection with postgres user..."
+          psql -h localhost -p 5432 -U postgres -d vonkfi_test -c "SELECT current_user, current_database();"
+          DATABASE_URL="postgresql://postgres:test@localhost:5432/vonkfi_test" npm run db:migrate
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Seed test data
         run: npm run db:seed:test
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Run integration tests
         run: npm run test:integration
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Upload integration test results
         uses: actions/upload-artifact@v4
@@ -517,10 +515,9 @@ jobs:
         image: postgres:15-alpine
         env:
           POSTGRES_DB: vonkfi_test
-          POSTGRES_USER: test
           POSTGRES_PASSWORD: test
         options: >-
-          --health-cmd "pg_isready -U test -d vonkfi_test"
+          --health-cmd "pg_isready -U postgres -d vonkfi_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -549,29 +546,29 @@ jobs:
       - name: Setup E2E test environment
         run: |
           cp .env.e2e.example .env.e2e
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/vonkfi_test" >> .env.e2e
+          echo "DATABASE_URL=postgresql://postgres:test@localhost:5432/vonkfi_test" >> .env.e2e
 
       - name: Run database migrations
         run: |
-          export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
+          export DATABASE_URL="postgresql://postgres:test@localhost:5432/vonkfi_test"
           echo "DATABASE_URL set to: $DATABASE_URL"
-          echo "Testing database connection with test user..."
-          psql -h localhost -p 5432 -U test -d vonkfi_test -c "SELECT current_user, current_database();"
-          DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test" npm run db:migrate
+          echo "Testing database connection with postgres user..."
+          psql -h localhost -p 5432 -U postgres -d vonkfi_test -c "SELECT current_user, current_database();"
+          DATABASE_URL="postgresql://postgres:test@localhost:5432/vonkfi_test" npm run db:migrate
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Seed E2E test data
         run: npm run db:seed:e2e
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Start application
         run: |
           npm start &
           npx wait-on http://localhost:3000
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Run E2E tests
         run: npm run test:e2e
@@ -597,10 +594,9 @@ jobs:
         image: postgres:15-alpine
         env:
           POSTGRES_DB: vonkfi_test
-          POSTGRES_USER: test
           POSTGRES_PASSWORD: test
         options: >-
-          --health-cmd "pg_isready -U test -d vonkfi_test"
+          --health-cmd "pg_isready -U postgres -d vonkfi_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -626,29 +622,29 @@ jobs:
       - name: Setup performance test environment
         run: |
           cp .env.performance.example .env.performance
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/vonkfi_test" >> .env.performance
+          echo "DATABASE_URL=postgresql://postgres:test@localhost:5432/vonkfi_test" >> .env.performance
 
       - name: Run database migrations
         run: |
-          export DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test"
+          export DATABASE_URL="postgresql://postgres:test@localhost:5432/vonkfi_test"
           echo "DATABASE_URL set to: $DATABASE_URL"
-          echo "Testing database connection with test user..."
-          psql -h localhost -p 5432 -U test -d vonkfi_test -c "SELECT current_user, current_database();"
-          DATABASE_URL="postgresql://test:test@localhost:5432/vonkfi_test" npm run db:migrate
+          echo "Testing database connection with postgres user..."
+          psql -h localhost -p 5432 -U postgres -d vonkfi_test -c "SELECT current_user, current_database();"
+          DATABASE_URL="postgresql://postgres:test@localhost:5432/vonkfi_test" npm run db:migrate
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Seed performance test data
         run: npm run db:seed:performance
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Start application
         run: |
           npm start &
           npx wait-on http://localhost:3000
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Run performance tests
         run: npm run test:performance
@@ -718,10 +714,9 @@ jobs:
         image: postgres:15-alpine
         env:
           POSTGRES_DB: vonkfi_test
-          POSTGRES_USER: test
           POSTGRES_PASSWORD: test
         options: >-
-          --health-cmd "pg_isready -U test -d vonkfi_test"
+          --health-cmd "pg_isready -U postgres -d vonkfi_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -744,12 +739,12 @@ jobs:
       - name: Test database migrations
         run: npm run test:migrations
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Test migration rollbacks
         run: npm run test:migrations:rollback
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vonkfi_test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/vonkfi_test
 
       - name: Upload migration test results
         uses: actions/upload-artifact@v4
