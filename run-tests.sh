@@ -99,7 +99,7 @@ echo ""
 echo "Running main test suite..."
 if [ $# -eq 0 ]; then
   # No arguments provided, run all tests
-  npm test
+  npm run test:run
 else
   # Arguments provided, run specific tests
   if [ $# -eq 1 ]; then

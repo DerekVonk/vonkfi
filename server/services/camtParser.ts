@@ -17,11 +17,29 @@ export class CamtParser {
         throw new Error('Invalid CAMT.053 format: Missing required elements');
       }
 
+      if (!document.BkToCstmrStmt[0] || !document.BkToCstmrStmt[0].Stmt || !document.BkToCstmrStmt[0].Stmt[0]) {
+        throw new Error('Invalid CAMT.053 format: Missing required statement elements');
+      }
+
       const statement = document.BkToCstmrStmt[0].Stmt[0];
+      
+      if (!statement.Id || !statement.Id[0]) {
+        throw new Error('Invalid CAMT.053 format: Missing statement ID');
+      }
+      
       const statementId = statement.Id[0];
       
       // Extract account information
+      if (!statement.Acct || !statement.Acct[0]) {
+        throw new Error('Invalid CAMT.053 format: Missing account information');
+      }
+      
       const accountInfo = statement.Acct[0];
+      
+      if (!accountInfo.Id || !accountInfo.Id[0] || !accountInfo.Id[0].IBAN || !accountInfo.Id[0].IBAN[0]) {
+        throw new Error('Invalid CAMT.053 format: Missing account IBAN');
+      }
+      
       const iban = accountInfo.Id[0].IBAN[0];
       const accountHolder = accountInfo.Ownr?.[0]?.Nm?.[0] || 'Unknown';
       const bankInfo = accountInfo.Svcr?.[0];

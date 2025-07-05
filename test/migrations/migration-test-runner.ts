@@ -27,13 +27,8 @@ export class MigrationTestRunner {
   private db: ReturnType<typeof drizzle>;
   private migrationsPath: string;
 
-  constructor(databaseUrl: string, migrationsPath: string = './migrations') {
-    this.pool = new Pool({
-      connectionString: databaseUrl,
-      max: 5,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    });
+  constructor(sharedPool: Pool, migrationsPath: string = './migrations') {
+    this.pool = sharedPool;
     this.db = drizzle({ client: this.pool, schema });
     this.migrationsPath = migrationsPath;
   }
@@ -427,6 +422,6 @@ export class MigrationTestRunner {
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    // Don't close the shared pool - it's managed by the test setup
   }
 }

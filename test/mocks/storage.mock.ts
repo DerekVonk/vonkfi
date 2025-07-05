@@ -36,6 +36,28 @@ class MockStorage implements IStorage {
   // Counter for generating IDs
   private idCounter = 1;
 
+  constructor() {
+    // Initialize with default categories
+    this.seedDefaultCategories();
+  }
+
+  private seedDefaultCategories() {
+    const defaultCategories = [
+      { id: this.idCounter++, name: "Salary", type: "income", color: "#22c55e", icon: "💰", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Freelance", type: "income", color: "#10b981", icon: "💼", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Investment Income", type: "income", color: "#06b6d4", icon: "📈", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Housing", type: "expense", color: "#ef4444", icon: "🏠", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Groceries", type: "expense", color: "#f97316", icon: "🍽️", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Transportation", type: "expense", color: "#eab308", icon: "🚗", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Utilities", type: "expense", color: "#8b5cf6", icon: "⚡", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Healthcare", type: "expense", color: "#ec4899", icon: "🏥", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Entertainment", type: "expense", color: "#06b6d4", icon: "🎭", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Shopping", type: "expense", color: "#f59e0b", icon: "🛍️", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+    ] as Category[];
+    
+    this.categories = defaultCategories;
+  }
+
   // Users
   async getUser(id: number): Promise<User | undefined> {
     return this.users.find(user => user.id === id);

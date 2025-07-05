@@ -1,12 +1,20 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MigrationTestRunner } from './migration-test-runner';
+import { testPool, dbConnectionFailed } from '../setup';
 
 describe('Database Migration Tests', () => {
   let migrationRunner: MigrationTestRunner;
-  const testDatabaseUrl = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5434/vonkfi_test';
 
   beforeAll(async () => {
-    migrationRunner = new MigrationTestRunner(testDatabaseUrl);
+    if (dbConnectionFailed || !testPool) {
+      throw new Error('Database connection failed - migration tests require a working database connection');
+    }
+
+    try {
+      migrationRunner = new MigrationTestRunner(testPool);
+    } catch (error) {
+      throw new Error(`Migration test setup failed: ${error.message}`);
+    }
   });
 
   afterAll(async () => {
