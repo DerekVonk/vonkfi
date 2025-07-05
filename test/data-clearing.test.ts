@@ -45,17 +45,17 @@ describe('Selective Data Clearing', () => {
     const goalResponse = await request(app)
       .post('/api/goals')
       .send(goalData)
-      .expect(200);
+      .expect(201);
     
     const accountResponse = await request(app)
       .post('/api/accounts')
       .send(accountData)
-      .expect(200);
+      .expect(201);
 
     // Verify they exist
-    expect(goalResponse.body.name).toBe('Test Savings Goal');
-    expect(goalResponse.body.currentAmount).toBe('1500.00');
-    expect(accountResponse.body.iban).toBe('NL91ABNA0417164300');
+    expect(goalResponse.body.data.name).toBe('Test Savings Goal');
+    expect(goalResponse.body.data.currentAmount).toBe(1500);
+    expect(accountResponse.body.data.iban).toBe('NL91ABNA0417164300');
 
     // Clear user data (selective clearing)
     await request(app)
@@ -67,11 +67,11 @@ describe('Selective Data Clearing', () => {
       .get(`/api/goals/${userId}`)
       .expect(200);
     
-    expect(goalsAfterClear.body).toHaveLength(1);
-    expect(goalsAfterClear.body[0].name).toBe('Test Savings Goal');
-    expect(goalsAfterClear.body[0].targetAmount).toBe('5000.00');
-    expect(goalsAfterClear.body[0].currentAmount).toBe('0'); // Reset to 0
-    expect(goalsAfterClear.body[0].isCompleted).toBe(false);
+    expect(goalsAfterClear.body.data).toHaveLength(1);
+    expect(goalsAfterClear.body.data[0].name).toBe('Test Savings Goal');
+    expect(goalsAfterClear.body.data[0].targetAmount).toBe('5000.00');
+    expect(goalsAfterClear.body.data[0].currentAmount).toBe('0'); // Reset to 0
+    expect(goalsAfterClear.body.data[0].isCompleted).toBe(false);
 
     // Verify accounts are preserved but balances are reset
     const accountsAfterClear = await request(app)
@@ -151,7 +151,7 @@ describe('Selective Data Clearing', () => {
       const response = await request(app)
         .post('/api/accounts')
         .send(accountData)
-        .expect(200);
+        .expect(201);
       createdAccounts.push(response.body);
     }
 

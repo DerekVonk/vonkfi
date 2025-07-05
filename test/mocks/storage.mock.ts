@@ -1,4 +1,5 @@
 import { IStorage } from '../../server/storage';
+import { hashPassword, verifyPassword, needsRehash } from '../../server/utils/passwordSecurity';
 import {
   User, InsertUser, Account, InsertAccount,
   Transaction, InsertTransaction, Category, InsertCategory,
@@ -35,38 +36,105 @@ class MockStorage implements IStorage {
   // Counter for generating IDs
   private idCounter = 1;
 
+  constructor() {
+    // Initialize with default categories
+    this.seedDefaultCategories();
+  }
+
+  private seedDefaultCategories() {
+    const defaultCategories = [
+      { id: this.idCounter++, name: "Salary", type: "income", color: "#22c55e", icon: "💰", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Freelance", type: "income", color: "#10b981", icon: "💼", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Investment Income", type: "income", color: "#06b6d4", icon: "📈", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Housing", type: "expense", color: "#ef4444", icon: "🏠", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Groceries", type: "expense", color: "#f97316", icon: "🍽️", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Transportation", type: "expense", color: "#eab308", icon: "🚗", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Utilities", type: "expense", color: "#8b5cf6", icon: "⚡", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Healthcare", type: "expense", color: "#ec4899", icon: "🏥", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Entertainment", type: "expense", color: "#06b6d4", icon: "🎭", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: this.idCounter++, name: "Shopping", type: "expense", color: "#f59e0b", icon: "🛍️", isSystemCategory: true, createdAt: new Date(), updatedAt: new Date() },
+    ] as Category[];
+    
+    this.categories = defaultCategories;
+  }
+
   // Users
   async getUser(id: number): Promise<User | undefined> {
     return this.users.find(user => user.id === id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.users.find(user => user.username === username);
+    const user = this.users.find(user => user.username === username);
+    if (!user) {
+      return undefined;
+    }
+    
+    // Return user without password for security
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword as User;
+  }
+
+  private async getUserByUsernameWithPassword(username: string): Promise<User | undefined> {
+    const user = this.users.find(user => user.username === username);
+    return user || undefined;
   }
 
   async createUser(user: InsertUser): Promise<User> {
+    // Check if username already exists
+    const existingUser = await this.getUserByUsernameWithPassword(user.username);
+    if (existingUser) {
+      throw new Error('Username already exists');
+    }
+
+    // Hash the password before storing
+    const hashedPassword = await hashPassword(user.password);
+    
     const newUser = {
       ...user,
+      password: hashedPassword,
       id: this.idCounter++,
       createdAt: new Date(),
       updatedAt: new Date()
     } as User;
+    
     this.users.push(newUser);
-    return newUser;
+    
+    // Return user without password for security (similar to database storage)
+    const { password, ...userWithoutPassword } = newUser;
+    return userWithoutPassword as User;
   }
 
   async authenticateUser(username: string, password: string): Promise<User | null> {
-    const user = await this.getUserByUsername(username);
-    if (!user || user.password !== password) {
+    try {
+      const user = await this.getUserByUsernameWithPassword(username);
+      if (!user) {
+        return null;
+      }
+
+      const isValidPassword = await verifyPassword(password, user.password);
+      if (!isValidPassword) {
+        return null;
+      }
+
+      // Check if password needs rehashing (due to updated security standards)
+      if (needsRehash(user.password)) {
+        await this.updateUserPassword(user.id, password);
+      }
+
+      // Return user without password
+      const { password: _, ...userWithoutPassword } = user;
+      return userWithoutPassword as User;
+    } catch (error: unknown) {
+      console.error('Authentication error:', error);
       return null;
     }
-    return user;
   }
 
   async updateUserPassword(id: number, newPassword: string): Promise<void> {
     const user = this.users.find(user => user.id === id);
     if (user) {
-      user.password = newPassword;
+      const hashedPassword = await hashPassword(newPassword);
+      user.password = hashedPassword;
     }
   }
 
@@ -104,6 +172,14 @@ class MockStorage implements IStorage {
   }
 
   async deleteAccount(id: number): Promise<void> {
+    // First, update any goals that are linked to this account
+    this.goals.forEach(goal => {
+      if (goal.linkedAccountId === id) {
+        goal.linkedAccountId = null;
+      }
+    });
+    
+    // Then delete the account
     const index = this.accounts.findIndex(account => account.id === id);
     if (index !== -1) {
       this.accounts.splice(index, 1);
@@ -131,6 +207,19 @@ class MockStorage implements IStorage {
     } as Transaction;
     this.transactions.push(newTransaction);
     return newTransaction;
+  }
+
+  async getTransactionById(id: number): Promise<Transaction | undefined> {
+    return this.transactions.find(transaction => transaction.id === id);
+  }
+
+  async updateTransaction(id: number, updates: Partial<Transaction>): Promise<Transaction> {
+    const transaction = this.transactions.find(transaction => transaction.id === id);
+    if (!transaction) {
+      throw new Error(`Transaction with id ${id} not found`);
+    }
+    Object.assign(transaction, updates);
+    return transaction;
   }
 
   async updateTransactionCategory(id: number, categoryId: number): Promise<Transaction> {
@@ -191,11 +280,34 @@ class MockStorage implements IStorage {
     this.importHistory = this.importHistory.filter(history => history.userId !== userId);
     this.importBatches = this.importBatches.filter(batch => batch.userId !== userId);
     
+    // Get user's budget periods and clear related data
+    const userBudgetPeriodIds = this.budgetPeriods
+      .filter(period => period.userId === userId)
+      .map(period => period.id);
+    
+    // Clear budget categories and accounts for user's budget periods
+    this.budgetCategories = this.budgetCategories.filter(
+      category => !userBudgetPeriodIds.includes(category.budgetPeriodId)
+    );
+    this.budgetAccounts = this.budgetAccounts.filter(
+      account => !userBudgetPeriodIds.includes(account.budgetPeriodId)
+    );
+    
+    // Clear budget periods (for clean test state)
+    this.budgetPeriods = this.budgetPeriods.filter(period => period.userId !== userId);
+    
     // Reset goal amounts
     this.goals.forEach(goal => {
       if (goal.userId === userId) {
         goal.currentAmount = "0";
         goal.isCompleted = false;
+      }
+    });
+    
+    // Reset account balances to 0 to ensure consistency with cleared transactions
+    this.accounts.forEach(account => {
+      if (account.userId === userId) {
+        account.balance = "0";
       }
     });
   }
@@ -427,6 +539,16 @@ class MockStorage implements IStorage {
   }
 
   async createBudgetPeriod(budgetPeriod: InsertBudgetPeriod): Promise<BudgetPeriod> {
+    // Check for duplicate budget period with same name for this user
+    const existingPeriod = this.budgetPeriods.find(period => 
+      period.userId === budgetPeriod.userId && 
+      period.name === budgetPeriod.name
+    );
+
+    if (existingPeriod) {
+      throw new Error(`Budget period with name "${budgetPeriod.name}" already exists for this user`);
+    }
+
     // Deactivate any existing active periods
     this.budgetPeriods.forEach(period => {
       if (period.userId === budgetPeriod.userId && period.isActive) {

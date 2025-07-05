@@ -39,7 +39,7 @@ describe('API Integration Tests', () => {
       const response = await request(app)
         .post('/api/goals')
         .send(goalData)
-        .expect(200);
+        .expect(201);
 
       // The response is wrapped in a success object with data property
       expect(response.body).toHaveProperty('success');
@@ -68,7 +68,7 @@ describe('API Integration Tests', () => {
       const response = await request(app)
         .post('/api/goals')
         .send(goalData)
-        .expect(200);
+        .expect(201);
 
       // The response is wrapped in a success object with data property
       expect(response.body).toHaveProperty('success');
@@ -91,7 +91,7 @@ describe('API Integration Tests', () => {
       const response = await request(app)
         .post('/api/goals')
         .send(goalData)
-        .expect(200);
+        .expect(201);
 
       // The response is wrapped in a success object with data property
       expect(response.body).toHaveProperty('success');
@@ -133,15 +133,17 @@ describe('API Integration Tests', () => {
       await request(app)
         .post('/api/accounts')
         .send(accountData)
-        .expect(200);
+        .expect(201);
 
       const response = await request(app)
         .post('/api/transfers/generate/1')
         .expect(200);
 
-      expect(response.body).toHaveProperty('recommendations');
-      expect(response.body).toHaveProperty('allocation');
-      expect(Array.isArray(response.body.recommendations)).toBe(true);
+      expect(response.body).toHaveProperty('success');
+      expect(response.body).toHaveProperty('data');
+      expect(response.body.data).toHaveProperty('recommendations');
+      expect(response.body.data).toHaveProperty('allocation');
+      expect(Array.isArray(response.body.data.recommendations)).toBe(true);
     });
 
     itIfDb('should fetch transfer recommendations for user', async () => {
@@ -159,16 +161,12 @@ describe('API Integration Tests', () => {
         .get('/api/dashboard/1')
         .expect(200);
 
-      // The response is wrapped in a success object with data property
-      expect(response.body).toHaveProperty('success');
-      expect(response.body).toHaveProperty('data');
-
-      // Check the data property has the expected properties
-      expect(response.body.data).toHaveProperty('accounts');
-      expect(response.body.data).toHaveProperty('transactions');
-      expect(response.body.data).toHaveProperty('goals');
-      expect(response.body.data).toHaveProperty('fireMetrics');
-      expect(response.body.data).toHaveProperty('transferRecommendations');
+      // Dashboard returns direct response object (not wrapped)
+      expect(response.body).toHaveProperty('accounts');
+      expect(response.body).toHaveProperty('transactions');
+      expect(response.body).toHaveProperty('goals');
+      expect(response.body).toHaveProperty('fireMetrics');
+      expect(response.body).toHaveProperty('transferRecommendations');
     });
 
     itIfDb('should recalculate dashboard metrics', async () => {

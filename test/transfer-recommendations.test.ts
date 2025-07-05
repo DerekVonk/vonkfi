@@ -96,17 +96,17 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Main Income Account',
           balance: '5000.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(accountResponse.body.id);
+      createdAccountIds.push(accountResponse.body.data.id);
 
       const response = await request(app)
         .post(`/api/transfers/generate/${testUserId}`)
         .expect(200);
       
-      expect(response.body.recommendations).toHaveLength(0);
-      expect(response.body.allocation).toBeDefined();
-      expect(response.body.summary.numberOfTransfers).toBe(0);
+      expect(response.body.data.recommendations).toHaveLength(0);
+      expect(response.body.data.allocation).toBeDefined();
+      expect(response.body.data.summary.numberOfTransfers).toBe(0);
     });
 
     it('should generate buffer transfer when income exceeds expenses', async () => {
@@ -120,9 +120,9 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Main Account',
           balance: '5000.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(mainAccount.body.id);
+      createdAccountIds.push(mainAccount.body.data.id);
 
       // Create emergency buffer account
       const bufferAccount = await request(app)
@@ -134,13 +134,13 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Emergency Buffer',
           balance: '1000.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(bufferAccount.body.id);
+      createdAccountIds.push(bufferAccount.body.data.id);
 
       // Add income transactions
       const incomeTransaction = {
-        accountId: mainAccount.body.id,
+        accountId: mainAccount.body.data.id,
         amount: '4000.00',
         description: 'Salary Payment',
         date: '2025-06-01',
@@ -156,7 +156,7 @@ describe('Transfer Recommendations Generation', () => {
 
       // Add some expenses
       const expenseTransaction = {
-        accountId: mainAccount.body.id,
+        accountId: mainAccount.body.data.id,
         amount: '-800.00',
         description: 'Rent Payment',
         date: '2025-06-02',
@@ -177,12 +177,12 @@ describe('Transfer Recommendations Generation', () => {
       
       console.log('Transfer response with buffer account:', JSON.stringify(response.body, null, 2));
       
-      expect(response.body.recommendations).toBeDefined();
-      expect(response.body.allocation).toBeDefined();
-      expect(response.body.allocation.bufferAllocation).toBeGreaterThan(0);
+      expect(response.body.data.recommendations).toBeDefined();
+      expect(response.body.data.allocation).toBeDefined();
+      expect(response.body.data.allocation.bufferAllocation).toBeGreaterThan(0);
       
       // Should have at least one buffer transfer recommendation
-      const bufferTransfers = response.body.recommendations.filter((r: any) => 
+      const bufferTransfers = response.body.data.recommendations.filter((r: any) => 
         r.purpose.toLowerCase().includes('buffer') || r.purpose.toLowerCase().includes('emergency')
       );
       expect(bufferTransfers.length).toBeGreaterThan(0);
@@ -199,9 +199,9 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Main Account',
           balance: '5000.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(mainAccount.body.id);
+      createdAccountIds.push(mainAccount.body.data.id);
 
       // Create goal savings account
       const goalAccount = await request(app)
@@ -213,9 +213,9 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Holiday Savings',
           balance: '500.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(goalAccount.body.id);
+      createdAccountIds.push(goalAccount.body.data.id);
 
       // Create a goal linked to the savings account
       const goalResponse = await request(app)
@@ -226,15 +226,15 @@ describe('Transfer Recommendations Generation', () => {
           currentAmount: '500.00',
           priority: 1,
           userId: testUserId,
-          linkedAccountId: goalAccount.body.id
+          linkedAccountId: goalAccount.body.data.id
         })
-        .expect(200);
+        .expect(201);
       
-      createdGoalIds.push(goalResponse.body.id);
+      createdGoalIds.push(goalResponse.body.data.id);
 
       // Add income transactions to create surplus
       const incomeTransaction = {
-        accountId: mainAccount.body.id,
+        accountId: mainAccount.body.data.id,
         amount: '3500.00',
         description: 'Monthly Salary',
         date: '2025-06-01',
@@ -250,7 +250,7 @@ describe('Transfer Recommendations Generation', () => {
 
       // Add modest expenses
       const expenseTransaction = {
-        accountId: mainAccount.body.id,
+        accountId: mainAccount.body.data.id,
         amount: '-1200.00',
         description: 'Monthly Expenses',
         date: '2025-06-02',
@@ -271,13 +271,13 @@ describe('Transfer Recommendations Generation', () => {
       
       console.log('Transfer response with goal:', JSON.stringify(response.body, null, 2));
       
-      expect(response.body.recommendations).toBeDefined();
-      expect(response.body.allocation).toBeDefined();
-      expect(response.body.allocation.goalAllocations).toBeDefined();
-      expect(response.body.allocation.goalAllocations.length).toBeGreaterThan(0);
+      expect(response.body.data.recommendations).toBeDefined();
+      expect(response.body.data.allocation).toBeDefined();
+      expect(response.body.data.allocation.goalAllocations).toBeDefined();
+      expect(response.body.data.allocation.goalAllocations.length).toBeGreaterThan(0);
       
       // Should have goal transfer recommendations
-      const goalTransfers = response.body.recommendations.filter((r: any) => 
+      const goalTransfers = response.body.data.recommendations.filter((r: any) => 
         r.purpose.toLowerCase().includes('holiday') || r.goalId
       );
       expect(goalTransfers.length).toBeGreaterThan(0);
@@ -294,9 +294,9 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Main Account',
           balance: '8000.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(mainAccount.body.id);
+      createdAccountIds.push(mainAccount.body.data.id);
 
       // Create multiple goal accounts
       const emergencyAccount = await request(app)
@@ -308,9 +308,9 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Emergency Fund',
           balance: '2000.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(emergencyAccount.body.id);
+      createdAccountIds.push(emergencyAccount.body.data.id);
 
       const vacationAccount = await request(app)
         .post('/api/accounts')
@@ -321,9 +321,9 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Vacation Fund',
           balance: '800.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(vacationAccount.body.id);
+      createdAccountIds.push(vacationAccount.body.data.id);
 
       // Create high priority emergency goal
       const emergencyGoal = await request(app)
@@ -334,11 +334,11 @@ describe('Transfer Recommendations Generation', () => {
           currentAmount: '2000.00',
           priority: 1,
           userId: testUserId,
-          linkedAccountId: emergencyAccount.body.id
+          linkedAccountId: emergencyAccount.body.data.id
         })
-        .expect(200);
+        .expect(201);
       
-      createdGoalIds.push(emergencyGoal.body.id);
+      createdGoalIds.push(emergencyGoal.body.data.id);
 
       // Create lower priority vacation goal
       const vacationGoal = await request(app)
@@ -349,15 +349,15 @@ describe('Transfer Recommendations Generation', () => {
           currentAmount: '800.00',
           priority: 2,
           userId: testUserId,
-          linkedAccountId: vacationAccount.body.id
+          linkedAccountId: vacationAccount.body.data.id
         })
-        .expect(200);
+        .expect(201);
       
-      createdGoalIds.push(vacationGoal.body.id);
+      createdGoalIds.push(vacationGoal.body.data.id);
 
       // Add substantial income
       const incomeTransaction = {
-        accountId: mainAccount.body.id,
+        accountId: mainAccount.body.data.id,
         amount: '6000.00',
         description: 'Monthly Income',
         date: '2025-06-01',
@@ -373,7 +373,7 @@ describe('Transfer Recommendations Generation', () => {
 
       // Add reasonable expenses
       const expenseTransaction = {
-        accountId: mainAccount.body.id,
+        accountId: mainAccount.body.data.id,
         amount: '-2000.00',
         description: 'Monthly Living Expenses',
         date: '2025-06-02',
@@ -394,14 +394,14 @@ describe('Transfer Recommendations Generation', () => {
       
       console.log('Multiple goals response:', JSON.stringify(response.body, null, 2));
       
-      expect(response.body.recommendations).toBeDefined();
-      expect(response.body.recommendations.length).toBeGreaterThan(0);
+      expect(response.body.data.recommendations).toBeDefined();
+      expect(response.body.data.recommendations.length).toBeGreaterThan(0);
       
       // Should prioritize emergency fund (priority 1) over vacation (priority 2)
-      const emergencyTransfers = response.body.recommendations.filter((r: any) => 
+      const emergencyTransfers = response.body.data.recommendations.filter((r: any) => 
         r.purpose.toLowerCase().includes('emergency')
       );
-      const vacationTransfers = response.body.recommendations.filter((r: any) => 
+      const vacationTransfers = response.body.data.recommendations.filter((r: any) => 
         r.purpose.toLowerCase().includes('vacation')
       );
       
@@ -428,17 +428,17 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Main Account',
           balance: '1000.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(mainAccount.body.id);
+      createdAccountIds.push(mainAccount.body.data.id);
 
       const response = await request(app)
         .post(`/api/transfers/generate/${testUserId}`)
         .expect(200);
       
-      expect(response.body.recommendations).toHaveLength(0);
-      expect(response.body.allocation.bufferAllocation).toBe(0);
-      expect(response.body.allocation.goalAllocations).toHaveLength(0);
+      expect(response.body.data.recommendations).toHaveLength(0);
+      expect(response.body.data.allocation.bufferAllocation).toBe(0);
+      expect(response.body.data.allocation.goalAllocations).toHaveLength(0);
     });
 
     it('should handle completed goals correctly', async () => {
@@ -452,9 +452,9 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Main Account',
           balance: '3000.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(mainAccount.body.id);
+      createdAccountIds.push(mainAccount.body.data.id);
 
       // Create goal account
       const goalAccount = await request(app)
@@ -466,9 +466,9 @@ describe('Transfer Recommendations Generation', () => {
           name: 'Completed Goal Account',
           balance: '2000.00'
         })
-        .expect(200);
+        .expect(201);
       
-      createdAccountIds.push(goalAccount.body.id);
+      createdAccountIds.push(goalAccount.body.data.id);
 
       // Create a completed goal
       const completedGoal = await request(app)
@@ -479,16 +479,16 @@ describe('Transfer Recommendations Generation', () => {
           currentAmount: '2000.00',
           priority: 1,
           userId: testUserId,
-          linkedAccountId: goalAccount.body.id,
+          linkedAccountId: goalAccount.body.data.id,
           isCompleted: true
         })
-        .expect(200);
+        .expect(201);
       
-      createdGoalIds.push(completedGoal.body.id);
+      createdGoalIds.push(completedGoal.body.data.id);
 
       // Add income
       const incomeTransaction = {
-        accountId: mainAccount.body.id,
+        accountId: mainAccount.body.data.id,
         amount: '3000.00',
         description: 'Income',
         date: '2025-06-01',
@@ -510,8 +510,8 @@ describe('Transfer Recommendations Generation', () => {
       console.log('Completed goal response:', JSON.stringify(response.body, null, 2));
       
       // Should not generate transfers for completed goals
-      const completedGoalTransfers = response.body.recommendations.filter((r: any) => 
-        r.goalId === completedGoal.body.id
+      const completedGoalTransfers = response.body.data.recommendations.filter((r: any) => 
+        r.goalId === completedGoal.body.data.id
       );
       expect(completedGoalTransfers).toHaveLength(0);
     });

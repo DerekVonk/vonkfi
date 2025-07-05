@@ -17,6 +17,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_category_id ON transactions(category_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_is_income ON transactions(is_income);
 CREATE INDEX IF NOT EXISTS idx_transactions_statement_id ON transactions(statement_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_transaction_type ON transactions(transaction_type);
 
 -- Composite indexes for common query patterns
 CREATE INDEX IF NOT EXISTS idx_transactions_account_date ON transactions(account_id, date DESC);

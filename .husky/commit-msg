@@ -1,0 +1,51 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Commit message validation for test infrastructure changes
+commit_file="$1"
+commit_msg=$(cat "$commit_file")
+
+echo "📝 Validating commit message..."
+
+# Check for conventional commit format
+if ! echo "$commit_msg" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|ci|build|perf)(\(.+\))?: .{1,50}"; then
+    echo "❌ Commit message must follow conventional commit format:"
+    echo "   <type>[optional scope]: <description>"
+    echo ""
+    echo "   Types: feat, fix, docs, style, refactor, test, chore, ci, build, perf"
+    echo "   Example: feat(tests): add parallel test execution"
+    echo ""
+    echo "   Your message: $commit_msg"
+    exit 1
+fi
+
+# Special validation for test infrastructure changes
+if echo "$commit_msg" | grep -qiE "(test|ci|build)"; then
+    echo "🧪 Detected test/CI infrastructure change - performing additional validation..."
+    
+    # Check if test files have been modified
+    modified_files=$(git diff --cached --name-only)
+    
+    if echo "$modified_files" | grep -qE "\.(test|spec)\.(ts|tsx|js|jsx)$|vitest\.config\.ts|playwright\.config\.ts|\.github/workflows/|\.gitlab-ci\.yml"; then
+        echo "🔍 Test infrastructure files modified - validating configuration..."
+        
+        # Run quick validation
+        if [ -f "./scripts/validate-ci-config.sh" ]; then
+            ./scripts/validate-ci-config.sh || {
+                echo "❌ CI configuration validation failed"
+                echo "Please fix configuration issues before committing"
+                exit 1
+            }
+        fi
+        
+        echo "✅ Test infrastructure validation passed"
+    fi
+fi
+
+# Check for breaking change indicators
+if echo "$commit_msg" | grep -qE "BREAKING CHANGE|breaking change"; then
+    echo "⚠️ Breaking change detected in commit message"
+    echo "   Make sure to update tests and documentation accordingly"
+fi
+
+echo "✅ Commit message validation passed!"

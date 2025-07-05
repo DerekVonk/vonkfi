@@ -1,0 +1,38 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-commit hook for test infrastructure validation
+echo "🔍 Running pre-commit validations..."
+
+# Run pre-commit hooks
+if command -v pre-commit >/dev/null 2>&1; then
+    echo "🪝 Running pre-commit hooks..."
+    pre-commit run --all-files
+else
+    echo "⚠️ pre-commit not installed, running manual validations..."
+    
+    # Manual validation of CI configuration
+    echo "🔧 Validating CI configuration..."
+    if [ -f "./scripts/validate-ci-config.sh" ]; then
+        ./scripts/validate-ci-config.sh
+    else
+        echo "❌ CI validation script not found"
+        exit 1
+    fi
+    
+    # TypeScript compilation check
+    echo "🔍 Checking TypeScript compilation..."
+    npx tsc --noEmit
+    
+    # ESLint security check
+    echo "🔒 Running security linting..."
+    npx eslint . --ext .ts,.tsx,.js,.jsx --config ./ci/eslint-security.config.js
+    
+    # Test configuration validation
+    echo "🧪 Validating test configuration..."
+    npx vitest --config vitest.config.ts --run --reporter=json --outputFile=/tmp/pre-commit-test-check.json --testNamePattern="__NON_EXISTENT_TEST__" 2>/dev/null || [ $? -eq 1 ]
+    
+    echo "✅ Manual validations completed"
+fi
+
+echo "✅ Pre-commit validations passed!"

@@ -17,11 +17,29 @@ export class CamtParser {
         throw new Error('Invalid CAMT.053 format: Missing required elements');
       }
 
+      if (!document.BkToCstmrStmt[0] || !document.BkToCstmrStmt[0].Stmt || !document.BkToCstmrStmt[0].Stmt[0]) {
+        throw new Error('Invalid CAMT.053 format: Missing required statement elements');
+      }
+
       const statement = document.BkToCstmrStmt[0].Stmt[0];
+      
+      if (!statement.Id || !statement.Id[0]) {
+        throw new Error('Invalid CAMT.053 format: Missing statement ID');
+      }
+      
       const statementId = statement.Id[0];
       
       // Extract account information
+      if (!statement.Acct || !statement.Acct[0]) {
+        throw new Error('Invalid CAMT.053 format: Missing account information');
+      }
+      
       const accountInfo = statement.Acct[0];
+      
+      if (!accountInfo.Id || !accountInfo.Id[0] || !accountInfo.Id[0].IBAN || !accountInfo.Id[0].IBAN[0]) {
+        throw new Error('Invalid CAMT.053 format: Missing account IBAN');
+      }
+      
       const iban = accountInfo.Id[0].IBAN[0];
       const accountHolder = accountInfo.Ownr?.[0]?.Nm?.[0] || 'Unknown';
       const bankInfo = accountInfo.Svcr?.[0];
@@ -36,24 +54,27 @@ export class CamtParser {
                   document.BkToCstmrStmt?.[0]?.GrpHdr?.[0]?.InstgAgt?.[0]?.FinInstnId?.[0]?.Nm?.[0];
       }
       
-      // Fallback to BIC-based bank identification if available
+      // Standardize bank names using BIC mapping if available
       const bic = bankInfo?.FinInstnId?.[0]?.BIC?.[0];
-      if (!bankName && bic) {
-        // Map common BIC codes to bank names
-        const bicToBankMap: Record<string, string> = {
-          'ABNANL2A': 'ABN AMRO Bank',
-          'INGBNL2A': 'ING Bank',
-          'RABONL2U': 'Rabobank',
-          'DEUTNL2N': 'Deutsche Bank Nederland',
-          'SNSBNL2A': 'SNS Bank',
-          'ASNBNL21': 'ASN Bank',
-          'BUNQNL2A': 'bunq',
-          'REVOLUT21': 'Revolut',
-          'TRIONL2U': 'Triodos Bank',
-          'FBHLLUX': 'Banque et Caisse d\'Epargne de l\'Etat',
-          'BCMCLUX': 'Banque et Caisse d\'Epargne de l\'Etat',
-        };
-        bankName = bicToBankMap[bic] || bic;
+      const bicToBankMap: Record<string, string> = {
+        'ABNANL2A': 'ABN AMRO Bank',
+        'INGBNL2A': 'ING Bank',
+        'RABONL2U': 'Rabobank',
+        'DEUTNL2N': 'Deutsche Bank Nederland',
+        'SNSBNL2A': 'SNS Bank',
+        'ASNBNL21': 'ASN Bank',
+        'BUNQNL2A': 'bunq',
+        'REVOLUT21': 'Revolut',
+        'TRIONL2U': 'Triodos Bank',
+        'FBHLLUX': 'Banque et Caisse d\'Epargne de l\'Etat',
+        'BCMCLUX': 'Banque et Caisse d\'Epargne de l\'Etat',
+      };
+      
+      // Prefer standardized bank names from BIC mapping over XML bank names
+      if (bic && bicToBankMap[bic]) {
+        bankName = bicToBankMap[bic];
+      } else if (!bankName && bic) {
+        bankName = bic;
       }
       
       // Final fallback
@@ -225,7 +246,7 @@ export class CamtParser {
     }
   }
 
-  private extractMerchant(description: string, counterpartyName: string): string {
+  private extractMerchant(description: string, counterpartyName: string): string | null {
     // If we have a counterparty name, use it
     if (counterpartyName && counterpartyName.trim() !== '') {
       return counterpartyName.trim();
@@ -263,6 +284,7 @@ export class CamtParser {
       }
     }
 
-    return description.substring(0, 50).trim();
+    // If no merchant could be extracted, return null instead of a truncated description
+    return null;
   }
 }

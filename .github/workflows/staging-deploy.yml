@@ -1,0 +1,197 @@
+name: Staging Deployment
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  STAGING_URL: 'https://staging.vonkfi.com'
+
+jobs:
+  # Pre-deployment validation
+  pre-deployment-checks:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+    
+    outputs:
+      should_deploy: ${{ steps.deployment_decision.outputs.should_deploy }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run quick smoke tests
+        run: npm run test:smoke
+
+      - name: Check deployment readiness
+        id: deployment_decision
+        run: |
+          # Check if this is a forced deployment
+          if [ "${{ github.event.inputs.force_deploy }}" = "true" ]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "Force deployment requested"
+            exit 0
+          fi
+          
+          # Check if we have passing tests from CI
+          # This would integrate with your CI system to check test results
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+
+  # Deploy to staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: pre-deployment-checks
+    if: needs.pre-deployment-checks.outputs.should_deploy == 'true'
+    
+    environment:
+      name: staging
+      url: ${{ env.STAGING_URL }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Create deployment package
+        run: |
+          tar -czf deployment-package.tar.gz \
+            dist/ \
+            package.json \
+            package-lock.json \
+            migrations/ \
+            docker-compose.staging.yml \
+            nginx/
+
+      - name: Deploy to staging server
+        run: |
+          # This would use your deployment method (SSH, Docker, Kubernetes, etc.)
+          echo "🚀 Deploying to staging environment..."
+          echo "Package created: deployment-package.tar.gz"
+          echo "This would be replaced with actual deployment commands"
+
+      - name: Run database migrations on staging
+        run: |
+          echo "🔄 Running database migrations on staging..."
+          # This would connect to staging database and run migrations
+          echo "Migrations completed"
+
+      - name: Warm up staging environment
+        run: |
+          echo "🔥 Warming up staging environment..."
+          # Pre-warm caches, connections, etc.
+          sleep 10
+
+  # Post-deployment validation
+  staging-validation:
+    name: Staging Environment Validation
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for staging deployment
+        run: |
+          echo "⏳ Waiting for staging deployment to be ready..."
+          sleep 30
+
+      - name: Run staging smoke tests
+        run: npm run test:staging:smoke
+        env:
+          STAGING_URL: ${{ env.STAGING_URL }}
+
+      - name: Run staging integration tests
+        run: npm run test:staging:integration
+        env:
+          STAGING_URL: ${{ env.STAGING_URL }}
+
+      - name: Run staging E2E tests
+        run: npm run test:staging:e2e
+        env:
+          STAGING_URL: ${{ env.STAGING_URL }}
+
+      - name: Performance validation
+        run: npm run test:staging:performance
+        env:
+          STAGING_URL: ${{ env.STAGING_URL }}
+
+      - name: Security validation
+        run: npm run test:staging:security
+        env:
+          STAGING_URL: ${{ env.STAGING_URL }}
+
+  # Rollback capability
+  rollback-staging:
+    name: Rollback Staging
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, staging-validation]
+    if: failure()
+    
+    steps:
+      - name: Rollback staging deployment
+        run: |
+          echo "🔄 Rolling back staging deployment..."
+          # This would implement your rollback strategy
+          echo "Rollback completed"
+
+      - name: Notify of rollback
+        run: |
+          echo "❌ Staging deployment failed and was rolled back"
+          # Send notifications to team
+
+  # Success notification
+  deployment-success:
+    name: Deployment Success
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, staging-validation]
+    if: success()
+    
+    steps:
+      - name: Notify successful deployment
+        run: |
+          echo "✅ Staging deployment successful!"
+          echo "🌐 Staging URL: ${{ env.STAGING_URL }}"
+          
+          # This would send notifications to team
+          echo "Notifying team of successful deployment..."

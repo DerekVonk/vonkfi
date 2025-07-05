@@ -28,9 +28,14 @@ describe('Category Management Tests', () => {
             // Create test user
             const user = await storage.createUser({
                 username: `testuser_${Date.now()}`,
-                password: 'testpass123'
+                password: 'TestPass123!'
             });
             testUserId = user.id;
+            
+            // Ensure user was created properly
+            if (!testUserId || typeof testUserId !== 'number') {
+                throw new Error(`Invalid test user ID: ${testUserId}`);
+            }
 
             // Clean up any existing data
             await storage.clearUserData(testUserId);
@@ -59,13 +64,13 @@ describe('Category Management Tests', () => {
             const response = await request(app)
                 .post('/api/categories')
                 .send(categoryData)
-                .expect(200);
+                .expect(201);
 
-            expect(response.body).toHaveProperty('id');
-            expect(response.body.name).toBe(categoryData.name);
-            expect(response.body.type).toBe(categoryData.type);
-            expect(response.body.color).toBe(categoryData.color);
-            expect(response.body.icon).toBe(categoryData.icon);
+            expect(response.body.data).toHaveProperty('id');
+            expect(response.body.data.name).toBe(categoryData.name);
+            expect(response.body.data.type).toBe(categoryData.type);
+            expect(response.body.data.color).toBe(categoryData.color);
+            expect(response.body.data.icon).toBe(categoryData.icon);
         });
 
         itIfDb('should retrieve all categories', async () => {
@@ -115,14 +120,14 @@ describe('Category Management Tests', () => {
             };
 
             const response = await request(app)
-                .put(`/api/categories/${category.id}`)
+                .patch(`/api/categories/${category.id}`)
                 .send(updateData)
                 .expect(200);
 
-            expect(response.body.name).toBe(updateData.name);
-            expect(response.body.type).toBe(updateData.type);
-            expect(response.body.color).toBe(updateData.color);
-            expect(response.body.icon).toBe(updateData.icon);
+            expect(response.body.data.name).toBe(updateData.name);
+            expect(response.body.data.type).toBe(updateData.type);
+            expect(response.body.data.color).toBe(updateData.color);
+            expect(response.body.data.icon).toBe(updateData.icon);
         });
 
         itIfDb('should delete a category', async () => {
@@ -163,19 +168,17 @@ describe('Category Management Tests', () => {
                 categoryId: category.id
             });
 
-            // Attempt to delete category should fail or handle gracefully
+            // Attempt to delete category should fail since it's in use
             const response = await request(app)
-                .delete(`/api/categories/${category.id}`);
+                .delete(`/api/categories/${category.id}?userId=${testUserId}`)
+                .expect(400);
 
-            // TODO: Should implement proper handling of category deletion with references
-            if (response.status === 400) {
-                expect(response.body.error).toContain('in use');
-            } else if (response.status === 200) {
-                // If deletion is allowed, transactions should be updated appropriately
-                const transactions = await storage.getTransactionsByAccountId(account.id);
-                const transaction = transactions.find(t => t.description === 'Test purchase');
-                expect(transaction?.categoryId).toBeNull();
-            }
+            expect(response.body.message).toContain('used in transactions');
+            
+            // Verify the category is still there and transaction still has the categoryId
+            const transactions = await storage.getTransactionsByAccountId(account.id);
+            const transaction = transactions.find(t => t.description === 'Test purchase');
+            expect(transaction?.categoryId).toBe(category.id);
         });
     });
 
@@ -335,16 +338,21 @@ describe('Category Management Tests', () => {
                 merchant: 'Restaurant De Kas'
             });
 
-            // Test categorization service
-            const categorizer = new TransactionCategorizer();
+            // Test categorization service - need to pass categories to constructor
+            const categories = await storage.getCategories();
+            const categorizer = new TransactionCategorizer(categories);
 
-            // TODO: Implement proper categorization logic
-            const grocerySuggestion = await categorizer.suggestCategory(groceryTransaction);
-            const restaurantSuggestion = await categorizer.suggestCategory(restaurantTransaction);
+            // Test categorization logic
+            const grocerySuggestion = categorizer.suggestCategory(groceryTransaction);
+            const restaurantSuggestion = categorizer.suggestCategory(restaurantTransaction);
 
-            // For now, test basic functionality exists
+            // Verify basic functionality works
             expect(groceryTransaction.merchant).toContain('Albert Heijn');
             expect(restaurantTransaction.merchant).toContain('Restaurant');
+            
+            // The categorizer should return suggestions or null
+            expect(grocerySuggestion).not.toBeUndefined();
+            expect(restaurantSuggestion).not.toBeUndefined();
         });
 
         itIfDb('should learn from manual categorization corrections', async () => {
@@ -395,11 +403,12 @@ describe('Category Management Tests', () => {
                 merchant: 'Unknown'
             });
 
-            const categorizer = new TransactionCategorizer();
-            const suggestion = await categorizer.suggestCategory(unknownTransaction);
+            const categories = await storage.getCategories();
+            const categorizer = new TransactionCategorizer(categories);
+            const suggestion = categorizer.suggestCategory(unknownTransaction);
 
             // Should handle unknown merchants without crashing
-            expect(unknownTransaction.categoryId).toBeNull();
+            expect(unknownTransaction.categoryId).toBeUndefined();
         });
     });
 

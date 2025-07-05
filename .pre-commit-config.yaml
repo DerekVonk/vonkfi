@@ -1,0 +1,267 @@
+# Pre-commit hooks for test infrastructure validation
+# See https://pre-commit.com for more information
+
+repos:
+  # Local hooks for project-specific validations
+  - repo: local
+    hooks:
+      # Validate CI/CD configuration
+      - id: validate-ci-config
+        name: Validate CI/CD Configuration
+        entry: ./scripts/validate-ci-config.sh
+        language: script
+        pass_filenames: false
+        files: |
+          (?x)^(
+            \.github/workflows/.*\.yml|
+            \.gitlab-ci\.yml|
+            vitest\.config\.ts|
+            playwright\.config\.ts|
+            package\.json|
+            run-tests\.sh|
+            ci/.*
+          )$
+
+      # Validate test files syntax
+      - id: validate-test-files
+        name: Validate Test Files
+        entry: bash -c 'npx tsc --noEmit --project test/tsconfig.json'
+        language: system
+        files: ^test/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      # Check test coverage configuration
+      - id: check-coverage-config
+        name: Check Coverage Configuration
+        entry: bash -c 'jq -e ".scripts.\"test:coverage\"" package.json > /dev/null && echo "✅ Coverage script found"'
+        language: system
+        files: ^(package\.json|vitest\.config\.ts)$
+        pass_filenames: false
+
+      # Validate Docker Compose files
+      - id: validate-docker-compose
+        name: Validate Docker Compose
+        entry: docker-compose
+        args: [-f, docker-compose.test.yml, config, -q]
+        language: system
+        files: ^docker-compose.*\.yml$
+        pass_filenames: false
+
+      # Check for test environment files
+      - id: check-test-env-files
+        name: Check Test Environment Files
+        entry: bash
+        args:
+          - -c
+          - |
+            required_files=(".env.test.example" ".env.integration.example" ".env.e2e.example")
+            for file in "${required_files[@]}"; do
+              if [ ! -f "$file" ]; then
+                echo "❌ Required test environment file missing: $file"
+                exit 1
+              fi
+            done
+            echo "✅ All test environment files present"
+        language: system
+        files: ^\.env.*\.example$
+        pass_filenames: false
+
+      # Validate package.json test scripts
+      - id: validate-test-scripts
+        name: Validate Test Scripts
+        entry: bash
+        args:
+          - -c
+          - |
+            required_scripts=("test" "test:run" "test:coverage" "test:e2e" "test:integration")
+            for script in "${required_scripts[@]}"; do
+              if ! jq -e ".scripts.\"$script\"" package.json > /dev/null; then
+                echo "❌ Required test script missing: $script"
+                exit 1
+              fi
+            done
+            echo "✅ All required test scripts found"
+        language: system
+        files: ^package\.json$
+        pass_filenames: false
+
+      # Check test database configuration
+      - id: check-test-db-config
+        name: Check Test Database Configuration
+        entry: bash
+        args:
+          - -c
+          - |
+            if ! grep -q "vonkfi_test" docker-compose.test.yml; then
+              echo "❌ Test database configuration not found in docker-compose.test.yml"
+              exit 1
+            fi
+            echo "✅ Test database configuration found"
+        language: system
+        files: ^(docker-compose\.test\.yml|test/setup\.ts)$
+        pass_filenames: false
+
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      # Basic file checks
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+
+      # Security checks
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+
+  # YAML validation
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.32.0
+    hooks:
+      - id: yamllint
+        args: [-d, relaxed]
+        files: \.(yml|yaml)$
+
+  # TypeScript/JavaScript linting and formatting
+  - repo: local
+    hooks:
+      # ESLint for security (using project config)
+      - id: eslint-security
+        name: ESLint Security Check
+        entry: npx eslint
+        args: [--config, ./ci/eslint-security.config.js, --ext, .ts,.tsx,.js,.jsx]
+        language: system
+        files: \.(ts|tsx|js|jsx)$
+        pass_filenames: true
+
+      # TypeScript compilation check
+      - id: typescript-check
+        name: TypeScript Check
+        entry: npx tsc
+        args: [--noEmit]
+        language: system
+        files: \.(ts|tsx)$
+        pass_filenames: false
+
+  # Security scanning
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: |
+          (?x)^(
+            .*\.lock$|
+            test/.*|
+            migrations/.*\.sql$
+          )$
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        args: [--ignore, DL3008, --ignore, DL3009]
+
+  # SQL formatting and linting
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 2.3.2
+    hooks:
+      - id: sqlfluff-lint
+        args: [--dialect, postgres]
+        files: \.sql$
+        exclude: migrations/
+
+  # Additional project-specific hooks
+  - repo: local
+    hooks:
+      # Test smoke check
+      - id: test-smoke-check
+        name: Test Smoke Check
+        entry: bash
+        args:
+          - -c
+          - |
+            echo "🔥 Running test smoke check..."
+            # Quick syntax check for test files
+            if ! npx vitest --run --reporter=basic --testNamePattern="__SMOKE_CHECK__" > /dev/null 2>&1; then
+              if [ $? -eq 1 ]; then
+                echo "✅ Test configuration is valid"
+                exit 0
+              else
+                echo "❌ Test configuration has errors"
+                exit 1
+              fi
+            fi
+            echo "✅ Test smoke check passed"
+        language: system
+        files: ^(test/.*|vitest\.config\.ts|test/setup\.ts)$
+        pass_filenames: false
+        stages: [pre-push]
+
+      # Database migration validation
+      - id: validate-migrations
+        name: Validate Database Migrations
+        entry: bash
+        args:
+          - -c
+          - |
+            echo "🗄️ Validating database migrations..."
+            for file in migrations/*.sql; do
+              if [ -f "$file" ]; then
+                if ! grep -q "CREATE\|ALTER\|INSERT\|UPDATE\|DELETE" "$file"; then
+                  echo "❌ Migration file may be empty or invalid: $file"
+                  exit 1
+                fi
+              fi
+            done
+            echo "✅ Migration files validated"
+        language: system
+        files: ^migrations/.*\.sql$
+        pass_filenames: false
+
+      # Check for debugging statements
+      - id: check-debug-statements
+        name: Check for Debug Statements
+        entry: bash
+        args:
+          - -c
+          - |
+            if grep -r "console\.log\|debugger\|\.only\(" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" .; then
+              echo "❌ Debug statements found. Please remove before committing."
+              exit 1
+            fi
+            echo "✅ No debug statements found"
+        language: system
+        files: \.(ts|tsx|js|jsx)$
+        pass_filenames: false
+        exclude: |
+          (?x)^(
+            node_modules/.*|
+            dist/.*|
+            coverage/.*|
+            .*\.log$
+          )$
+
+# Configuration for pre-commit
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

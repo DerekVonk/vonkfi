@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     counterparty_iban TEXT,
     counterparty_name TEXT,
     reference TEXT,
-    statement_id TEXT
+    statement_id TEXT,
+    transaction_type TEXT -- credit, debit, transfer
 );
 
 -- Create categories table

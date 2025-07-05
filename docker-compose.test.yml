@@ -14,7 +14,6 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data_test:/var/lib/postgresql/data
-      - ./database-setup.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     ports:
       - "5434:5432"  # Different port to avoid conflicts with dev and prod
     networks:

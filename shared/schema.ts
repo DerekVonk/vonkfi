@@ -39,6 +39,7 @@ export const transactions = pgTable("transactions", {
   counterpartyName: text("counterparty_name"),
   reference: text("reference"),
   statementId: text("statement_id"),
+  transactionType: text("transaction_type"), // credit, debit, transfer
 });
 
 export const categories = pgTable("categories", {
