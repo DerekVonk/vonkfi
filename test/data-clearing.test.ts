@@ -45,12 +45,12 @@ describe('Selective Data Clearing', () => {
     const goalResponse = await request(app)
       .post('/api/goals')
       .send(goalData)
-      .expect(200);
+      .expect(201);
     
     const accountResponse = await request(app)
       .post('/api/accounts')
       .send(accountData)
-      .expect(200);
+      .expect(201);
 
     // Verify they exist
     expect(goalResponse.body.name).toBe('Test Savings Goal');
@@ -151,7 +151,7 @@ describe('Selective Data Clearing', () => {
       const response = await request(app)
         .post('/api/accounts')
         .send(accountData)
-        .expect(200);
+        .expect(201);
       createdAccounts.push(response.body);
     }
 

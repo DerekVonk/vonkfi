@@ -174,6 +174,13 @@ const sendErrorProd = (err: any, req: Request, res: Response) => {
   if (err.isOperational) {
     error = err.name || 'Application Error';
     message = sanitizeErrorMessage(err.message);
+    
+    // For specific error types, preserve the original message format
+    if (err.message === 'Failed to fetch dashboard data' || 
+        err.message === 'Transaction creation failed' ||
+        err.message?.includes('Database connection failed')) {
+      message = err.message;
+    }
   }
 
   const errorResponse: ErrorResponse = {

@@ -43,6 +43,7 @@
     "test:production:security": "ENVIRONMENT_URL=https://vonkfi.com vitest run test/security/production-security.test.ts",
     "security:scan": "./scripts/security-scan.sh",
     "health:check": "./scripts/post-deployment-check.sh",
+    "lint:claude": "claude -p 'you are a linter. please look at the changes vs. main and report any issues related to typos. report the filename and line number on one line, and a description of the issue on the second line. do not return any other text.'",
     "lint:security": "eslint . --ext .ts,.tsx,.js,.jsx --config ./ci/eslint-security.config.js",
     "audit:dependencies": "npm audit --audit-level=moderate",
     "audit:full": "npm audit && ./scripts/security-scan.sh",

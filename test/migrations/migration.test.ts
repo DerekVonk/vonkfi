@@ -3,7 +3,7 @@ import { MigrationTestRunner } from './migration-test-runner';
 
 describe('Database Migration Tests', () => {
   let migrationRunner: MigrationTestRunner;
-  const testDatabaseUrl = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/vonkfi_test';
+  const testDatabaseUrl = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5434/vonkfi_test';
 
   beforeAll(async () => {
     migrationRunner = new MigrationTestRunner(testDatabaseUrl);

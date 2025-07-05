@@ -41,7 +41,7 @@ describe('Authentication & Security Tests', () => {
         it('should create a user with valid data', async () => {
             const userData = {
                 username: 'testuser' + Date.now(),
-                password: 'SecurePassword123!'
+                password: 'TestPass123!'
             };
 
             const user = await storage.createUser(userData);
@@ -56,7 +56,7 @@ describe('Authentication & Security Tests', () => {
         it('should not create duplicate usernames', async () => {
             const userData = {
                 username: 'duplicateuser' + Date.now(),
-                password: 'Password123!'
+                password: 'TestPass123!'
             };
 
             // Create first user
@@ -69,7 +69,7 @@ describe('Authentication & Security Tests', () => {
         it('should retrieve user by username', async () => {
             const userData = {
                 username: 'findme' + Date.now(),
-                password: 'Password123!'
+                password: 'TestPass123!'
             };
 
             await storage.createUser(userData);
@@ -140,8 +140,8 @@ describe('Authentication & Security Tests', () => {
     describe('Data Access Control', () => {
         it('should only return data for the specified user', async () => {
             // Create two users with different data
-            const user1 = await storage.createUser({username: 'user1' + Date.now(), password: 'Pass1word!'});
-            const user2 = await storage.createUser({username: 'user2' + Date.now(), password: 'Pass2word!'});
+            const user1 = await storage.createUser({username: 'user1' + Date.now(), password: 'TestPass123!'});
+            const user2 = await storage.createUser({username: 'user2' + Date.now(), password: 'TestPass123!'});
 
             // Create account for user1
             const account1 = await storage.createAccount({
@@ -185,8 +185,8 @@ describe('Authentication & Security Tests', () => {
         });
 
         it('should prevent cross-user data access in goal operations', async () => {
-            const user1 = await storage.createUser({username: 'goaluser1' + Date.now(), password: 'Pass1word!'});
-            const user2 = await storage.createUser({username: 'goaluser2' + Date.now(), password: 'Pass2word!'});
+            const user1 = await storage.createUser({username: 'goaluser1' + Date.now(), password: 'TestPass123!'});
+            const user2 = await storage.createUser({username: 'goaluser2' + Date.now(), password: 'TestPass123!'});
 
             // Create goal for user1
             const goal = await storage.createGoal({
@@ -211,7 +211,7 @@ describe('Authentication & Security Tests', () => {
         it('should store passwords securely with proper hashing', async () => {
             const userData = {
                 username: 'secureuser' + Date.now(),
-                password: 'MyPlainTextPassword123!'
+                password: 'TestPass123!'
             };
 
             const user = await storage.createUser(userData);
@@ -224,7 +224,7 @@ describe('Authentication & Security Tests', () => {
             expect(storedUser?.password).toBeUndefined();
             
             // But authentication should work with the correct password
-            const authenticatedUser = await storage.authenticateUser(userData.username, 'MyPlainTextPassword123!');
+            const authenticatedUser = await storage.authenticateUser(userData.username, 'TestPass123!');
             expect(authenticatedUser).toBeDefined();
             expect(authenticatedUser?.id).toBe(user.id);
             
@@ -251,7 +251,7 @@ describe('Authentication & Security Tests', () => {
 
     describe('Rate Limiting & DoS Protection', () => {
         it('should handle multiple concurrent requests gracefully', async () => {
-            const user = await storage.createUser({username: 'concurrent' + Date.now(), password: 'Test123!'});
+            const user = await storage.createUser({username: 'concurrent' + Date.now(), password: 'TestPass123!'});
 
             // Make multiple concurrent requests
             const requests = Array.from({length: 10}, () =>

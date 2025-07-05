@@ -73,7 +73,7 @@ describe('Password Security', () => {
 
   describe('Password Hashing', () => {
     it('should hash passwords securely', async () => {
-      const password = 'TestPassword123!';
+      const password = 'TestPass123!';
       const hashedPassword = await hashPassword(password);
 
       expect(hashedPassword).toBeDefined();
@@ -83,7 +83,7 @@ describe('Password Security', () => {
     });
 
     it('should verify passwords correctly', async () => {
-      const password = 'VerifyMe123!';
+      const password = 'TestPass123!';
       const hashedPassword = await hashPassword(password);
 
       const isValid = await verifyPassword(password, hashedPassword);
@@ -94,7 +94,7 @@ describe('Password Security', () => {
     });
 
     it('should generate different hashes for same password', async () => {
-      const password = 'SamePassword123!';
+      const password = 'TestPass123!';
       const hash1 = await hashPassword(password);
       const hash2 = await hashPassword(password);
 

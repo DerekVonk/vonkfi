@@ -2,6 +2,8 @@ import { describe, test, expect, beforeAll } from 'vitest';
 import { ComprehensiveHealthCheck, performQuickHealthCheck } from './utils/comprehensive-health-check';
 import { TestConnectionPoolManager } from './utils/connection-pool-manager';
 import pg from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import * as schema from '@shared/schema';
 
 describe('Infrastructure Smoke Tests', () => {
     let dbConfig: {
@@ -12,7 +14,7 @@ describe('Infrastructure Smoke Tests', () => {
         password: string;
     };
 
-    beforeAll(() => {
+    beforeAll(async () => {
         // Get database configuration from environment
         const isCI = process.env.CI === 'true';
         const nodeEnv = process.env.NODE_ENV;
@@ -44,9 +46,48 @@ describe('Infrastructure Smoke Tests', () => {
                 password: process.env.TEST_DATABASE_PASSWORD || defaultConfig.password
             };
         }
+
+        // Set up database URL for migrations
+        const TEST_DATABASE_URL = `postgresql://${dbConfig.user}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`;
+        process.env.DATABASE_URL = TEST_DATABASE_URL;
+
+        // Check if migrations need to be run
+        const pool = new pg.Pool(dbConfig);
+        try {
+            const db = drizzle({ client: pool, schema });
+            
+            // Check if migrations are needed
+            let needsMigrations = false;
+            try {
+                const client = await pool.connect();
+                const result = await client.query("SELECT to_regclass('public.users')");
+                client.release();
+
+                if (!result.rows[0].to_regclass) {
+                    needsMigrations = true;
+                }
+            } catch (migrationError) {
+                needsMigrations = true;
+            }
+
+            // Run migrations if needed
+            if (needsMigrations) {
+                console.log('🔄 Running database migrations...');
+                const { migrate } = await import('drizzle-orm/node-postgres/migrator');
+                await migrate(db, { migrationsFolder: './migrations' });
+                console.log('✅ Migrations completed');
+            } else {
+                console.log('✅ Migrations completed');
+            }
+        } finally {
+            await pool.end();
+        }
     });
 
     test('comprehensive health check passes', async () => {
+        // Add a brief wait to ensure migrations have time to commit
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         const healthCheck = new ComprehensiveHealthCheck({
             dbConfig,
             timeoutMs: 10000,
@@ -101,6 +142,15 @@ describe('Infrastructure Smoke Tests', () => {
         try {
             const client = await pool.connect();
             
+            // Debug: Check what tables exist
+            const allTablesResult = await client.query(`
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                ORDER BY table_name
+            `);
+            console.log('📋 All existing tables:', allTablesResult.rows.map(row => row.table_name));
+            
             // Check for essential tables
             const tablesResult = await client.query(`
                 SELECT table_name 
@@ -111,6 +161,8 @@ describe('Infrastructure Smoke Tests', () => {
             `);
 
             const tableNames = tablesResult.rows.map(row => row.table_name);
+            console.log('📋 Required tables found:', tableNames);
+            
             expect(tableNames).toContain('users');
             expect(tableNames).toContain('accounts');
             expect(tableNames).toContain('transactions');

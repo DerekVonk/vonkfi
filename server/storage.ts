@@ -304,6 +304,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAccount(id: number): Promise<void> {
+    // First, update any goals that are linked to this account
+    await db.update(goals)
+      .set({ linkedAccountId: null })
+      .where(eq(goals.linkedAccountId, id));
+    
+    // Then delete the account
     await db.delete(accounts).where(eq(accounts.id, id));
   }
 
@@ -434,6 +440,19 @@ export class DatabaseStorage implements IStorage {
     
     // Delete transfer recommendations (calculated data)
     await db.delete(transferRecommendations).where(eq(transferRecommendations.userId, userId));
+    
+    // Get user's budget periods and their related data
+    const userBudgetPeriods = await this.getBudgetPeriodsByUserId(userId);
+    const budgetPeriodIds = userBudgetPeriods.map(bp => bp.id);
+    
+    // Delete budget categories for user's budget periods
+    if (budgetPeriodIds.length > 0) {
+      await db.delete(budgetCategories).where(inArray(budgetCategories.budgetPeriodId, budgetPeriodIds));
+      await db.delete(budgetAccounts).where(inArray(budgetAccounts.budgetPeriodId, budgetPeriodIds));
+    }
+    
+    // Delete budget periods (for clean test state)
+    await db.delete(budgetPeriods).where(eq(budgetPeriods.userId, userId));
     
     // Reset goal current amounts to 0 but preserve goal configurations
     const userGoals = await this.getGoalsByUserId(userId);
@@ -681,6 +700,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBudgetPeriod(insertBudgetPeriod: InsertBudgetPeriod): Promise<BudgetPeriod> {
+    // Check for duplicate budget period with same name for this user
+    const existingPeriod = await db.select()
+      .from(budgetPeriods)
+      .where(and(
+        eq(budgetPeriods.userId, insertBudgetPeriod.userId),
+        eq(budgetPeriods.name, insertBudgetPeriod.name)
+      ))
+      .limit(1);
+
+    if (existingPeriod.length > 0) {
+      throw new Error(`Budget period with name "${insertBudgetPeriod.name}" already exists for this user`);
+    }
+
     // Deactivate any existing active periods
     await db.update(budgetPeriods)
       .set({ isActive: false })

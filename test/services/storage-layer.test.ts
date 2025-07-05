@@ -68,7 +68,7 @@ describe('Storage Layer Tests', () => {
         it('should create a user with hashed password', async () => {
             const userData = {
                 username: 'newuser' + Date.now(),
-                password: 'Password123!'
+                password: 'TestPass123!'
             };
 
             const user = await storage.createUser(userData);
@@ -87,7 +87,7 @@ describe('Storage Layer Tests', () => {
         it('should prevent duplicate usernames', async () => {
             const userData = {
                 username: 'duplicateuser' + Date.now(),
-                password: 'Password123!'
+                password: 'TestPass123!'
             };
 
             await storage.createUser(userData);
@@ -135,7 +135,7 @@ describe('Storage Layer Tests', () => {
         });
 
         it('should update user password', async () => {
-            const newPassword = 'NewPassword123!';
+            const newPassword = 'TestPass123!';
 
             await storage.updateUserPassword(testUserId, newPassword);
 

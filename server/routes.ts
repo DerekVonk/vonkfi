@@ -379,7 +379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/accounts", asyncHandler(async (req, res) => {
     const accountData = req.body;
     const account = await storage.createAccount(accountData);
-    res.json(account);
+    res.created(account, 'Account created successfully');
   }));
 
   // Update account
@@ -653,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     asyncHandler(async (req, res) => {
       const userId = parseInt(req.params.userId);
       const goals = await storage.getGoalsByUserId(userId);
-      res.json(goals);
+      res.success(goals, 'Goals retrieved successfully');
     })
   );
 
@@ -699,7 +699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         priority: goal.priority,
       });
 
-      res.json(goal);
+      res.created(goal, 'Goal created successfully');
     })
   );
 
@@ -710,7 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = req.body;
 
       const updated = await storage.updateGoal(goalId, updates);
-      res.json(updated);
+      res.updated(updated, 'Goal updated successfully');
     } catch (error: unknown) {
       res.status(500).json({ error: "Failed to update goal" });
     }
@@ -868,14 +868,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({
+      res.success({
         recommendations,
         allocation,
         summary: {
           totalRecommended: recommendations.reduce((sum, r) => sum + parseFloat(r.amount), 0),
           numberOfTransfers: recommendations.length,
         }
-      });
+      }, 'Transfer recommendations generated successfully');
     } catch (error: unknown) {
       res.status(500).json({ error: "Failed to generate transfer recommendations" });
     }

@@ -28,9 +28,14 @@ describe('Category Management Tests', () => {
             // Create test user
             const user = await storage.createUser({
                 username: `testuser_${Date.now()}`,
-                password: 'testpass123'
+                password: 'TestPass123!'
             });
             testUserId = user.id;
+            
+            // Ensure user was created properly
+            if (!testUserId || typeof testUserId !== 'number') {
+                throw new Error(`Invalid test user ID: ${testUserId}`);
+            }
 
             // Clean up any existing data
             await storage.clearUserData(testUserId);

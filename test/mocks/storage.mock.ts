@@ -150,6 +150,14 @@ class MockStorage implements IStorage {
   }
 
   async deleteAccount(id: number): Promise<void> {
+    // First, update any goals that are linked to this account
+    this.goals.forEach(goal => {
+      if (goal.linkedAccountId === id) {
+        goal.linkedAccountId = null;
+      }
+    });
+    
+    // Then delete the account
     const index = this.accounts.findIndex(account => account.id === id);
     if (index !== -1) {
       this.accounts.splice(index, 1);
@@ -249,6 +257,22 @@ class MockStorage implements IStorage {
     this.transferRecommendations = this.transferRecommendations.filter(rec => rec.userId !== userId);
     this.importHistory = this.importHistory.filter(history => history.userId !== userId);
     this.importBatches = this.importBatches.filter(batch => batch.userId !== userId);
+    
+    // Get user's budget periods and clear related data
+    const userBudgetPeriodIds = this.budgetPeriods
+      .filter(period => period.userId === userId)
+      .map(period => period.id);
+    
+    // Clear budget categories and accounts for user's budget periods
+    this.budgetCategories = this.budgetCategories.filter(
+      category => !userBudgetPeriodIds.includes(category.budgetPeriodId)
+    );
+    this.budgetAccounts = this.budgetAccounts.filter(
+      account => !userBudgetPeriodIds.includes(account.budgetPeriodId)
+    );
+    
+    // Clear budget periods (for clean test state)
+    this.budgetPeriods = this.budgetPeriods.filter(period => period.userId !== userId);
     
     // Reset goal amounts
     this.goals.forEach(goal => {
@@ -493,6 +517,16 @@ class MockStorage implements IStorage {
   }
 
   async createBudgetPeriod(budgetPeriod: InsertBudgetPeriod): Promise<BudgetPeriod> {
+    // Check for duplicate budget period with same name for this user
+    const existingPeriod = this.budgetPeriods.find(period => 
+      period.userId === budgetPeriod.userId && 
+      period.name === budgetPeriod.name
+    );
+
+    if (existingPeriod) {
+      throw new Error(`Budget period with name "${budgetPeriod.name}" already exists for this user`);
+    }
+
     // Deactivate any existing active periods
     this.budgetPeriods.forEach(period => {
       if (period.userId === budgetPeriod.userId && period.isActive) {
