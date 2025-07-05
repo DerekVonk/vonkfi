@@ -230,7 +230,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: vonkfi_test
           POSTGRES_USER: test
@@ -244,7 +244,7 @@ jobs:
           - 5432:5432
       
       redis:
-        image: redis:${{ env.REDIS_VERSION }}-alpine
+        image: redis:7-alpine
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -432,7 +432,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: vonkfi_test
           POSTGRES_USER: test
@@ -446,7 +446,7 @@ jobs:
           - 5432:5432
       
       redis:
-        image: redis:${{ env.REDIS_VERSION }}-alpine
+        image: redis:7-alpine
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -506,7 +506,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: vonkfi_test
           POSTGRES_USER: test
@@ -581,7 +581,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: vonkfi_test
           POSTGRES_USER: test
@@ -697,7 +697,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: vonkfi_test
           POSTGRES_USER: test
