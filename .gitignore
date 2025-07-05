@@ -93,6 +93,9 @@ tramp
 *.sqlite
 *.sqlite3
 
+# Override global gitignore to include migration SQL files
+!migrations/*.sql
+
 # Runtime data
 pids/
 *.pid

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Target, Plus, TrendingUp, Calendar, DollarSign, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Target, Plus, TrendingUp, DollarSign, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import type { Goal, Account } from "@/types";
@@ -37,11 +37,27 @@ export default function Goals() {
   const queryClient = useQueryClient();
 
   const { data: goals, isLoading: goalsLoading } = useQuery<Goal[]>({
-    queryKey: [api.getGoals(DEMO_USER_ID)],
+    queryKey: ['goals', DEMO_USER_ID],
+    queryFn: async () => {
+      const response = await fetch(api.getGoals(DEMO_USER_ID));
+      if (!response.ok) {
+        throw new Error('Failed to fetch goals');
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
   });
 
   const { data: accounts } = useQuery<Account[]>({
-    queryKey: [api.getAccounts(DEMO_USER_ID)],
+    queryKey: ['accounts', DEMO_USER_ID],
+    queryFn: async () => {
+      const response = await fetch(api.getAccounts(DEMO_USER_ID));
+      if (!response.ok) {
+        throw new Error('Failed to fetch accounts');
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
   });
 
   const createGoalMutation = useMutation({
@@ -65,9 +81,9 @@ export default function Goals() {
         console.log("Transfer generation completed");
       }
       
-      queryClient.invalidateQueries({ queryKey: [api.getGoals(DEMO_USER_ID)] });
-      queryClient.invalidateQueries({ queryKey: [api.getTransfers(DEMO_USER_ID)] });
-      queryClient.invalidateQueries({ queryKey: [api.getDashboard(DEMO_USER_ID)] });
+      queryClient.invalidateQueries({ queryKey: ['goals', DEMO_USER_ID] });
+      queryClient.invalidateQueries({ queryKey: ['transfers', DEMO_USER_ID] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', DEMO_USER_ID] });
       setShowCreateDialog(false);
       form.reset();
     },
@@ -89,8 +105,8 @@ export default function Goals() {
         description: "Goal has been updated successfully",
         duration: 5000,
       });
-      queryClient.invalidateQueries({ queryKey: [api.getGoals(DEMO_USER_ID)] });
-      queryClient.invalidateQueries({ queryKey: [api.getDashboard(DEMO_USER_ID)] });
+      queryClient.invalidateQueries({ queryKey: ['goals', DEMO_USER_ID] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', DEMO_USER_ID] });
       setShowEditDialog(false);
       setEditingGoal(null);
     },
@@ -196,10 +212,11 @@ export default function Goals() {
     updateGoalMutation.mutate({ goalId: editingGoal.id, updates });
   };
 
-  const activeGoals = goals?.filter(g => !g.isCompleted) || [];
-  const completedGoals = goals?.filter(g => g.isCompleted) || [];
-  const totalTargetValue = goals?.reduce((sum, g) => sum + parseFloat(g.targetAmount || '0'), 0) || 0;
-  const totalCurrentValue = goals?.reduce((sum, g) => sum + parseFloat(g.currentAmount || '0'), 0) || 0;
+  const goalsArray = Array.isArray(goals) ? goals : [];
+  const activeGoals = goalsArray.filter(g => !g.isCompleted);
+  const completedGoals = goalsArray.filter(g => g.isCompleted);
+  const totalTargetValue = goalsArray.reduce((sum, g) => sum + parseFloat(g.targetAmount || '0'), 0);
+  const totalCurrentValue = goalsArray.reduce((sum, g) => sum + parseFloat(g.currentAmount || '0'), 0);
 
   if (goalsLoading) {
     return (
@@ -380,7 +397,7 @@ export default function Goals() {
                 <Target className="text-blue-600" size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-lg sm:text-2xl font-bold text-neutral-800">{goals?.length || 0}</p>
+                <p className="text-lg sm:text-2xl font-bold text-neutral-800">{goalsArray.length}</p>
                 <p className="text-xs sm:text-sm text-neutral-400 truncate">Total Goals</p>
               </div>
             </div>
@@ -424,7 +441,7 @@ export default function Goals() {
         </div>
 
         {/* Overall Progress */}
-        {goals && goals.length > 0 && (
+        {goalsArray.length > 0 && (
           <Card className="p-6">
             <CardHeader className="px-0 pt-0">
               <CardTitle>Overall Goals Progress</CardTitle>
@@ -569,7 +586,7 @@ export default function Goals() {
           </Card>
         )}
 
-        {(!goals || goals.length === 0) && (
+        {goalsArray.length === 0 && (
           <Card className="p-8 text-center">
             <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Savings Goals Yet</h3>
