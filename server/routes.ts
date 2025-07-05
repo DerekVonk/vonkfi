@@ -86,10 +86,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Calculate FIRE metrics using ALL transactions for accurate monthly breakdown
         let fireMetrics;
         try {
-          // Use complete transaction set instead of limited optimized query
-          const allTransactions = await storage.getTransactionsByUserId(Number(userId));
+          // Use optimized transaction query (already includes LEFT JOIN fix)
           fireMetrics = fireCalculator.calculateMetrics(
-            allTransactions, 
+            dashboardData.transactions, 
             dashboardData.goals, 
             dashboardData.accounts
           );

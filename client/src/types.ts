@@ -95,6 +95,7 @@ export interface FireMetrics {
 
 export interface DashboardData {
   accounts: Account[];
+  transactions: (Transaction & { categoryName?: string })[];
   goals: Goal[];
   transferRecommendations: TransferRecommendation[];
   fireMetrics: FireMetrics;

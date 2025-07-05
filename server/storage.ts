@@ -983,7 +983,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(transactions)
         .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-        .innerJoin(categories, eq(transactions.categoryId, categories.id))
+        .leftJoin(categories, eq(transactions.categoryId, categories.id))
         .where(eq(accounts.userId, userId))
         .orderBy(desc(transactions.date))
         .limit(limit)

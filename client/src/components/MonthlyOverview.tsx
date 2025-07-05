@@ -44,15 +44,15 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
     // If looking at current month, always use the live fireMetrics data
     if (monthKey === currentMonthKey) {
       return {
-        income: dashboardData?.data?.fireMetrics?.monthlyIncome || 0,
-        expenses: dashboardData?.data?.fireMetrics?.monthlyExpenses || 0,
-        savings: (dashboardData?.data?.fireMetrics?.monthlyIncome || 0) - (dashboardData?.data?.fireMetrics?.monthlyExpenses || 0),
-        savingsRate: dashboardData?.data?.fireMetrics?.savingsRate || 0
+        income: dashboardData?.fireMetrics?.monthlyIncome || 0,
+        expenses: dashboardData?.fireMetrics?.monthlyExpenses || 0,
+        savings: (dashboardData?.fireMetrics?.monthlyIncome || 0) - (dashboardData?.fireMetrics?.monthlyExpenses || 0),
+        savingsRate: dashboardData?.fireMetrics?.savingsRate || 0
       };
     }
 
     // For historical months, look in monthlyBreakdown
-    const monthData = dashboardData?.data?.fireMetrics?.monthlyBreakdown?.find(
+    const monthData = dashboardData?.fireMetrics?.monthlyBreakdown?.find(
       m => m.month === monthKey
     );
 
@@ -72,7 +72,7 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
       savings: 0,
       savingsRate: 0
     };
-  }, [selectedMonth, dashboardData?.data?.fireMetrics]);
+  }, [selectedMonth, dashboardData?.fireMetrics]);
 
   const isCurrentMonth = useMemo(() => {
     return selectedMonth.toISOString().substring(0, 7) === new Date().toISOString().substring(0, 7);
