@@ -25,7 +25,7 @@ on:
         type: boolean
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   POSTGRES_VERSION: '15'
   REDIS_VERSION: '7'
   # CI-specific optimizations
