@@ -1235,8 +1235,8 @@ private async getNetworkMetrics(): Promise<any> {
     // Check network connectivity
     const connectivity = {
       localhost: await this.testConnection('localhost', 'TCP'),
-      database_port: await this.testConnection('localhost:5434', 'TCP'),
-      redis_port: await this.testConnection('localhost:6381', 'TCP')
+      database_port: await this.testConnection('localhost:5432', 'TCP'),
+      redis_port: await this.testConnection('localhost:6379', 'TCP')
     };
     
     // Get network interface stats (if available)

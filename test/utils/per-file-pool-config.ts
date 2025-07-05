@@ -205,12 +205,29 @@ export class PerFilePoolConfiguration extends EventEmitter {
     console.log(`🏗️ Creating dedicated pool for test file: ${testFile} (${++this.poolCreationCount} total created)`);
     
     try {
-      const baseConfig: ConnectionPoolOptions = {
-        host: process.env.TEST_DATABASE_HOST || 'localhost',
-        port: parseInt(process.env.TEST_DATABASE_PORT || '5434'),
-        database: this.getDatabaseName(normalizedFile),
-        user: process.env.TEST_DATABASE_USER || 'test',
-        password: process.env.TEST_DATABASE_PASSWORD || 'test',
+      // Use DATABASE_URL if available, otherwise fall back to individual env vars
+      let baseConfig: ConnectionPoolOptions;
+      if (process.env.DATABASE_URL) {
+        const url = new URL(process.env.DATABASE_URL);
+        baseConfig = {
+          host: url.hostname,
+          port: parseInt(url.port) || 5432,
+          database: this.getDatabaseName(normalizedFile),
+          user: url.username,
+          password: url.password,
+        };
+      } else {
+        baseConfig = {
+          host: process.env.TEST_DATABASE_HOST || 'localhost',
+          port: parseInt(process.env.TEST_DATABASE_PORT || '5432'),
+          database: this.getDatabaseName(normalizedFile),
+          user: process.env.TEST_DATABASE_USER || 'test',
+          password: process.env.TEST_DATABASE_PASSWORD || 'test',
+        };
+      }
+      
+      baseConfig = {
+        ...baseConfig,
         max: this.config.maxConnectionsPerFile,
         min: this.config.minConnectionsPerFile,
         maxLeaseTime: this.config.maxLeaseTime,
