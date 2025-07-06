@@ -15,6 +15,20 @@
       "when": 1751662898420,
       "tag": "0001_hesitant_the_order",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1751748980414,
+      "tag": "0002_premium_mikhail_rasputin",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1751749040945,
+      "tag": "0003_modern_professor_monster",
+      "breakpoints": true
     }
   ]
 }

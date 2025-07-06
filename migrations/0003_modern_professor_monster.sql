@@ -1,0 +1,2 @@
+CREATE INDEX "idx_transactions_counterparty_iban" ON "transactions" USING btree ("counterparty_iban");--> statement-breakpoint
+CREATE INDEX "idx_transactions_date_amount" ON "transactions" USING btree ("date","amount");

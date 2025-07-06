@@ -340,6 +340,11 @@ export class DatabaseStorage implements IStorage {
           counterpartyName: transactions.counterpartyName,
           reference: transactions.reference,
           statementId: transactions.statementId,
+          transactionType: transactions.transactionType,
+          isInternalTransfer: transactions.isInternalTransfer,
+          matchedTransferId: transactions.matchedTransferId,
+          transferDetectionConfidence: transactions.transferDetectionConfidence,
+          transferFee: transactions.transferFee,
         })
         .from(transactions)
         .innerJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -941,6 +946,11 @@ export class DatabaseStorage implements IStorage {
             counterpartyName: transactions.counterpartyName,
             reference: transactions.reference,
             statementId: transactions.statementId,
+            transactionType: transactions.transactionType,
+            isInternalTransfer: transactions.isInternalTransfer,
+            matchedTransferId: transactions.matchedTransferId,
+            transferDetectionConfidence: transactions.transferDetectionConfidence,
+            transferFee: transactions.transferFee,
             categoryName: categories.name,
           })
           .from(transactions)
@@ -978,6 +988,11 @@ export class DatabaseStorage implements IStorage {
           counterpartyName: transactions.counterpartyName,
           reference: transactions.reference,
           statementId: transactions.statementId,
+          transactionType: transactions.transactionType,
+          isInternalTransfer: transactions.isInternalTransfer,
+          matchedTransferId: transactions.matchedTransferId,
+          transferDetectionConfidence: transactions.transferDetectionConfidence,
+          transferFee: transactions.transferFee,
           accountName: sql<string>`COALESCE(${accounts.customName}, ${accounts.accountHolderName})`,
           categoryName: categories.name,
         })

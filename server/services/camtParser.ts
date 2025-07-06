@@ -91,6 +91,14 @@ export class CamtParser {
         bal.Tp?.[0]?.CdOrPrtry?.[0]?.Cd?.[0] === 'PRCD'
       );
       if (openingBalanceInfo) {
+        // Validate balance fields
+        if (!openingBalanceInfo.Amt || !openingBalanceInfo.Amt[0]) {
+          throw new Error('Invalid CAMT.053 format: Missing opening balance amount');
+        }
+        if (!openingBalanceInfo.CdtDbtInd || !openingBalanceInfo.CdtDbtInd[0]) {
+          throw new Error('Invalid CAMT.053 format: Missing opening balance credit/debit indicator');
+        }
+        
         // Handle CAMT balance amount parsing (similar to transaction amounts)
         let amount: number;
         if (typeof openingBalanceInfo.Amt[0] === 'object' && openingBalanceInfo.Amt[0]._) {
@@ -109,6 +117,14 @@ export class CamtParser {
         bal.Tp?.[0]?.CdOrPrtry?.[0]?.Cd?.[0] === 'CLAV'
       );
       if (closingBalanceInfo) {
+        // Validate balance fields
+        if (!closingBalanceInfo.Amt || !closingBalanceInfo.Amt[0]) {
+          throw new Error('Invalid CAMT.053 format: Missing closing balance amount');
+        }
+        if (!closingBalanceInfo.CdtDbtInd || !closingBalanceInfo.CdtDbtInd[0]) {
+          throw new Error('Invalid CAMT.053 format: Missing closing balance credit/debit indicator');
+        }
+        
         let amount: number;
         
         // Handle CAMT balance amount format (with Ccy attribute)
@@ -150,6 +166,11 @@ export class CamtParser {
       const transactions: Omit<InsertTransaction, 'accountId'>[] = [];
 
       for (const entry of entries) {
+        // Validate required amount field
+        if (!entry.Amt || !entry.Amt[0]) {
+          throw new Error('Invalid CAMT.053 format: Missing transaction amount');
+        }
+        
         // Parse transaction amount from <Ntry> elements (per CAMT.053 spec)
         // Handle both object and direct value formats for CAMT amounts
         let amount: number;
@@ -167,6 +188,15 @@ export class CamtParser {
           // Fallback - extract from nested structure
           amount = parseFloat(entry.Amt[0]);
           currency = accountCurrency; // Use account currency as fallback
+        }
+        
+        // Validate required fields before accessing
+        if (!entry.CdtDbtInd || !entry.CdtDbtInd[0]) {
+          throw new Error('Invalid CAMT.053 format: Missing credit/debit indicator');
+        }
+        
+        if (!entry.BookgDt || !entry.BookgDt[0] || !entry.BookgDt[0].Dt || !entry.BookgDt[0].Dt[0]) {
+          throw new Error('Invalid CAMT.053 format: Missing booking date');
         }
         
         const creditDebitIndicator = entry.CdtDbtInd[0];

@@ -1,4 +1,5 @@
 import { Transaction, Goal, Account } from '@shared/schema';
+import { InternalTransferDetector } from './internalTransferDetector';
 
 export interface FireMetrics {
   monthlyIncome: number;
@@ -39,6 +40,11 @@ export class FireCalculator {
   private readonly BUFFER_MIN = 3000; // €3,000
   private readonly BUFFER_MAX = 4000; // €4,000
   private readonly FIRE_TARGET_MULTIPLE = 25; // 25x annual expenses
+  private readonly transferDetector: InternalTransferDetector;
+
+  constructor() {
+    this.transferDetector = new InternalTransferDetector();
+  }
 
   calculateMetrics(
     transactions: Transaction[],
@@ -48,14 +54,14 @@ export class FireCalculator {
   ): FireMetrics {
     // Calculate 6-month income volatility
     const last6Months = this.getLast6MonthsData(transactions);
-    const monthlyIncomes = this.calculateMonthlyIncomes(last6Months);
-    const monthlyExpenses = this.calculateMonthlyExpenses(last6Months);
+    const monthlyIncomes = this.calculateMonthlyIncomes(last6Months, accounts);
+    const monthlyExpenses = this.calculateMonthlyExpenses(last6Months, accounts);
     
-    const avgIncome = monthlyIncomes.reduce((sum, income) => sum + income, 0) / monthlyIncomes.length;
-    const avgExpenses = monthlyExpenses.reduce((sum, exp) => sum + exp, 0) / monthlyExpenses.length;
+    const avgIncome = monthlyIncomes.length > 0 ? monthlyIncomes.reduce((sum, income) => sum + income, 0) / monthlyIncomes.length : 0;
+    const avgExpenses = monthlyExpenses.length > 0 ? monthlyExpenses.reduce((sum, exp) => sum + exp, 0) / monthlyExpenses.length : 0;
     
-    const incomeStdDev = this.calculateStandardDeviation(monthlyIncomes);
-    const coefficientOfVariation = incomeStdDev / avgIncome;
+    const incomeStdDev = monthlyIncomes.length > 0 ? this.calculateStandardDeviation(monthlyIncomes) : 0;
+    const coefficientOfVariation = avgIncome > 0 ? incomeStdDev / avgIncome : 0;
     
     let volatilityScore: 'low' | 'medium' | 'high' = 'low';
     if (coefficientOfVariation > 0.2) volatilityScore = 'high';
@@ -73,14 +79,14 @@ export class FireCalculator {
     const annualExpenses = avgExpenses * 12;
     const fireTarget = annualExpenses * this.FIRE_TARGET_MULTIPLE;
     const totalSavings = goals.reduce((sum, goal) => sum + parseFloat(goal.currentAmount || '0'), 0);
-    const fireProgress = Math.min(totalSavings / fireTarget, 1);
+    const fireProgress = fireTarget > 0 ? Math.min(totalSavings / fireTarget, 1) : 0;
 
     // Calculate time to FIRE
-    const savingsRate = (avgIncome - avgExpenses) / avgIncome;
+    const savingsRate = avgIncome > 0 ? (avgIncome - avgExpenses) / avgIncome : 0;
     const timeToFire = this.calculateTimeToFire(savingsRate, fireProgress);
 
     // Generate monthly breakdown
-    const monthlyBreakdown = this.generateMonthlyBreakdown(last6Months);
+    const monthlyBreakdown = this.generateMonthlyBreakdown(last6Months, accounts);
     const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM format
 
     return {
@@ -154,11 +160,11 @@ export class FireCalculator {
     return transactions.filter(tx => new Date(tx.date) >= sixMonthsAgo);
   }
 
-  private calculateMonthlyIncomes(transactions: Transaction[]): number[] {
+  private calculateMonthlyIncomes(transactions: Transaction[], userAccounts: Account[]): number[] {
     const monthlyData = new Map<string, number>();
     
     transactions
-      .filter(tx => tx.isIncome)
+      .filter(tx => tx.isIncome && !this.isInternalTransfer(tx, userAccounts, transactions))
       .forEach(tx => {
         const monthKey = new Date(tx.date).toISOString().substring(0, 7); // YYYY-MM
         const current = monthlyData.get(monthKey) || 0;
@@ -168,11 +174,11 @@ export class FireCalculator {
     return Array.from(monthlyData.values());
   }
 
-  private calculateMonthlyExpenses(transactions: Transaction[]): number[] {
+  private calculateMonthlyExpenses(transactions: Transaction[], userAccounts: Account[]): number[] {
     const monthlyData = new Map<string, number>();
     
     transactions
-      .filter(tx => !tx.isIncome && parseFloat(tx.amount) < 0)
+      .filter(tx => !tx.isIncome && parseFloat(tx.amount) < 0 && !this.isInternalTransfer(tx, userAccounts, transactions))
       .forEach(tx => {
         const monthKey = new Date(tx.date).toISOString().substring(0, 7); // YYYY-MM
         const current = monthlyData.get(monthKey) || 0;
@@ -182,10 +188,15 @@ export class FireCalculator {
     return Array.from(monthlyData.values());
   }
 
-  private generateMonthlyBreakdown(transactions: Transaction[]): { month: string; income: number; expenses: number; savings: number; }[] {
+  private generateMonthlyBreakdown(transactions: Transaction[], userAccounts: Account[]): { month: string; income: number; expenses: number; savings: number; }[] {
     const monthlyData = new Map<string, { income: number; expenses: number; }>();
     
     transactions.forEach(tx => {
+      // Skip internal transfers
+      if (this.isInternalTransfer(tx, userAccounts, transactions)) {
+        return;
+      }
+
       const monthKey = new Date(tx.date).toISOString().substring(0, 7); // YYYY-MM
       const current = monthlyData.get(monthKey) || { income: 0, expenses: 0 };
       
@@ -265,5 +276,25 @@ export class FireCalculator {
     }
 
     return allocations;
+  }
+
+  private isInternalTransfer(
+    transaction: Transaction,
+    userAccounts: Account[],
+    allTransactions: Transaction[]
+  ): boolean {
+    // First check if transaction is already marked as internal transfer
+    if (transaction.isInternalTransfer) {
+      return true;
+    }
+
+    // Use the internal transfer detector to check
+    const result = this.transferDetector.detectInternalTransfer(
+      transaction,
+      userAccounts,
+      allTransactions
+    );
+
+    return result.isInternalTransfer && this.transferDetector.isConfidenceAcceptable(result);
   }
 }

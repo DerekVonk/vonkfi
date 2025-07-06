@@ -5,6 +5,7 @@ import { CamtParser } from "./services/camtParser";
 import { TransactionCategorizer } from "./services/categorization";
 import { FireCalculator } from "./services/fireCalculations";
 import { duplicateDetectionService } from "./services/duplicateDetection";
+import { InternalTransferDetector } from "./services/internalTransferDetector";
 import multer from "multer";
 
 // Import middleware
@@ -247,6 +248,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         results.newTransactions.push(newTransaction);
+      }
+
+      // Detect internal transfers for newly imported transactions
+      if (results.newTransactions.length > 0) {
+        const userAccounts = await storage.getAccountsByUserId(userId);
+        const transferDetector = new InternalTransferDetector();
+        
+        // Get all user transactions for context (including newly imported ones)
+        const allUserTransactions = await storage.getTransactionsByUserId(userId);
+        
+        // Run batch detection on newly imported transactions
+        const detectionResults = await transferDetector.detectBatchTransfers(
+          results.newTransactions,
+          userAccounts
+        );
+
+        // Update transactions that were detected as internal transfers
+        let transfersDetected = 0;
+        for (const [transactionId, detectionResult] of Array.from(detectionResults)) {
+          try {
+            await storage.updateTransaction(transactionId, {
+              isInternalTransfer: true,
+              transferDetectionConfidence: detectionResult.confidence,
+              matchedTransferId: detectionResult.matchedTransactionId || null,
+              transferFee: detectionResult.transferFee ? detectionResult.transferFee.toString() : null
+            });
+            transfersDetected++;
+          } catch (error) {
+            console.error(`Error updating transaction ${transactionId} with transfer detection:`, error);
+          }
+        }
+
+        if (transfersDetected > 0) {
+          console.log(`Detected and marked ${transfersDetected} internal transfers during import`);
+        }
       }
 
       // Create hash records for duplicate detection using original transaction data

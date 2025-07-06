@@ -6,7 +6,7 @@ set -e
 # Function to clean up on exit
 cleanup() {
   echo "Cleaning up..."
-  docker-compose -f docker-compose.test.yml down --remove-orphans
+  docker-compose -f docker-compose.test.yml down
 }
 
 # Register the cleanup function to be called on exit

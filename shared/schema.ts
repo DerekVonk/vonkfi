@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, decimal, timestamp, jsonb, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, jsonb, unique, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -40,7 +40,14 @@ export const transactions = pgTable("transactions", {
   reference: text("reference"),
   statementId: text("statement_id"),
   transactionType: text("transaction_type"), // credit, debit, transfer
-});
+  isInternalTransfer: boolean("is_internal_transfer").default(false),
+  matchedTransferId: integer("matched_transfer_id"),
+  transferDetectionConfidence: text("transfer_detection_confidence"), // high, medium, low
+  transferFee: decimal("transfer_fee", { precision: 12, scale: 2 }),
+}, (table) => ({
+  counterpartyIbanIndex: index("idx_transactions_counterparty_iban").on(table.counterpartyIban),
+  dateAmountIndex: index("idx_transactions_date_amount").on(table.date, table.amount),
+}));
 
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
