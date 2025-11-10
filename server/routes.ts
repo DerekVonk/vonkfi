@@ -89,8 +89,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Use optimized transaction query (already includes LEFT JOIN fix)
           fireMetrics = fireCalculator.calculateMetrics(
-            dashboardData.transactions, 
-            dashboardData.goals, 
+            dashboardData.transactions,
+            dashboardData.goals,
             dashboardData.accounts
           );
         } catch (error: unknown) {
@@ -103,6 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             timeToFire: 0,
             netWorth: 0,
             currentMonth: new Date().toISOString().substring(0, 7),
+            lastTransactionDate: new Date().toISOString(),
             monthlyBreakdown: [],
             bufferStatus: {
               current: 0,
@@ -710,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Convert string priority to numeric if needed (database expects integer)
       if (typeof goalData.priority === 'string') {
-        const priorityMap = { 'high': 1, 'medium': 2, 'low': 3 };
+        const priorityMap: { [key: string]: number } = { 'high': 1, 'medium': 2, 'low': 3 };
         goalData.priority = priorityMap[goalData.priority] || 2;
       }
 
@@ -895,7 +896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Return comprehensive response
-        const response = {
+        const response: any = {
           recommendations: storedRecommendations,
           allocation: result.allocation,
           summary: {
@@ -906,8 +907,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           metadata: result.metadata
         };
 
-        if (result.warnings && result.warnings.length > 0) {
-          response.warnings = result.warnings;
+        if ((result as any).warnings && (result as any).warnings.length > 0) {
+          response.warnings = (result as any).warnings;
         }
 
         res.success(response, 'Transfer recommendations generated successfully');

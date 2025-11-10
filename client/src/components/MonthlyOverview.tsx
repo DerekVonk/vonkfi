@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown, PiggyBank, ArrowLeftRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown, PiggyBank, ArrowLeftRight, Clock } from "lucide-react";
 import type { DashboardData } from "@/types";
 
 interface MonthlyOverviewProps {
@@ -82,6 +82,40 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
     return selectedMonth.toLocaleDateString('en-EU', { month: 'long', year: 'numeric' });
   }, [selectedMonth]);
 
+  // Data freshness indicators
+  const dataFreshness = useMemo(() => {
+    const currentMonthKey = new Date().toISOString().substring(0, 7);
+    const lastTransactionDate = dashboardData?.fireMetrics?.lastTransactionDate || '';
+
+    if (!lastTransactionDate) {
+      return {
+        isDataCurrent: true,
+        monthsOld: 0,
+        lastTransactionDate: '',
+        lastTransactionFormatted: 'Unknown',
+        isStale: false
+      };
+    }
+
+    const lastTransactionMonth = lastTransactionDate.substring(0, 7); // Extract YYYY-MM from date
+    const isDataCurrent = lastTransactionMonth === currentMonthKey;
+    const monthsOld = lastTransactionMonth ?
+      ((new Date().getFullYear() - new Date(lastTransactionMonth + '-01').getFullYear()) * 12) +
+      (new Date().getMonth() - new Date(lastTransactionMonth + '-01').getMonth()) : 0;
+
+    const lastTransactionFormatted = lastTransactionMonth ?
+      new Date(lastTransactionMonth + '-01').toLocaleDateString('en-EU', { month: 'long', year: 'numeric' }) :
+      'Unknown';
+
+    return {
+      isDataCurrent,
+      monthsOld,
+      lastTransactionDate,
+      lastTransactionFormatted,
+      isStale: monthsOld > 0
+    };
+  }, [dashboardData?.fireMetrics?.lastTransactionDate]);
+
   return (
     <div className="space-y-4">
       {/* Month Navigation */}
@@ -100,7 +134,15 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
             {formattedMonth}
           </h3>
           {isCurrentMonth && (
-            <p className="text-xs text-green-600">Current Month</p>
+            <div className="space-y-1">
+              <p className="text-xs text-green-600">Current Month</p>
+              {dataFreshness.isStale && (
+                <div className="flex items-center justify-center gap-1 text-xs text-amber-600 bg-amber-50 rounded-full px-3 py-1.5 border border-amber-200">
+                  <Clock size={12} />
+                  <span className="font-medium">Data through {dataFreshness.lastTransactionFormatted}</span>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -126,7 +168,10 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
           </div>
           <div className="text-sm text-neutral-400 truncate">Income</div>
           <div className="text-xs text-green-600 mt-1 truncate">
-            {isCurrentMonth ? 'Current month' : 'Historical'}
+            {isCurrentMonth ? 
+              (dataFreshness.isStale ? '6-month average' : 'Current month') : 
+              'Historical'
+            }
           </div>
         </div>
 
@@ -139,7 +184,10 @@ const MonthlyOverview = memo(function MonthlyOverview({ dashboardData }: Monthly
           </div>
           <div className="text-sm text-neutral-400 truncate">Essential</div>
           <div className="text-xs text-neutral-600 mt-1 truncate">
-            {isCurrentMonth ? 'Current month' : 'Historical'}
+            {isCurrentMonth ? 
+              (dataFreshness.isStale ? '6-month average' : 'Current month') : 
+              'Historical'
+            }
           </div>
         </div>
 

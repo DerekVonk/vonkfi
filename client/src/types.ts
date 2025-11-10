@@ -74,6 +74,7 @@ export interface FireMetrics {
   timeToFire: number;
   netWorth: number;
   currentMonth: string;
+  lastTransactionDate: string;
   monthlyBreakdown: {
     month: string;
     income: number;

@@ -7,7 +7,9 @@ export interface FireMetrics {
   savingsRate: number;
   fireProgress: number;
   timeToFire: number;
+  netWorth: number;
   currentMonth: string;
+  lastTransactionDate: string;
   monthlyBreakdown: {
     month: string;
     income: number;
@@ -68,7 +70,7 @@ export class FireCalculator {
     else if (coefficientOfVariation > 0.1) volatilityScore = 'medium';
 
     // Calculate current buffer
-    const emergencyFundGoal = goals.find(g => g.name.toLowerCase().includes('emergency'));
+    const emergencyFundGoal = goals.find(g => g.name?.toLowerCase().includes('emergency'));
     const currentBuffer = emergencyFundGoal ? parseFloat(emergencyFundGoal.currentAmount || '0') : 0;
     
     let bufferStatus: 'below' | 'optimal' | 'above' = 'optimal';
@@ -88,6 +90,10 @@ export class FireCalculator {
     // Generate monthly breakdown
     const monthlyBreakdown = this.generateMonthlyBreakdown(last6Months, accounts);
     const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM format
+    const lastTransactionDate = this.getLatestTransactionDate(transactions); // Track most recent transaction
+
+    // Calculate net worth from goals (simple approximation)
+    const netWorth = goals.reduce((sum, goal) => sum + parseFloat(goal.currentAmount || '0'), 0);
 
     return {
       monthlyIncome: avgIncome || 0,
@@ -95,7 +101,9 @@ export class FireCalculator {
       savingsRate: isNaN(savingsRate) ? 0 : savingsRate,
       fireProgress,
       timeToFire,
+      netWorth,
       currentMonth,
+      lastTransactionDate,
       monthlyBreakdown,
       bufferStatus: {
         current: currentBuffer,
@@ -296,5 +304,19 @@ export class FireCalculator {
     );
 
     return result.isInternalTransfer && this.transferDetector.isConfidenceAcceptable(result);
+  }
+
+  private getLatestTransactionDate(transactions: Transaction[]): string {
+    if (transactions.length === 0) {
+      return new Date().toISOString(); // Return current date if no transactions
+    }
+
+    // Find the most recent transaction date
+    const latestTransaction = transactions.reduce((latest, tx) =>
+      new Date(tx.date) > new Date(latest.date) ? tx : latest
+    );
+
+    // Convert to ISO string format for consistency
+    return new Date(latestTransaction.date).toISOString();
   }
 }
